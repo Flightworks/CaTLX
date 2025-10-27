@@ -173,7 +173,7 @@ const AssessmentSummary: React.FC<{ onReturnToTasks: () => void }> = ({ onReturn
                 evaluatorName: evaluator?.name || 'Unknown',
                 studyName: study?.name || 'Unknown',
                 studyId: study?.id || '',
-                mteName: mte?.name || 'Unknown',
+                mteName: mte ? `[${mte.refNumber}] ${mte.name}` : 'Unknown',
                 rawScores: rating.scores,
                 weights,
                 weightedScores,
@@ -352,7 +352,7 @@ const AssessmentRunner: React.FC = () => {
             <Card>
                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
                     <div>
-                        <h3 className="text-lg leading-6 font-medium text-white">{`Rating for: ${selectedMte.name}`}</h3>
+                        <h3 className="text-lg leading-6 font-medium text-white">{`Rating for: [${selectedMte.refNumber}] ${selectedMte.name}`}</h3>
                         <p className="mt-1 text-sm text-nasa-gray-400">{selectedMte.description}</p>
                     </div>
                     <ToggleSwitch
@@ -465,7 +465,9 @@ const AssessmentRunner: React.FC = () => {
                                 <div key={mte.id} className="p-4 bg-nasa-gray-900 rounded-md">
                                     <div className="flex flex-col sm:flex-row justify-between sm:items-start gap-4 mb-4">
                                         <div className="w-full">
-                                            <h4 className="font-semibold text-white">{mte.name}</h4>
+                                            <h4 className="font-semibold text-white">
+                                                <span className="font-mono text-sm text-nasa-gray-400 mr-2">[{mte.refNumber}]</span>{mte.name}
+                                            </h4>
                                             <p className="text-sm text-nasa-gray-400">{mte.description}</p>
                                         </div>
                                         <div className="flex-shrink-0 w-full sm:w-24 text-left sm:text-center">
@@ -494,7 +496,9 @@ const AssessmentRunner: React.FC = () => {
                             return (
                                 <div key={mte.id} className="flex flex-col sm:flex-row justify-between items-start sm:items-center p-4 bg-nasa-gray-900 rounded-md gap-4">
                                     <div className="w-full">
-                                        <h4 className="font-semibold text-white">{mte.name}</h4>
+                                        <h4 className="font-semibold text-white">
+                                            <span className="font-mono text-sm text-nasa-gray-400 mr-2">[{mte.refNumber}]</span>{mte.name}
+                                        </h4>
                                         <p className="text-sm text-nasa-gray-400">{mte.description}</p>
                                     </div>
                                     <div className="flex-shrink-0 w-full sm:w-auto">

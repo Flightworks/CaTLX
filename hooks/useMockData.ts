@@ -8,9 +8,9 @@ const INITIAL_EVALUATORS: Evaluator[] = [
 ];
 
 const INITIAL_MTES: MTE[] = [
-    { id: 'mte1', name: 'EVA Simulation', description: 'Simulated extravehicular activity.' },
-    { id: 'mte2', name: 'Docking Maneuver', description: 'Manual docking procedure with space station.' },
-    { id: 'mte3', name: 'System Anomaly Response', description: 'Respond to a critical system failure alert.' },
+    { id: 'mte1', name: 'EVA Simulation', description: 'Simulated extravehicular activity.', refNumber: '35182' },
+    { id: 'mte2', name: 'Docking Maneuver', description: 'Manual docking procedure with space station.', refNumber: '72940' },
+    { id: 'mte3', name: 'System Anomaly Response', description: 'Respond to a critical system failure alert.', refNumber: '58219' },
 ];
 
 const INITIAL_STUDIES: Study[] = [
@@ -25,8 +25,8 @@ const INITIAL_STUDIES: Study[] = [
     name: 'ISS Maintenance Protocols',
     description: 'Evaluating new maintenance protocols aboard the ISS.',
     mtes: [
-        { id: 'mte4', name: 'Robotic Arm Calibration', description: 'Calibrating the Canadarm2.' },
-        { id: 'mte5', name: 'Life Support Check', description: 'Routine check of life support systems.' },
+        { id: 'mte4', name: 'Robotic Arm Calibration', description: 'Calibrating the Canadarm2.', refNumber: '88371' },
+        { id: 'mte5', name: 'Life Support Check', description: 'Routine check of life support systems.', refNumber: '41056' },
     ],
   },
 ];
@@ -42,7 +42,7 @@ export interface MockDataHook {
   addStudy: (study: Omit<Study, 'id' | 'mtes'>) => void;
   updateStudy: (study: Study) => void;
   deleteStudy: (id: string) => void;
-  addMTEToStudy: (studyId: string, mte: Omit<MTE, 'id'>) => void;
+  addMTEToStudy: (studyId: string, mte: Omit<MTE, 'id' | 'refNumber'>) => void;
   removeMTEFromStudy: (studyId: string, mteId: string) => void;
   addRating: (rating: Omit<Rating, 'id' | 'timestamp'>) => void;
   addPairwiseComparison: (comparison: PairwiseComparison) => void;
@@ -79,10 +79,10 @@ const useMockData = (): MockDataHook => {
     setStudies(prev => prev.filter(s => s.id !== id));
   };
 
-  const addMTEToStudy = (studyId: string, mte: Omit<MTE, 'id'>) => {
+  const addMTEToStudy = (studyId: string, mte: Omit<MTE, 'id' | 'refNumber'>) => {
     setStudies(prev => prev.map(s => {
       if (s.id === studyId) {
-        return { ...s, mtes: [...s.mtes, { ...mte, id: `mte${Date.now()}` }] };
+        return { ...s, mtes: [...s.mtes, { ...mte, id: `mte${Date.now()}`, refNumber: Math.floor(10000 + Math.random() * 90000).toString() }] };
       }
       return s;
     }));

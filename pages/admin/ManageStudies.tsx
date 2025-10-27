@@ -40,7 +40,7 @@ const StudyForm: React.FC<{
 
 // Form for MTE
 const MTEForm: React.FC<{
-  onSave: (mte: Omit<MTE, 'id'>) => void;
+  onSave: (mte: Omit<MTE, 'id' | 'refNumber'>) => void;
   onCancel: () => void;
 }> = ({ onSave, onCancel }) => {
   const [name, setName] = useState('');
@@ -87,7 +87,7 @@ const ManageStudies: React.FC = () => {
     setEditingStudy(null);
   };
 
-  const handleSaveMTE = (mte: Omit<MTE, 'id'>) => {
+  const handleSaveMTE = (mte: Omit<MTE, 'id' | 'refNumber'>) => {
       if (studyForMTE) {
           addMTEToStudy(studyForMTE.id, mte);
       }
@@ -119,7 +119,10 @@ const ManageStudies: React.FC = () => {
                 <ul className="space-y-2">
                     {study.mtes.map(mte => (
                         <li key={mte.id} className="flex justify-between items-center p-2 bg-nasa-gray-800 rounded">
-                            <span className="text-sm">{mte.name}</span>
+                            <div className="flex items-center">
+                                <span className="font-mono text-xs text-nasa-gray-400 mr-3 bg-nasa-gray-700 px-1.5 py-0.5 rounded-sm">{mte.refNumber}</span>
+                                <span className="text-sm">{mte.name}</span>
+                            </div>
                             <Button size="sm" variant="danger" onClick={() => removeMTEFromStudy(study.id, mte.id)}>Remove</Button>
                         </li>
                     ))}

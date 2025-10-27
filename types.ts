@@ -17,6 +17,7 @@ export interface MTE {
   id: string;
   name: string;
   description: string;
+  refNumber: string;
 }
 
 export interface Study {

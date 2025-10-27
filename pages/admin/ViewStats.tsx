@@ -38,7 +38,7 @@ const ViewStats: React.FC = () => {
         evaluatorName: evaluator?.name || 'Unknown',
         studyName: study?.name || 'Unknown',
         studyId: study?.id || '',
-        mteName: mte?.name || 'Unknown',
+        mteName: mte ? `[${mte.refNumber}] ${mte.name}` : 'Unknown',
         rawScores: rating.scores,
         weights,
         weightedScores,
