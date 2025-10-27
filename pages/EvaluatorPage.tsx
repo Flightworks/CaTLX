@@ -92,9 +92,9 @@ const PairwiseComparisonView: React.FC<{
           </div>
         ))}
       </div>
-      <div className="flex justify-end space-x-3 mt-6 pt-4 border-t border-nasa-gray-700">
-        <Button onClick={handleSkip} variant="secondary">Skip for Now</Button>
-        <Button onClick={handleSubmit} disabled={!allPairsSelected}>Submit Weights</Button>
+      <div className="flex flex-col sm:flex-row justify-end space-y-2 sm:space-y-0 sm:space-x-3 mt-6 pt-4 border-t border-nasa-gray-700">
+        <Button onClick={handleSkip} variant="secondary" className="w-full sm:w-auto">Skip for Now</Button>
+        <Button onClick={handleSubmit} disabled={!allPairsSelected} className="w-full sm:w-auto">Submit Weights</Button>
       </div>
     </Card>
   );
@@ -200,8 +200,8 @@ const AssessmentSummary: React.FC<{ onReturnToTasks: () => void }> = ({ onReturn
             <div className="space-y-4">
                 {summaryScores.map((score, index) => (
                     <Card key={index} className="bg-nasa-gray-900">
-                        <div className="flex justify-between items-center">
-                            <h4 className="text-lg font-semibold">{score.mteName}</h4>
+                        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center">
+                            <h4 className="text-lg font-semibold mb-2 sm:mb-0">{score.mteName}</h4>
                             <div className="text-right">
                                 <span className="text-sm text-nasa-gray-400 block">Overall Workload</span>
                                 <span className="text-2xl font-bold" style={{ color: getScoreColor(score.totalWeightedScore) }}>
@@ -350,7 +350,7 @@ const AssessmentRunner: React.FC = () => {
         const currentDimension = TLX_DIMENSIONS_INFO[currentStep];
         return (
             <Card>
-                <div className="flex justify-between items-center mb-6">
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
                     <div>
                         <h3 className="text-lg leading-6 font-medium text-white">{`Rating for: ${selectedMte.name}`}</h3>
                         <p className="mt-1 text-sm text-nasa-gray-400">{selectedMte.description}</p>
@@ -394,22 +394,22 @@ const AssessmentRunner: React.FC = () => {
                             />
                         </div>
                     )}
-                    <div className="flex justify-between items-center gap-4 mt-6">
-                         <Button type="button" variant="secondary" onClick={() => { setSelectedMte(null); setCurrentStep(0); }}>Back to Tasks</Button>
+                    <div className="flex flex-col-reverse sm:flex-row justify-between items-center gap-4 mt-6">
+                         <Button type="button" variant="secondary" onClick={() => { setSelectedMte(null); setCurrentStep(0); }} className="w-full sm:w-auto">Back to Tasks</Button>
                         
                         {ratingMode === 'express' ? (
-                            <Button type="submit">Submit Rating</Button>
+                            <Button type="submit" className="w-full sm:w-auto">Submit Rating</Button>
                         ) : (
-                            <div className="flex items-center gap-2">
-                                <Button type="button" onClick={() => setCurrentStep(prev => prev - 1)} disabled={currentStep === 0}>
+                            <div className="flex items-center gap-2 w-full sm:w-auto">
+                                <Button type="button" onClick={() => setCurrentStep(prev => prev - 1)} disabled={currentStep === 0} className="w-1/2 sm:w-auto">
                                     Previous
                                 </Button>
                                 {currentStep < TLX_DIMENSIONS_INFO.length - 1 ? (
-                                    <Button type="button" onClick={() => setCurrentStep(prev => prev + 1)}>
+                                    <Button type="button" onClick={() => setCurrentStep(prev => prev + 1)} className="w-1/2 sm:w-auto">
                                         Next ({currentStep + 1}/{TLX_DIMENSIONS_INFO.length})
                                     </Button>
                                 ) : (
-                                    <Button type="submit">Submit Rating</Button>
+                                    <Button type="submit" className="w-1/2 sm:w-auto">Submit Rating</Button>
                                 )}
                             </div>
                         )}
@@ -426,15 +426,15 @@ const AssessmentRunner: React.FC = () => {
          <>
             <div className="mb-6">
                 <Card title="Current Study Dimension Weights">
-                    <div className="flex justify-between items-start">
+                    <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
                         <div className="flex-grow pr-4">
                             <PairwiseWeightsDisplay weights={currentWeights} isWeighted={isWeighted} />
                         </div>
-                         <div className="flex items-center space-x-2">
-                            <Button onClick={handleResetWeights} variant="secondary" size="sm" disabled={!isWeighted}>
+                         <div className="flex flex-col sm:flex-row items-stretch sm:items-center space-y-2 sm:space-y-0 sm:space-x-2 w-full sm:w-auto">
+                            <Button onClick={handleResetWeights} variant="secondary" size="sm" disabled={!isWeighted} className="w-full sm:w-auto">
                                 Reset Weights
                             </Button>
-                            <Button onClick={() => setView('pairwise')} variant="secondary" size="sm">
+                            <Button onClick={() => setView('pairwise')} variant="secondary" size="sm" className="w-full sm:w-auto">
                                 Redo Comparison
                             </Button>
                         </div>
@@ -463,12 +463,12 @@ const AssessmentRunner: React.FC = () => {
 
                             return (
                                 <div key={mte.id} className="p-4 bg-nasa-gray-900 rounded-md">
-                                    <div className="flex justify-between items-start mb-4">
-                                        <div>
+                                    <div className="flex flex-col sm:flex-row justify-between sm:items-start gap-4 mb-4">
+                                        <div className="w-full">
                                             <h4 className="font-semibold text-white">{mte.name}</h4>
                                             <p className="text-sm text-nasa-gray-400">{mte.description}</p>
                                         </div>
-                                        <div className="flex-shrink-0 w-24 text-center">
+                                        <div className="flex-shrink-0 w-full sm:w-24 text-left sm:text-center">
                                             <div>
                                                 <span className="text-2xl font-bold" style={{ color: getScoreColor(score) }}>
                                                   {score.toFixed(2)}
@@ -492,13 +492,13 @@ const AssessmentRunner: React.FC = () => {
                             );
                         } else {
                             return (
-                                <div key={mte.id} className="flex justify-between items-center p-4 bg-nasa-gray-900 rounded-md">
-                                    <div>
+                                <div key={mte.id} className="flex flex-col sm:flex-row justify-between items-start sm:items-center p-4 bg-nasa-gray-900 rounded-md gap-4">
+                                    <div className="w-full">
                                         <h4 className="font-semibold text-white">{mte.name}</h4>
                                         <p className="text-sm text-nasa-gray-400">{mte.description}</p>
                                     </div>
-                                    <div className="flex-shrink-0">
-                                        <Button onClick={() => { setSelectedMte(mte); setCurrentStep(0); }} size="sm">
+                                    <div className="flex-shrink-0 w-full sm:w-auto">
+                                        <Button onClick={() => { setSelectedMte(mte); setCurrentStep(0); }} size="sm" className="w-full sm:w-auto">
                                             Rate Task
                                         </Button>
                                     </div>
@@ -516,11 +516,34 @@ const AssessmentRunner: React.FC = () => {
 
 const EvaluatorPage: React.FC = () => {
     const { selectedEvaluatorId, selectedStudyId } = useSession();
-    const isSessionActive = selectedEvaluatorId && selectedStudyId;
+
+    if (!selectedEvaluatorId) {
+        return (
+            <div className="space-y-8">
+                <AssessmentSetup />
+            </div>
+        );
+    }
+    
+    if (!selectedStudyId) {
+        return (
+            <div className="space-y-8">
+                <div className="max-w-2xl mx-auto">
+                    <Card title="Ready for Assessment">
+                        <div className="text-center py-8">
+                            <p className="text-lg text-nasa-gray-300">
+                                Please select a study from the header to begin.
+                            </p>
+                        </div>
+                    </Card>
+                </div>
+            </div>
+        )
+    }
 
     return (
         <div className="space-y-8">
-            {isSessionActive ? <AssessmentRunner /> : <AssessmentSetup />}
+            <AssessmentRunner />
         </div>
     );
 };

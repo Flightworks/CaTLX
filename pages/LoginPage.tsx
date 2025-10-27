@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useAuth } from '../contexts/AppContext';
 import Button from '../components/ui/Button';
@@ -20,7 +19,17 @@ const LoginPage: React.FC = () => {
     <div className="flex items-center justify-center min-h-screen bg-nasa-gray-900">
       <div className="text-center p-8 max-w-md w-full">
         <div className="mb-8">
-            <h1 className="text-4xl font-bold text-white tracking-wider">NASA TLX</h1>
+            <div className="flex items-center justify-center">
+              <svg className="w-12 h-12 text-nasa-light-blue mr-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" xmlns="http://www.w3.org/2000/svg">
+                <path d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22Z" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                <path d="M10 15C10.6311 15.5103 11.3323 15.8333 12.0833 15.8333C12.8344 15.8333 13.5356 15.5103 14.1667 15" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                <path d="M15.5 9.5C15.5 9.77614 15.2761 10 15 10C14.7239 10 14.5 9.77614 14.5 9.5C14.5 9.22386 14.7239 9 15 9C15.2761 9 15.5 9.22386 15.5 9.5Z" fill="currentColor"/>
+                <path d="M9.5 9.5C9.5 9.77614 9.27614 10 9 10C8.72386 10 8.5 9.77614 8.5 9.5C8.5 9.22386 8.72386 9 9 9C9.27614 9 9.5 9.22386 9.5 9.5Z" fill="currentColor"/>
+                <path d="M19 12C19 8.13401 15.866 5 12 5C8.13401 5 5 8.13401 5 12" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                <path d="M12 11V12" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+              <h1 className="text-4xl font-bold text-white tracking-wider">CaTLX</h1>
+            </div>
             <p className="text-nasa-gray-300 mt-2">Workload Assessment Tool</p>
         </div>
         <div className="bg-nasa-gray-800 p-8 rounded-lg shadow-2xl">

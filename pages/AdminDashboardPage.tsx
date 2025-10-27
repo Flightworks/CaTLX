@@ -39,7 +39,7 @@ const AdminDashboardPage: React.FC = () => {
     <div className="space-y-6">
       <h1 className="text-3xl font-bold text-white">Admin Dashboard</h1>
       <div className="border-b border-nasa-gray-700">
-        <nav className="-mb-px flex space-x-4" aria-label="Tabs">
+        <nav className="-mb-px flex space-x-4 flex-wrap" aria-label="Tabs">
           <TabButton tabId="stats">Statistics</TabButton>
           <TabButton tabId="evaluators">Manage Evaluators</TabButton>
           <TabButton tabId="studies">Manage Studies</TabButton>
