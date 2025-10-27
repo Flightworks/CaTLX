@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useData, useSession } from '../contexts/AppContext';
-import { TLXDimension, Rating, MTE, Study } from '../types';
+import { TLXDimension, Rating, MTE, Study, ComputedTLXScore } from '../types';
 import { TLX_DIMENSIONS_INFO, PAIRWISE_COMBINATIONS, DEFAULT_WEIGHTS } from '../constants';
 import Select from '../components/ui/Select';
 import TlxSlider from '../components/ui/TlxSlider';
@@ -14,8 +14,30 @@ const initialScores = TLX_DIMENSIONS_INFO.reduce((acc, dim) => {
   return acc;
 }, {} as Record<TLXDimension, number>);
 
+const getScoreColor = (score: number): string => {
+  const green = [74, 222, 128];
+  const blue = [96, 165, 250];
+  const red = [248, 113, 113];
+
+  let r, g, b;
+
+  if (score <= 50) {
+    const t = score / 50;
+    r = Math.round(green[0] + t * (blue[0] - green[0]));
+    g = Math.round(green[1] + t * (blue[1] - green[1]));
+    b = Math.round(green[2] + t * (blue[2] - green[2]));
+  } else {
+    const t = (score - 50) / 50;
+    r = Math.round(blue[0] + t * (red[0] - blue[0]));
+    g = Math.round(blue[1] + t * (red[1] - blue[1]));
+    b = Math.round(blue[2] + t * (red[2] - blue[2]));
+  }
+
+  return `rgb(${r}, ${g}, ${b})`;
+};
+
 const PairwiseComparisonView: React.FC<{
-  onSubmit: (weights: Record<TLXDimension, number>) => void;
+  onSubmit: (weights: Record<TLXDimension, number>, isWeighted: boolean) => void;
   onComplete: () => void;
 }> = ({ onSubmit, onComplete }) => {
   const [selections, setSelections] = useState<Record<string, TLXDimension | null>>({});
@@ -35,11 +57,12 @@ const PairwiseComparisonView: React.FC<{
         weights[dim]++;
       }
     });
-    onSubmit(weights);
+    onSubmit(weights, true);
     onComplete();
   };
   
   const handleSkip = () => {
+      onSubmit(DEFAULT_WEIGHTS, false);
       onComplete();
   }
 
@@ -115,15 +138,108 @@ const AssessmentSetup: React.FC = () => {
     );
 };
 
+const AssessmentSummary: React.FC<{ onReturnToTasks: () => void }> = ({ onReturnToTasks }) => {
+    const { ratings, pairwiseComparisons, evaluators, studies } = useData();
+    const { selectedEvaluatorId, selectedStudyId } = useSession();
+
+    const selectedStudy = useMemo(() => studies.find(s => s.id === selectedStudyId), [studies, selectedStudyId]);
+    const currentComparison = useMemo(() => pairwiseComparisons.find(pc => pc.evaluatorId === selectedEvaluatorId && pc.studyId === selectedStudyId), [pairwiseComparisons, selectedEvaluatorId, selectedStudyId]);
+
+    const summaryScores = useMemo<ComputedTLXScore[]>(() => {
+        const relevantRatings = ratings.filter(r => r.evaluatorId === selectedEvaluatorId && r.studyId === selectedStudyId);
+        
+        return relevantRatings.map(rating => {
+            const evaluator = evaluators.find(e => e.id === rating.evaluatorId);
+            const study = studies.find(s => s.id === rating.studyId);
+            const mte = study?.mtes.find(m => m.id === rating.mteId);
+            
+            const isWeighted = !!currentComparison && currentComparison.isWeighted;
+            const weights = currentComparison ? currentComparison.weights : DEFAULT_WEIGHTS;
+            const totalWeight = (Object.values(weights) as number[]).reduce((sum, w) => sum + w, 0);
+
+            const weightedScores = {} as Record<TLXDimension, number>;
+            let totalWeightedScore = 0;
+
+            for (const dimInfo of TLX_DIMENSIONS_INFO) {
+                const dim = dimInfo.id;
+                const rawScore = rating.scores[dim];
+                const weight = weights[dim];
+                const weightedScore = rawScore * weight;
+                weightedScores[dim] = weightedScore;
+                totalWeightedScore += weightedScore;
+            }
+            
+            return {
+                evaluatorName: evaluator?.name || 'Unknown',
+                studyName: study?.name || 'Unknown',
+                studyId: study?.id || '',
+                mteName: mte?.name || 'Unknown',
+                rawScores: rating.scores,
+                weights,
+                weightedScores,
+                totalWeightedScore: totalWeight > 0 ? totalWeightedScore / totalWeight : 0,
+                isWeighted,
+            };
+        });
+    }, [ratings, currentComparison, evaluators, studies, selectedEvaluatorId, selectedStudyId]);
+
+    if (!selectedStudy) return null;
+
+    const isWeighted = !!currentComparison && currentComparison.isWeighted;
+    const currentWeights = currentComparison?.weights || DEFAULT_WEIGHTS;
+
+    return (
+        <Card title={`Assessment Summary for: ${selectedStudy.name}`}>
+            <p className="text-nasa-gray-300 mb-6">You have completed all ratings for this study. Below is a summary of your submitted workload scores.</p>
+            
+            <div className="mb-6">
+                <h3 className="text-lg font-medium text-white mb-2">Dimension Weights Used</h3>
+                <PairwiseWeightsDisplay weights={currentWeights} isWeighted={isWeighted} />
+            </div>
+
+            <div className="space-y-4">
+                {summaryScores.map((score, index) => (
+                    <Card key={index} className="bg-nasa-gray-900">
+                        <div className="flex justify-between items-center">
+                            <h4 className="text-lg font-semibold">{score.mteName}</h4>
+                            <div className="text-right">
+                                <span className="text-sm text-nasa-gray-400 block">Overall Workload</span>
+                                <span className="text-2xl font-bold" style={{ color: getScoreColor(score.totalWeightedScore) }}>
+                                  {score.totalWeightedScore.toFixed(2)}
+                                </span>
+                            </div>
+                        </div>
+                        <div className="mt-4 pt-4 border-t border-nasa-gray-700">
+                            <h5 className="text-sm font-semibold text-nasa-gray-300 mb-2">Raw Scores Submitted</h5>
+                            <div className="grid grid-cols-2 md:grid-cols-3 gap-x-8 gap-y-2">
+                                {TLX_DIMENSIONS_INFO.map(dim => (
+                                    <div key={dim.id} className="flex justify-between text-sm">
+                                        <span className="text-nasa-gray-400">{dim.title}</span>
+                                        <span className="font-mono font-semibold text-white">{score.rawScores[dim.id]}</span>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </Card>
+                ))}
+            </div>
+            <div className="mt-6 pt-4 border-t border-nasa-gray-700 flex justify-center sm:justify-end">
+                <Button onClick={onReturnToTasks}>Return to Task List</Button>
+            </div>
+        </Card>
+    );
+};
+
+
 const AssessmentRunner: React.FC = () => {
-    const { studies, addRating, addPairwiseComparison, pairwiseComparisons } = useData();
+    const { studies, ratings, addRating, addPairwiseComparison, pairwiseComparisons } = useData();
     const { selectedEvaluatorId, selectedStudyId } = useSession();
     
     const storageKey = useMemo(() => `ratingMode_${selectedEvaluatorId}`, [selectedEvaluatorId]);
 
     const [selectedMte, setSelectedMte] = useState<MTE | null>(null);
     const [scores, setScores] = useState<Record<TLXDimension, number>>(initialScores);
-    const [view, setView] = useState<'loading' | 'pairwise' | 'tasks'>('loading');
+    const [view, setView] = useState<'loading' | 'pairwise' | 'tasks' | 'summary'>('loading');
     const [notification, setNotification] = useState('');
     const [ratingMode, setRatingMode] = useState<'express' | 'step-by-step'>(() => {
         const savedMode = localStorage.getItem(storageKey);
@@ -136,25 +252,36 @@ const AssessmentRunner: React.FC = () => {
     const currentComparison = useMemo(() => {
         return pairwiseComparisons.find(pc => pc.evaluatorId === selectedEvaluatorId && pc.studyId === selectedStudyId);
     }, [pairwiseComparisons, selectedEvaluatorId, selectedStudyId]);
+    
+    const ratedMteIds = useMemo(() => new Set(
+        ratings
+            .filter(r => r.evaluatorId === selectedEvaluatorId && r.studyId === selectedStudyId)
+            .map(r => r.mteId)
+    ), [ratings, selectedEvaluatorId, selectedStudyId]);
+
 
     useEffect(() => {
         if (selectedEvaluatorId && selectedStudyId) {
-            if (!currentComparison) {
+            const allMtesRated = selectedStudy && selectedStudy.mtes.length > 0 && selectedStudy.mtes.every(mte => ratedMteIds.has(mte.id));
+
+            if (allMtesRated) {
+                setView('summary');
+            } else if (!currentComparison) {
                 setView('pairwise');
             } else {
                 setView('tasks');
             }
         }
-    }, [selectedEvaluatorId, selectedStudyId, currentComparison]);
+    }, [selectedEvaluatorId, selectedStudyId, currentComparison, ratedMteIds, selectedStudy]);
 
 
     const handleScoreChange = (dimension: TLXDimension, value: number) => {
         setScores(prev => ({ ...prev, [dimension]: value }));
     };
     
-    const handlePairwiseSubmit = (weights: Record<TLXDimension, number>) => {
+    const handlePairwiseSubmit = (weights: Record<TLXDimension, number>, isWeighted: boolean) => {
         if (selectedEvaluatorId && selectedStudyId) {
-            addPairwiseComparison({ evaluatorId: selectedEvaluatorId, studyId: selectedStudyId, weights });
+            addPairwiseComparison({ evaluatorId: selectedEvaluatorId, studyId: selectedStudyId, weights, isWeighted });
         }
     };
     
@@ -181,11 +308,30 @@ const AssessmentRunner: React.FC = () => {
         };
         addRating(newRating);
         setNotification(`Rating for "${selectedMte.name}" submitted successfully!`);
+        
+        const mtesInStudy = selectedStudy.mtes;
+        const ratedMteIdsAfterThisOne = new Set([...ratedMteIds, selectedMte.id]);
+        
+        if (mtesInStudy.length > 0 && mtesInStudy.every(mte => ratedMteIdsAfterThisOne.has(mte.id))) {
+            setView('summary');
+        }
+
         setScores(initialScores);
         setSelectedMte(null);
         setCurrentStep(0);
 
         setTimeout(() => setNotification(''), 3000);
+    };
+
+     const handleResetWeights = () => {
+        if (selectedEvaluatorId && selectedStudyId) {
+            addPairwiseComparison({
+                evaluatorId: selectedEvaluatorId,
+                studyId: selectedStudyId,
+                weights: DEFAULT_WEIGHTS,
+                isWeighted: false
+            });
+        }
     };
 
     if (view === 'loading') {
@@ -194,6 +340,10 @@ const AssessmentRunner: React.FC = () => {
 
     if (view === 'pairwise') {
         return <PairwiseComparisonView onSubmit={handlePairwiseSubmit} onComplete={handlePairwiseComplete} />
+    }
+
+    if (view === 'summary') {
+        return <AssessmentSummary onReturnToTasks={() => setView('tasks')} />;
     }
 
     if (selectedMte) {
@@ -269,7 +419,7 @@ const AssessmentRunner: React.FC = () => {
         );
     }
 
-    const isWeighted = !!currentComparison;
+    const isWeighted = !!currentComparison && currentComparison.isWeighted;
     const currentWeights = currentComparison?.weights || DEFAULT_WEIGHTS;
 
     return (
@@ -280,9 +430,14 @@ const AssessmentRunner: React.FC = () => {
                         <div className="flex-grow pr-4">
                             <PairwiseWeightsDisplay weights={currentWeights} isWeighted={isWeighted} />
                         </div>
-                        <Button onClick={() => setView('pairwise')} variant="secondary" size="sm">
-                            Redo Comparison
-                        </Button>
+                         <div className="flex items-center space-x-2">
+                            <Button onClick={handleResetWeights} variant="secondary" size="sm" disabled={!isWeighted}>
+                                Reset Weights
+                            </Button>
+                            <Button onClick={() => setView('pairwise')} variant="secondary" size="sm">
+                                Redo Comparison
+                            </Button>
+                        </div>
                     </div>
                 </Card>
             </div>
@@ -290,17 +445,67 @@ const AssessmentRunner: React.FC = () => {
                  {notification && <div className="mb-4 p-3 rounded-md bg-green-500 bg-opacity-20 text-green-300 text-sm">{notification}</div>}
                  <p className="text-nasa-gray-300 mb-4">Select a task to begin rating.</p>
                 <div className="space-y-3">
-                    {selectedStudy.mtes.map(mte => (
-                        <div key={mte.id} className="flex justify-between items-center p-3 bg-nasa-gray-900 rounded-md">
-                            <div>
-                                <h4 className="font-semibold text-white">{mte.name}</h4>
-                                <p className="text-sm text-nasa-gray-400">{mte.description}</p>
-                            </div>
-                            <Button onClick={() => { setSelectedMte(mte); setCurrentStep(0); }} size="sm">
-                                Rate Task
-                            </Button>
-                        </div>
-                    ))}
+                    {selectedStudy.mtes.map(mte => {
+                        const isRated = ratedMteIds.has(mte.id);
+
+                        if (isRated) {
+                            const rating = ratings.find(r => r.evaluatorId === selectedEvaluatorId && r.studyId === selectedStudyId && r.mteId === mte.id);
+                            if (!rating) return null;
+
+                            const weights = currentComparison?.weights || DEFAULT_WEIGHTS;
+                            let totalWeightedScoreSum = 0;
+                            let totalWeight = 0;
+                            for (const dimInfo of TLX_DIMENSIONS_INFO) {
+                                totalWeight += weights[dimInfo.id];
+                                totalWeightedScoreSum += rating.scores[dimInfo.id] * weights[dimInfo.id];
+                            }
+                            const score = totalWeight > 0 ? totalWeightedScoreSum / totalWeight : 0;
+
+                            return (
+                                <div key={mte.id} className="p-4 bg-nasa-gray-900 rounded-md">
+                                    <div className="flex justify-between items-start mb-4">
+                                        <div>
+                                            <h4 className="font-semibold text-white">{mte.name}</h4>
+                                            <p className="text-sm text-nasa-gray-400">{mte.description}</p>
+                                        </div>
+                                        <div className="flex-shrink-0 w-24 text-center">
+                                            <div>
+                                                <span className="text-2xl font-bold" style={{ color: getScoreColor(score) }}>
+                                                  {score.toFixed(2)}
+                                                </span>
+                                                <p className="text-xs text-nasa-gray-400 font-semibold tracking-wider">SCORE</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div className="pt-4 border-t border-nasa-gray-700">
+                                        <h5 className="text-sm font-semibold text-nasa-gray-300 mb-2">Raw Scores Submitted</h5>
+                                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-8 gap-y-2">
+                                            {TLX_DIMENSIONS_INFO.map(dim => (
+                                                <div key={dim.id} className="flex justify-between text-sm">
+                                                    <span className="text-nasa-gray-400">{dim.title}</span>
+                                                    <span className="font-mono font-semibold text-white">{rating.scores[dim.id]}</span>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                </div>
+                            );
+                        } else {
+                            return (
+                                <div key={mte.id} className="flex justify-between items-center p-4 bg-nasa-gray-900 rounded-md">
+                                    <div>
+                                        <h4 className="font-semibold text-white">{mte.name}</h4>
+                                        <p className="text-sm text-nasa-gray-400">{mte.description}</p>
+                                    </div>
+                                    <div className="flex-shrink-0">
+                                        <Button onClick={() => { setSelectedMte(mte); setCurrentStep(0); }} size="sm">
+                                            Rate Task
+                                        </Button>
+                                    </div>
+                                </div>
+                            );
+                        }
+                    })}
                     {selectedStudy.mtes.length === 0 && <p className="text-sm text-nasa-gray-500 text-center py-4">No MTEs have been added to this study yet.</p>}
                 </div>
             </Card>

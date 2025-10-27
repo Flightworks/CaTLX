@@ -30,6 +30,7 @@ export interface PairwiseComparison {
   evaluatorId: string;
   studyId: string;
   weights: Record<TLXDimension, number>;
+  isWeighted: boolean;
 }
 
 export interface Rating {

@@ -17,7 +17,7 @@ const ViewStats: React.FC = () => {
       const mte = study?.mtes.find(m => m.id === rating.mteId);
       const comparison = pairwiseComparisons.find(pc => pc.evaluatorId === rating.evaluatorId && pc.studyId === rating.studyId);
       
-      const isWeighted = !!comparison;
+      const isWeighted = !!comparison && comparison.isWeighted;
       const weights = comparison ? comparison.weights : DEFAULT_WEIGHTS;
       
       const totalWeight = (Object.values(weights) as number[]).reduce((sum, w) => sum + w, 0);
