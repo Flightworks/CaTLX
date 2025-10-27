@@ -1,0 +1,5 @@
+{
+  "name": "CaTLX",
+  "description": "A web application to conduct NASA Task Load Index (TLX) assessments. It allows administrators to manage studies, evaluators, and mission task elements, while evaluators can submit workload ratings and perform pairwise comparisons. The app provides a dashboard to view and analyze the results.",
+  "requestFramePermissions": []
+}
