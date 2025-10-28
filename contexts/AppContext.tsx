@@ -1,5 +1,8 @@
-import React, { createContext, useContext, useState, ReactNode } from 'react';
-import useMockData, { MockDataHook } from '../hooks/useMockData';
+import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
+import useMockData from '../hooks/useMockData';
+import useLocalStorageData from '../hooks/useLocalStorageData';
+import { IDataSource } from '../types';
+
 
 interface AuthContextType {
   isAuthenticated: boolean;
@@ -15,13 +18,17 @@ interface SessionContextType {
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
-const DataContext = createContext<MockDataHook | undefined>(undefined);
+const DataContext = createContext<IDataSource | undefined>(undefined);
 const SessionContext = createContext<SessionContextType | undefined>(undefined);
 
 
 export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  
   const mockDataHook = useMockData();
+  const localStorageDataHook = useLocalStorageData();
+  const dataHook = isAuthenticated ? mockDataHook : localStorageDataHook;
+
   const [selectedEvaluatorId, setSelectedEvaluatorId] = useState('');
   const [selectedStudyId, setSelectedStudyId] = useState('');
 
@@ -31,10 +38,15 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     setSelectedEvaluatorId('');
     setSelectedStudyId('');
   };
+  
+  useEffect(() => {
+    setSelectedEvaluatorId('');
+    setSelectedStudyId('');
+  }, [isAuthenticated]);
 
   return (
     <AuthContext.Provider value={{ isAuthenticated, login, logout }}>
-      <DataContext.Provider value={mockDataHook}>
+      <DataContext.Provider value={dataHook}>
         <SessionContext.Provider value={{ selectedEvaluatorId, setSelectedEvaluatorId, selectedStudyId, setSelectedStudyId }}>
           {children}
         </SessionContext.Provider>

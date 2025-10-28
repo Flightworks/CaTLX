@@ -1,40 +1,36 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Evaluator, Study, MTE, Rating, PairwiseComparison, TLXDimension, IDataSource } from '../types';
 
-const INITIAL_EVALUATORS: Evaluator[] = [
-  { id: 'eval1', name: 'John Glenn', email: 'john.g@nasa.gov' },
-  { id: 'eval2', name: 'Sally Ride', email: 'sally.r@nasa.gov' },
-];
+function useLocalStorage<T>(key: string, initialValue: T): [T, React.Dispatch<React.SetStateAction<T>>] {
+    const [storedValue, setStoredValue] = useState<T>(() => {
+        try {
+            const item = window.localStorage.getItem(key);
+            return item ? JSON.parse(item) : initialValue;
+        } catch (error) {
+            console.error(`Error reading localStorage key “${key}”:`, error);
+            return initialValue;
+        }
+    });
 
-const INITIAL_MTES_CATALOG: MTE[] = [
-    { id: 'mte1', name: 'EVA Simulation', description: 'Simulated extravehicular activity.', refNumber: '35182' },
-    { id: 'mte2', name: 'Docking Maneuver', description: 'Manual docking procedure with space station.', refNumber: '72940' },
-    { id: 'mte3', name: 'System Anomaly Response', description: 'Respond to a critical system failure alert.', refNumber: '58219' },
-    { id: 'mte4', name: 'Robotic Arm Calibration', description: 'Calibrating the Canadarm2.', refNumber: '88371' },
-    { id: 'mte5', name: 'Life Support Check', description: 'Routine check of life support systems.', refNumber: '41056' },
-];
+    const setValue: React.Dispatch<React.SetStateAction<T>> = (value) => {
+        try {
+            const valueToStore = value instanceof Function ? value(storedValue) : value;
+            setStoredValue(valueToStore);
+            window.localStorage.setItem(key, JSON.stringify(valueToStore));
+        } catch (error) {
+            console.error(`Error setting localStorage key “${key}”:`, error);
+        }
+    };
+    return [storedValue, setValue];
+}
 
-const INITIAL_STUDIES: Study[] = [
-  {
-    id: 'study1',
-    name: 'Artemis II Mission Prep',
-    description: 'Preparation tasks for the Artemis II lunar mission.',
-    mteIds: ['mte1', 'mte2', 'mte3'],
-  },
-  {
-    id: 'study2',
-    name: 'ISS Maintenance Protocols',
-    description: 'Evaluating new maintenance protocols aboard the ISS.',
-    mteIds: ['mte4', 'mte5'],
-  },
-];
 
-const useMockData = (): IDataSource => {
-  const [evaluators, setEvaluators] = useState<Evaluator[]>(INITIAL_EVALUATORS);
-  const [studies, setStudies] = useState<Study[]>(INITIAL_STUDIES);
-  const [mtes, setMtes] = useState<MTE[]>(INITIAL_MTES_CATALOG);
-  const [ratings, setRatings] = useState<Rating[]>([]);
-  const [pairwiseComparisons, setPairwiseComparisons] = useState<PairwiseComparison[]>([]);
+const useLocalStorageData = (): IDataSource => {
+  const [evaluators, setEvaluators] = useLocalStorage<Evaluator[]>('catlx_evaluators', []);
+  const [studies, setStudies] = useLocalStorage<Study[]>('catlx_studies', []);
+  const [mtes, setMtes] = useLocalStorage<MTE[]>('catlx_mtes', []);
+  const [ratings, setRatings] = useLocalStorage<Rating[]>('catlx_ratings', []);
+  const [pairwiseComparisons, setPairwiseComparisons] = useLocalStorage<PairwiseComparison[]>('catlx_pairwise_comparisons', []);
   
   const addEvaluator = (evaluator: Omit<Evaluator, 'id'>) => {
     setEvaluators(prev => [...prev, { ...evaluator, id: `eval${Date.now()}` }]);
@@ -126,4 +122,4 @@ const useMockData = (): IDataSource => {
   };
 };
 
-export default useMockData;
+export default useLocalStorageData;

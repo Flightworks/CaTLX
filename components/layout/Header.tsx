@@ -4,7 +4,7 @@ import { useAuth, useData, useSession } from '../../contexts/AppContext';
 import Button from '../ui/Button';
 
 const Header: React.FC = () => {
-  const { logout } = useAuth();
+  const { isAuthenticated, logout } = useAuth();
   const { evaluators, studies } = useData();
   const { selectedEvaluatorId, setSelectedEvaluatorId, selectedStudyId, setSelectedStudyId } = useSession();
   const navigate = useNavigate();
@@ -13,7 +13,7 @@ const Header: React.FC = () => {
 
   const handleLogout = () => {
     logout();
-    navigate('/');
+    navigate('/login');
     setIsMenuOpen(false);
   };
   
@@ -48,7 +48,7 @@ const Header: React.FC = () => {
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           <div className="flex items-center">
-            <div className="flex-shrink-0 text-white font-bold text-xl flex items-center space-x-2">
+            <div className="flex-shrink-0 text-white font-bold text-xl flex items-center space-x-3">
               <svg className="w-8 h-8 text-nasa-light-blue" viewBox="0 0 24 24" fill="none" stroke="currentColor" xmlns="http://www.w3.org/2000/svg">
                   <path d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22Z" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
                   <path d="M10 15C10.6311 15.5103 11.3323 15.8333 12.0833 15.8333C12.8344 15.8333 13.5356 15.5103 14.1667 15" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
@@ -58,6 +58,7 @@ const Header: React.FC = () => {
                   <path d="M12 11V12" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
               </svg>
               <span>CaTLX</span>
+              {!isAuthenticated && <span className="text-xs font-semibold bg-yellow-500 text-yellow-900 px-2 py-0.5 rounded-full">Local</span>}
             </div>
             <nav className="hidden md:block ml-10">
               <div className="flex items-baseline space-x-4">
@@ -95,9 +96,15 @@ const Header: React.FC = () => {
                     </select>
                 </div>
             )}
-            <Button onClick={handleLogout} variant="danger" size="sm">
-                Logout
-            </Button>
+            {isAuthenticated ? (
+                <Button onClick={handleLogout} variant="danger" size="sm">
+                    Logout
+                </Button>
+            ) : (
+                <Button onClick={() => navigate('/login')} variant="primary" size="sm">
+                    Login
+                </Button>
+            )}
           </div>
           <div className="md:hidden flex items-center">
              <button onClick={() => setIsMenuOpen(!isMenuOpen)} className="inline-flex items-center justify-center p-2 rounded-md text-nasa-gray-400 hover:text-white hover:bg-nasa-gray-700 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-white" aria-controls="mobile-menu" aria-expanded={isMenuOpen}>
@@ -155,9 +162,15 @@ const Header: React.FC = () => {
                 </div>
             )}
             <div className="mt-3 px-4">
-                <Button onClick={handleLogout} variant="danger" size="md" className="w-full">
-                    Logout
-                </Button>
+                {isAuthenticated ? (
+                    <Button onClick={handleLogout} variant="danger" size="md" className="w-full">
+                        Logout
+                    </Button>
+                ) : (
+                    <Button onClick={() => { navigate('/login'); setIsMenuOpen(false); }} variant="primary" size="md" className="w-full">
+                        Login
+                    </Button>
+                )}
             </div>
           </div>
         </div>

@@ -1,4 +1,5 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AppContext';
 import Button from '../components/ui/Button';
 
@@ -14,6 +15,12 @@ const GoogleIcon = () => (
 
 const LoginPage: React.FC = () => {
   const { login } = useAuth();
+  const navigate = useNavigate();
+
+  const handleLogin = () => {
+    login();
+    navigate('/evaluator');
+  };
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-nasa-gray-900">
@@ -34,8 +41,8 @@ const LoginPage: React.FC = () => {
         </div>
         <div className="bg-nasa-gray-800 p-8 rounded-lg shadow-2xl">
             <h2 className="text-2xl font-semibold text-white mb-6">Welcome</h2>
-            <p className="text-nasa-gray-400 mb-8">Please sign in to continue to the assessment dashboard.</p>
-            <Button onClick={login} size="lg" className="w-full">
+            <p className="text-nasa-gray-400 mb-8">Sign in to access shared studies or continue in local mode by navigating to the dashboard.</p>
+            <Button onClick={handleLogin} size="lg" className="w-full">
                 <GoogleIcon />
                 Sign in with Google
             </Button>

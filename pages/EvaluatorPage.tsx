@@ -2,7 +2,6 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useData, useSession } from '../contexts/AppContext';
 import { TLXDimension, Rating, MTE, Study, ComputedTLXScore } from '../types';
 import { TLX_DIMENSIONS_INFO, PAIRWISE_COMBINATIONS, DEFAULT_WEIGHTS } from '../constants';
-import Select from '../components/ui/Select';
 import TlxSlider from '../components/ui/TlxSlider';
 import Button from '../components/ui/Button';
 import Card from '../components/ui/Card';
@@ -98,44 +97,6 @@ const PairwiseComparisonView: React.FC<{
       </div>
     </Card>
   );
-};
-
-
-const AssessmentSetup: React.FC = () => {
-    const { evaluators, studies } = useData();
-    const { setSelectedEvaluatorId, setSelectedStudyId } = useSession();
-    const [localEvaluatorId, setLocalEvaluatorId] = useState('');
-    const [localStudyId, setLocalStudyId] = useState('');
-
-    const handleStartSession = () => {
-        if (localEvaluatorId && localStudyId) {
-            setSelectedEvaluatorId(localEvaluatorId);
-            setSelectedStudyId(localStudyId);
-        }
-    };
-
-    return (
-        <div className="max-w-2xl mx-auto">
-             <Card title="Assessment Setup">
-                <div className="space-y-6">
-                     <p className="text-nasa-gray-300">Select an evaluator and a study to begin the assessment session.</p>
-                    <Select label="Select Evaluator" value={localEvaluatorId} onChange={e => setLocalEvaluatorId(e.target.value)}>
-                        <option value="">-- Choose Evaluator --</option>
-                        {evaluators.map(e => <option key={e.id} value={e.id}>{e.name}</option>)}
-                    </Select>
-                    <Select label="Select Study" value={localStudyId} onChange={e => setLocalStudyId(e.target.value)} disabled={!localEvaluatorId}>
-                        <option value="">-- Choose Study --</option>
-                        {studies.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
-                    </Select>
-                    <div className="text-right">
-                        <Button onClick={handleStartSession} disabled={!localEvaluatorId || !localStudyId}>
-                            Start Assessment Session
-                        </Button>
-                    </div>
-                </div>
-            </Card>
-        </div>
-    );
 };
 
 const AssessmentSummary: React.FC<{ onReturnToTasks: () => void }> = ({ onReturnToTasks }) => {
@@ -248,7 +209,7 @@ const AssessmentRunner: React.FC = () => {
     });
     const [currentStep, setCurrentStep] = useState(0);
 
-    const selectedStudy = useMemo(() => studies.find(s => s.id === selectedStudyId) as Study, [studies, selectedStudyId]);
+    const selectedStudy = useMemo(() => studies.find(s => s.id === selectedStudyId), [studies, selectedStudyId]);
     
     const mtesInStudy = useMemo(() => {
         if (!selectedStudy) return [];
@@ -339,7 +300,7 @@ const AssessmentRunner: React.FC = () => {
         }
     };
 
-    if (view === 'loading') {
+    if (view === 'loading' || !selectedStudy) {
         return <Card><p className="text-center text-nasa-gray-400">Loading session...</p></Card>
     }
 
@@ -526,33 +487,41 @@ const AssessmentRunner: React.FC = () => {
 const EvaluatorPage: React.FC = () => {
     const { selectedEvaluatorId, selectedStudyId } = useSession();
 
-    if (!selectedEvaluatorId) {
-        return (
-            <div className="space-y-8">
-                <AssessmentSetup />
-            </div>
-        );
+    const renderContent = () => {
+        if (!selectedEvaluatorId) {
+            return (
+                <Card>
+                    <div className="text-center py-8">
+                        <h2 className="text-xl font-semibold mb-2">Welcome to the Evaluator Dashboard</h2>
+                        <p className="text-lg text-nasa-gray-300">
+                            Please select an evaluator from the header to begin an assessment session.
+                        </p>
+                         <p className="text-sm text-nasa-gray-400 mt-4">If no evaluators are available, please go to the Admin Dashboard to create one.</p>
+                    </div>
+                </Card>
+            );
+        }
+        
+        if (!selectedStudyId) {
+            return (
+                <Card>
+                    <div className="text-center py-8">
+                        <h2 className="text-xl font-semibold mb-2">Ready for Assessment</h2>
+                        <p className="text-lg text-nasa-gray-300">
+                            Please select a study from the header to continue.
+                        </p>
+                    </div>
+                </Card>
+            );
+        }
+
+        return <AssessmentRunner />;
     }
-    
-    if (!selectedStudyId) {
-        return (
-            <div className="space-y-8">
-                <div className="max-w-2xl mx-auto">
-                    <Card title="Ready for Assessment">
-                        <div className="text-center py-8">
-                            <p className="text-lg text-nasa-gray-300">
-                                Please select a study from the header to begin.
-                            </p>
-                        </div>
-                    </Card>
-                </div>
-            </div>
-        )
-    }
+
 
     return (
         <div className="space-y-8">
-            <AssessmentRunner />
+            {renderContent()}
         </div>
     );
 };
