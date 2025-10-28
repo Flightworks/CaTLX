@@ -139,7 +139,7 @@ const AssessmentSetup: React.FC = () => {
 };
 
 const AssessmentSummary: React.FC<{ onReturnToTasks: () => void }> = ({ onReturnToTasks }) => {
-    const { ratings, pairwiseComparisons, evaluators, studies } = useData();
+    const { ratings, pairwiseComparisons, evaluators, studies, mtes } = useData();
     const { selectedEvaluatorId, selectedStudyId } = useSession();
 
     const selectedStudy = useMemo(() => studies.find(s => s.id === selectedStudyId), [studies, selectedStudyId]);
@@ -151,7 +151,7 @@ const AssessmentSummary: React.FC<{ onReturnToTasks: () => void }> = ({ onReturn
         return relevantRatings.map(rating => {
             const evaluator = evaluators.find(e => e.id === rating.evaluatorId);
             const study = studies.find(s => s.id === rating.studyId);
-            const mte = study?.mtes.find(m => m.id === rating.mteId);
+            const mte = mtes.find(m => m.id === rating.mteId);
             
             const isWeighted = !!currentComparison && currentComparison.isWeighted;
             const weights = currentComparison ? currentComparison.weights : DEFAULT_WEIGHTS;
@@ -173,6 +173,7 @@ const AssessmentSummary: React.FC<{ onReturnToTasks: () => void }> = ({ onReturn
                 evaluatorName: evaluator?.name || 'Unknown',
                 studyName: study?.name || 'Unknown',
                 studyId: study?.id || '',
+                mteId: rating.mteId,
                 mteName: mte ? `[${mte.refNumber}] ${mte.name}` : 'Unknown',
                 rawScores: rating.scores,
                 weights,
@@ -181,7 +182,7 @@ const AssessmentSummary: React.FC<{ onReturnToTasks: () => void }> = ({ onReturn
                 isWeighted,
             };
         });
-    }, [ratings, currentComparison, evaluators, studies, selectedEvaluatorId, selectedStudyId]);
+    }, [ratings, currentComparison, evaluators, studies, mtes, selectedEvaluatorId, selectedStudyId]);
 
     if (!selectedStudy) return null;
 
@@ -232,7 +233,7 @@ const AssessmentSummary: React.FC<{ onReturnToTasks: () => void }> = ({ onReturn
 
 
 const AssessmentRunner: React.FC = () => {
-    const { studies, ratings, addRating, addPairwiseComparison, pairwiseComparisons } = useData();
+    const { studies, mtes, ratings, addRating, addPairwiseComparison, pairwiseComparisons } = useData();
     const { selectedEvaluatorId, selectedStudyId } = useSession();
     
     const storageKey = useMemo(() => `ratingMode_${selectedEvaluatorId}`, [selectedEvaluatorId]);
@@ -248,6 +249,11 @@ const AssessmentRunner: React.FC = () => {
     const [currentStep, setCurrentStep] = useState(0);
 
     const selectedStudy = useMemo(() => studies.find(s => s.id === selectedStudyId) as Study, [studies, selectedStudyId]);
+    
+    const mtesInStudy = useMemo(() => {
+        if (!selectedStudy) return [];
+        return selectedStudy.mteIds.map(id => mtes.find(m => m.id === id)).filter((m): m is MTE => !!m);
+    }, [selectedStudy, mtes]);
 
     const currentComparison = useMemo(() => {
         return pairwiseComparisons.find(pc => pc.evaluatorId === selectedEvaluatorId && pc.studyId === selectedStudyId);
@@ -262,7 +268,7 @@ const AssessmentRunner: React.FC = () => {
 
     useEffect(() => {
         if (selectedEvaluatorId && selectedStudyId) {
-            const allMtesRated = selectedStudy && selectedStudy.mtes.length > 0 && selectedStudy.mtes.every(mte => ratedMteIds.has(mte.id));
+            const allMtesRated = selectedStudy && mtesInStudy.length > 0 && mtesInStudy.every(mte => ratedMteIds.has(mte.id));
 
             if (allMtesRated) {
                 setView('summary');
@@ -272,7 +278,7 @@ const AssessmentRunner: React.FC = () => {
                 setView('tasks');
             }
         }
-    }, [selectedEvaluatorId, selectedStudyId, currentComparison, ratedMteIds, selectedStudy]);
+    }, [selectedEvaluatorId, selectedStudyId, currentComparison, ratedMteIds, selectedStudy, mtesInStudy]);
 
 
     const handleScoreChange = (dimension: TLXDimension, value: number) => {
@@ -309,7 +315,6 @@ const AssessmentRunner: React.FC = () => {
         addRating(newRating);
         setNotification(`Rating for "${selectedMte.name}" submitted successfully!`);
         
-        const mtesInStudy = selectedStudy.mtes;
         const ratedMteIdsAfterThisOne = new Set([...ratedMteIds, selectedMte.id]);
         
         if (mtesInStudy.length > 0 && mtesInStudy.every(mte => ratedMteIdsAfterThisOne.has(mte.id))) {
@@ -445,7 +450,7 @@ const AssessmentRunner: React.FC = () => {
                  {notification && <div className="mb-4 p-3 rounded-md bg-green-500 bg-opacity-20 text-green-300 text-sm">{notification}</div>}
                  <p className="text-nasa-gray-300 mb-4">Select a task to begin rating.</p>
                 <div className="space-y-3">
-                    {selectedStudy.mtes.map(mte => {
+                    {mtesInStudy.map(mte => {
                         const isRated = ratedMteIds.has(mte.id);
 
                         if (isRated) {
@@ -510,7 +515,7 @@ const AssessmentRunner: React.FC = () => {
                             );
                         }
                     })}
-                    {selectedStudy.mtes.length === 0 && <p className="text-sm text-nasa-gray-500 text-center py-4">No MTEs have been added to this study yet.</p>}
+                    {mtesInStudy.length === 0 && <p className="text-sm text-nasa-gray-500 text-center py-4">No MTEs have been added to this study yet.</p>}
                 </div>
             </Card>
         </>

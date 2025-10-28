@@ -24,7 +24,7 @@ export interface Study {
   id: string;
   name: string;
   description: string;
-  mtes: MTE[];
+  mteIds: string[];
 }
 
 export interface PairwiseComparison {
@@ -52,5 +52,6 @@ export interface ComputedTLXScore {
   weightedScores: Record<TLXDimension, number>;
   totalWeightedScore: number;
   studyId: string;
+  mteId: string;
   isWeighted: boolean;
 }

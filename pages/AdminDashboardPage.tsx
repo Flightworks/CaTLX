@@ -1,10 +1,10 @@
-
 import React, { useState } from 'react';
 import ManageEvaluators from './admin/ManageEvaluators';
 import ManageStudies from './admin/ManageStudies';
 import ViewStats from './admin/ViewStats';
+import ManageMTEs from './admin/ManageMTEs';
 
-type AdminTab = 'stats' | 'evaluators' | 'studies';
+type AdminTab = 'stats' | 'evaluators' | 'studies' | 'mtes';
 
 const AdminDashboardPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<AdminTab>('stats');
@@ -17,6 +17,8 @@ const AdminDashboardPage: React.FC = () => {
         return <ManageEvaluators />;
       case 'studies':
         return <ManageStudies />;
+      case 'mtes':
+        return <ManageMTEs />;
       default:
         return null;
     }
@@ -43,6 +45,7 @@ const AdminDashboardPage: React.FC = () => {
           <TabButton tabId="stats">Statistics</TabButton>
           <TabButton tabId="evaluators">Manage Evaluators</TabButton>
           <TabButton tabId="studies">Manage Studies</TabButton>
+          <TabButton tabId="mtes">MTE Catalog</TabButton>
         </nav>
       </div>
       <div>{renderTabContent()}</div>
