@@ -1,15 +1,28 @@
+
 import React, { useMemo, useState } from 'react';
 import { useData } from '../../contexts/AppContext';
-import { ComputedTLXScore, TLXDimension } from '../../types';
+import { ComputedTLXScore, TLXDimension, MTE, Study } from '../../types';
 import { TLX_DIMENSIONS_INFO, DEFAULT_WEIGHTS } from '../../constants';
 import Card from '../../components/ui/Card';
 import Select from '../../components/ui/Select';
-import PairwiseWeightsDisplay from '../../components/ui/PairwiseWeightsDisplay';
+import MteStatsCard from '../../components/admin/MteStatsCard';
+import MteDetailModal from '../../components/admin/MteDetailModal';
+
+export interface AggregatedMteStats {
+  mteId: string;
+  mteName: string;
+  mteRefNumber: string;
+  numberOfEvals: number;
+  avgOverallScore: number;
+  stdDevOverallScore: number;
+  avgRawScores: Record<TLXDimension, number>;
+  studyNames: string[];
+}
 
 const ViewStats: React.FC = () => {
   const { ratings, pairwiseComparisons, evaluators, studies, mtes } = useData();
   const [filterStudyId, setFilterStudyId] = useState<string>('');
-  const [filterMteId, setFilterMteId] = useState<string>('');
+  const [selectedMte, setSelectedMte] = useState<AggregatedMteStats | null>(null);
   
   const computedScores = useMemo<ComputedTLXScore[]>(() => {
     return ratings.map(rating => {
@@ -50,92 +63,108 @@ const ViewStats: React.FC = () => {
     });
   }, [ratings, pairwiseComparisons, evaluators, studies, mtes]);
 
-  const mtesForFilter = useMemo(() => {
-    if (!filterStudyId) return mtes;
-    const study = studies.find(s => s.id === filterStudyId);
-    if (!study) return [];
-    return mtes.filter(mte => study.mteIds.includes(mte.id));
-  }, [filterStudyId, studies, mtes]);
 
-  const handleStudyFilterChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    setFilterStudyId(e.target.value);
-    setFilterMteId(''); // Reset MTE filter when study changes
-  };
+  const aggregatedMteData = useMemo<AggregatedMteStats[]>(() => {
+    const scoresToProcess = filterStudyId
+      ? computedScores.filter(score => score.studyId === filterStudyId)
+      : computedScores;
 
-  const filteredScores = useMemo(() => {
-      let scores = computedScores;
-      if (filterStudyId) {
-          scores = scores.filter(score => score.studyId === filterStudyId);
+    const scoresByMte = scoresToProcess.reduce((acc, score) => {
+      if (!acc[score.mteId]) {
+        acc[score.mteId] = [];
       }
-      if (filterMteId) {
-          scores = scores.filter(score => score.mteId === filterMteId);
-      }
-      return scores;
-  }, [computedScores, filterStudyId, filterMteId]);
+      acc[score.mteId].push(score);
+      return acc;
+    }, {} as Record<string, ComputedTLXScore[]>);
+
+    const mtesToDisplay = filterStudyId 
+        ? mtes.filter(mte => studies.find(s => s.id === filterStudyId)?.mteIds.includes(mte.id))
+        : mtes;
+
+    return mtesToDisplay.map(mte => {
+        const mteScores = scoresByMte[mte.id] || [];
+        
+        if (mteScores.length === 0) {
+            return {
+                mteId: mte.id,
+                mteName: mte.name,
+                mteRefNumber: mte.refNumber,
+                numberOfEvals: 0,
+                avgOverallScore: 0,
+                stdDevOverallScore: 0,
+                avgRawScores: {} as Record<TLXDimension, number>,
+                studyNames: studies.filter(s => s.mteIds.includes(mte.id)).map(s => s.name)
+            };
+        }
+
+        const numberOfEvals = mteScores.length;
+        
+        const sumOverallScore = mteScores.reduce((sum, score) => sum + score.totalWeightedScore, 0);
+        const avgOverallScore = sumOverallScore / numberOfEvals;
+
+        const variance = mteScores.reduce((sum, score) => sum + Math.pow(score.totalWeightedScore - avgOverallScore, 2), 0) / numberOfEvals;
+        const stdDevOverallScore = Math.sqrt(variance);
+
+        const avgRawScores = {} as Record<TLXDimension, number>;
+        for (const dimInfo of TLX_DIMENSIONS_INFO) {
+            const dim = dimInfo.id;
+            const sumRawScore = mteScores.reduce((sum, score) => sum + score.rawScores[dim], 0);
+            avgRawScores[dim] = sumRawScore / numberOfEvals;
+        }
+
+        const studyNames = [...new Set(mteScores.map(s => s.studyName))];
+
+        return {
+            mteId: mte.id,
+            mteName: mte.name,
+            mteRefNumber: mte.refNumber,
+            numberOfEvals,
+            avgOverallScore,
+            stdDevOverallScore,
+            avgRawScores,
+            studyNames
+        };
+    }).sort((a,b) => a.mteName.localeCompare(b.mteName));
+  }, [computedScores, filterStudyId, mtes, studies]);
 
   return (
     <Card>
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
-        <h2 className="text-xl font-bold">Assessment Statistics</h2>
+        <h2 className="text-xl font-bold">MTE Statistics Dashboard</h2>
         <div className="flex flex-col sm:flex-row gap-4 w-full md:w-auto">
           <div className="w-full sm:w-64">
-            <Select label="Filter by Study" value={filterStudyId} onChange={handleStudyFilterChange}>
+            <Select label="Filter by Study" value={filterStudyId} onChange={(e) => setFilterStudyId(e.target.value)}>
               <option value="">All Studies</option>
               {studies.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
             </Select>
           </div>
-          <div className="w-full sm:w-64">
-            <Select label="Filter by MTE" value={filterMteId} onChange={e => setFilterMteId(e.target.value)}>
-              <option value="">All MTEs</option>
-              {mtesForFilter.map(m => <option key={m.id} value={m.id}>[{m.refNumber}] {m.name}</option>)}
-            </Select>
-          </div>
         </div>
       </div>
-      <div className="overflow-x-auto">
-        <table className="min-w-full divide-y divide-nasa-gray-700">
-          <thead className="bg-nasa-gray-800">
-            <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-nasa-gray-300 uppercase tracking-wider">Study</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-nasa-gray-300 uppercase tracking-wider">MTE</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-nasa-gray-300 uppercase tracking-wider">Evaluator</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-nasa-gray-300 uppercase tracking-wider">Overall Workload Score</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-nasa-gray-300 uppercase tracking-wider">Dimension Weights</th>
-            </tr>
-          </thead>
-          <tbody className="bg-nasa-gray-900 divide-y divide-nasa-gray-700">
-            {filteredScores.map((score, index) => (
-              <tr key={`${score.studyId}-${score.mteId}-${score.evaluatorName}-${index}`}>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-nasa-gray-300">{score.studyName}</td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-white">{score.mteName}</td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-nasa-gray-300">{score.evaluatorName}</td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold">
-                  <div className="flex items-center space-x-2">
-                    <span className={score.isWeighted ? 'text-nasa-blue' : 'text-nasa-gray-300'}>
-                      {score.totalWeightedScore.toFixed(2)}
-                    </span>
-                    {!score.isWeighted && (
-                        <span 
-                            className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-nasa-gray-700 text-nasa-gray-300" 
-                            title="Unweighted (pairwise comparison was skipped, showing raw average score)">
-                            Unweighted
-                        </span>
-                    )}
-                  </div>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm">
-                  <PairwiseWeightsDisplay weights={score.weights} compact isWeighted={score.isWeighted} />
-                </td>
-              </tr>
+      
+      {aggregatedMteData.length > 0 ? (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {aggregatedMteData.map(stats => (
+                <MteStatsCard 
+                  key={stats.mteId} 
+                  mteStats={stats} 
+                  onClick={() => setSelectedMte(stats)}
+                />
             ))}
-            {filteredScores.length === 0 && (
-                <tr>
-                    <td colSpan={5} className="text-center py-10 text-nasa-gray-500">No matching ratings found.</td>
-                </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
+        </div>
+      ) : (
+         <div className="text-center py-16 text-nasa-gray-500">
+            <h3 className="text-lg font-semibold">No Matching Data Found</h3>
+            <p>There are no ratings for the selected criteria.</p>
+        </div>
+      )}
+
+      {selectedMte && (
+        <MteDetailModal
+          mteStats={selectedMte}
+          scores={computedScores}
+          onClose={() => setSelectedMte(null)}
+        />
+      )}
     </Card>
   );
 };

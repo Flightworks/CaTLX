@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth, useData, useSession } from '../../contexts/AppContext';
@@ -13,7 +14,7 @@ const Header: React.FC = () => {
 
   const handleLogout = () => {
     logout();
-    navigate('/login');
+    navigate('/evaluator');
     setIsMenuOpen(false);
   };
   
@@ -58,7 +59,11 @@ const Header: React.FC = () => {
                   <path d="M12 11V12" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
               </svg>
               <span>CaTLX</span>
-              {!isAuthenticated && <span className="text-xs font-semibold bg-yellow-500 text-yellow-900 px-2 py-0.5 rounded-full">Local</span>}
+              {isAuthenticated ? (
+                <span className="text-xs font-semibold bg-green-500 text-green-900 px-2 py-0.5 rounded-full">Demo</span>
+              ) : (
+                <span className="text-xs font-semibold bg-yellow-500 text-yellow-900 px-2 py-0.5 rounded-full">Local</span>
+              )}
             </div>
             <nav className="hidden md:block ml-10">
               <div className="flex items-baseline space-x-4">

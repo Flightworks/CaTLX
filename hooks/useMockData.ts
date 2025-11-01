@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Evaluator, Study, MTE, Rating, PairwiseComparison, TLXDimension, IDataSource } from '../types';
+import { DEFAULT_WEIGHTS } from '../constants';
 
 const INITIAL_EVALUATORS: Evaluator[] = [
   { id: 'eval1', name: 'John Glenn', email: 'john.g@nasa.gov' },
@@ -29,12 +30,68 @@ const INITIAL_STUDIES: Study[] = [
   },
 ];
 
+const INITIAL_RATINGS: Rating[] = [
+  { id: 'rating1', evaluatorId: 'eval1', studyId: 'study1', mteId: 'mte1', scores: {
+    [TLXDimension.MENTAL_DEMAND]: 75,
+    [TLXDimension.PHYSICAL_DEMAND]: 30,
+    [TLXDimension.TEMPORAL_DEMAND]: 80,
+    [TLXDimension.PERFORMANCE]: 20,
+    [TLXDimension.EFFORT]: 65,
+    [TLXDimension.FRUSTRATION]: 40,
+  }, timestamp: Date.now() - 200000 },
+  { id: 'rating2', evaluatorId: 'eval1', studyId: 'study1', mteId: 'mte2', scores: {
+    [TLXDimension.MENTAL_DEMAND]: 85,
+    [TLXDimension.PHYSICAL_DEMAND]: 70,
+    [TLXDimension.TEMPORAL_DEMAND]: 60,
+    [TLXDimension.PERFORMANCE]: 15,
+    [TLXDimension.EFFORT]: 80,
+    [TLXDimension.FRUSTRATION]: 50,
+  }, timestamp: Date.now() - 190000 },
+  { id: 'rating3', evaluatorId: 'eval2', studyId: 'study1', mteId: 'mte1', scores: {
+    [TLXDimension.MENTAL_DEMAND]: 60,
+    [TLXDimension.PHYSICAL_DEMAND]: 25,
+    [TLXDimension.TEMPORAL_DEMAND]: 70,
+    [TLXDimension.PERFORMANCE]: 30,
+    [TLXDimension.EFFORT]: 55,
+    [TLXDimension.FRUSTRATION]: 20,
+  }, timestamp: Date.now() - 180000 },
+  { id: 'rating4', evaluatorId: 'eval2', studyId: 'study2', mteId: 'mte4', scores: {
+      [TLXDimension.MENTAL_DEMAND]: 20,
+      [TLXDimension.PHYSICAL_DEMAND]: 80,
+      [TLXDimension.TEMPORAL_DEMAND]: 15,
+      [TLXDimension.PERFORMANCE]: 10,
+      [TLXDimension.EFFORT]: 60,
+      [TLXDimension.FRUSTRATION]: 5,
+  }, timestamp: Date.now() - 170000 },
+];
+
+const INITIAL_PAIRWISE_COMPARISONS: PairwiseComparison[] = [
+  { evaluatorId: 'eval1', studyId: 'study1', weights: {
+    [TLXDimension.MENTAL_DEMAND]: 5,
+    [TLXDimension.PHYSICAL_DEMAND]: 1,
+    [TLXDimension.TEMPORAL_DEMAND]: 3,
+    [TLXDimension.PERFORMANCE]: 2,
+    [TLXDimension.EFFORT]: 4,
+    [TLXDimension.FRUSTRATION]: 0,
+  }, isWeighted: true },
+  { evaluatorId: 'eval2', studyId: 'study1', weights: {
+    [TLXDimension.MENTAL_DEMAND]: 2,
+    [TLXDimension.PHYSICAL_DEMAND]: 0,
+    [TLXDimension.TEMPORAL_DEMAND]: 5,
+    [TLXDimension.PERFORMANCE]: 3,
+    [TLXDimension.EFFORT]: 3,
+    [TLXDimension.FRUSTRATION]: 2,
+  }, isWeighted: true },
+  { evaluatorId: 'eval2', studyId: 'study2', weights: DEFAULT_WEIGHTS, isWeighted: false },
+];
+
+
 const useMockData = (): IDataSource => {
   const [evaluators, setEvaluators] = useState<Evaluator[]>(INITIAL_EVALUATORS);
   const [studies, setStudies] = useState<Study[]>(INITIAL_STUDIES);
   const [mtes, setMtes] = useState<MTE[]>(INITIAL_MTES_CATALOG);
-  const [ratings, setRatings] = useState<Rating[]>([]);
-  const [pairwiseComparisons, setPairwiseComparisons] = useState<PairwiseComparison[]>([]);
+  const [ratings, setRatings] = useState<Rating[]>(INITIAL_RATINGS);
+  const [pairwiseComparisons, setPairwiseComparisons] = useState<PairwiseComparison[]>(INITIAL_PAIRWISE_COMPARISONS);
   
   const addEvaluator = (evaluator: Omit<Evaluator, 'id'>) => {
     setEvaluators(prev => [...prev, { ...evaluator, id: `eval${Date.now()}` }]);

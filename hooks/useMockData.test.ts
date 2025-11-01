@@ -1,3 +1,4 @@
+
 import { renderHook, act } from '@testing-library/react';
 import { describe, it, expect } from 'vitest';
 import useMockData from './useMockData';
@@ -11,8 +12,8 @@ describe('useMockData hook', () => {
     expect(result.current.evaluators.length).toBe(2);
     expect(result.current.studies.length).toBe(2);
     expect(result.current.mtes.length).toBe(5);
-    expect(result.current.ratings.length).toBe(0);
-    expect(result.current.pairwiseComparisons.length).toBe(0);
+    expect(result.current.ratings.length).toBe(4);
+    expect(result.current.pairwiseComparisons.length).toBe(3);
   });
 
   it('should add an evaluator', () => {
@@ -45,8 +46,8 @@ describe('useMockData hook', () => {
     act(() => {
       result.current.addRating({
         evaluatorId: 'eval1',
-        studyId: 'study1',
-        mteId: 'mte1',
+        studyId: 'study2',
+        mteId: 'mte4',
         scores: {
           [TLXDimension.MENTAL_DEMAND]: 50,
           [TLXDimension.PHYSICAL_DEMAND]: 50,
@@ -58,20 +59,22 @@ describe('useMockData hook', () => {
       });
     });
 
-    expect(result.current.ratings.length).toBe(1);
-    expect(result.current.ratings[0].evaluatorId).toBe('eval1');
+    expect(result.current.ratings.length).toBe(5);
+    expect(result.current.ratings[4].evaluatorId).toBe('eval1');
+    expect(result.current.ratings[4].studyId).toBe('study2');
   });
   
   it('should correctly report if an evaluator has a previous rating in a study', () => {
     const { result } = renderHook(() => useMockData());
     
-    expect(result.current.hasPreviousRatingInStudy('eval1', 'study1')).toBe(false);
+    expect(result.current.hasPreviousRatingInStudy('eval1', 'study1')).toBe(true);
+    expect(result.current.hasPreviousRatingInStudy('eval1', 'study2')).toBe(false);
 
     act(() => {
       result.current.addRating({
         evaluatorId: 'eval1',
-        studyId: 'study1',
-        mteId: 'mte1',
+        studyId: 'study2',
+        mteId: 'mte4',
         scores: {
           [TLXDimension.MENTAL_DEMAND]: 50,
           [TLXDimension.PHYSICAL_DEMAND]: 50,
@@ -83,9 +86,9 @@ describe('useMockData hook', () => {
       });
     });
 
-    expect(result.current.hasPreviousRatingInStudy('eval1', 'study1')).toBe(true);
-    expect(result.current.hasPreviousRatingInStudy('eval2', 'study1')).toBe(false);
-    expect(result.current.hasPreviousRatingInStudy('eval1', 'study2')).toBe(false);
+    expect(result.current.hasPreviousRatingInStudy('eval1', 'study2')).toBe(true);
+    expect(result.current.hasPreviousRatingInStudy('eval2', 'study1')).toBe(true);
+    expect(result.current.hasPreviousRatingInStudy('eval2', 'study2')).toBe(true);
   });
   
   it('should add a new MTE to a study', () => {

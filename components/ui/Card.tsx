@@ -1,15 +1,15 @@
 
 import React from 'react';
 
-interface CardProps {
+interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
   children: React.ReactNode;
   className?: string;
   title?: string;
 }
 
-const Card: React.FC<CardProps> = ({ children, className = '', title }) => {
+const Card: React.FC<CardProps> = ({ children, className = '', title, ...props }) => {
   return (
-    <div className={`bg-nasa-gray-800 shadow-xl rounded-lg overflow-hidden ${className}`}>
+    <div className={`bg-nasa-gray-800 shadow-xl rounded-lg overflow-hidden ${className}`} {...props}>
       {title && (
         <div className="px-4 py-3 border-b border-nasa-gray-700 sm:px-6">
           <h3 className="text-lg leading-6 font-medium text-white">{title}</h3>

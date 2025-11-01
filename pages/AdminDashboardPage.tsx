@@ -1,4 +1,7 @@
+
 import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
+import { useAuth } from '../contexts/AppContext';
 import ManageEvaluators from './admin/ManageEvaluators';
 import ManageStudies from './admin/ManageStudies';
 import ViewStats from './admin/ViewStats';
@@ -8,6 +11,7 @@ type AdminTab = 'stats' | 'evaluators' | 'studies' | 'mtes';
 
 const AdminDashboardPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<AdminTab>('stats');
+  const { isAuthenticated } = useAuth();
 
   const renderTabContent = () => {
     switch (activeTab) {
@@ -40,6 +44,14 @@ const AdminDashboardPage: React.FC = () => {
   return (
     <div className="space-y-6">
       <h1 className="text-3xl font-bold text-white">Admin Dashboard</h1>
+
+      {!isAuthenticated && (
+        <div className="bg-yellow-900 bg-opacity-50 text-yellow-200 p-4 rounded-lg text-center text-sm">
+            You are in <span className="font-bold">Local Mode</span>. All data is saved on this device only. 
+            <Link to="/login" className="font-bold underline text-white ml-1 hover:text-yellow-100">Log in</Link> to access shared studies.
+        </div>
+      )}
+
       <div className="border-b border-nasa-gray-700">
         <nav className="-mb-px flex space-x-4 flex-wrap" aria-label="Tabs">
           <TabButton tabId="stats">Statistics</TabButton>
