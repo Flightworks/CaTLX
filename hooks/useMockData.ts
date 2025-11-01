@@ -2,25 +2,31 @@ import { useState } from 'react';
 import { Evaluator, Study, MTE, Rating, PairwiseComparison, TLXDimension, IDataSource } from '../types';
 import { DEFAULT_WEIGHTS } from '../constants';
 
-const INITIAL_EVALUATORS: Evaluator[] = [
+export const INITIAL_EVALUATORS: Evaluator[] = [
   { id: 'eval1', name: 'John Glenn', email: 'john.g@nasa.gov' },
   { id: 'eval2', name: 'Sally Ride', email: 'sally.r@nasa.gov' },
+  { id: 'eval3', name: 'Neil Armstrong', email: 'neil.a@nasa.gov' },
+  { id: 'eval4', name: 'Mae Jemison', email: 'mae.j@nasa.gov' },
+  { id: 'eval5', name: 'Chris Hadfield', email: 'chris.h@nasa.gov' },
 ];
 
-const INITIAL_MTES_CATALOG: MTE[] = [
+export const INITIAL_MTES_CATALOG: MTE[] = [
     { id: 'mte1', name: 'EVA Simulation', description: 'Simulated extravehicular activity.', refNumber: '35182' },
     { id: 'mte2', name: 'Docking Maneuver', description: 'Manual docking procedure with space station.', refNumber: '72940' },
     { id: 'mte3', name: 'System Anomaly Response', description: 'Respond to a critical system failure alert.', refNumber: '58219' },
     { id: 'mte4', name: 'Robotic Arm Calibration', description: 'Calibrating the Canadarm2.', refNumber: '88371' },
     { id: 'mte5', name: 'Life Support Check', description: 'Routine check of life support systems.', refNumber: '41056' },
+    { id: 'mte6', name: 'Lunar Sample Collection', description: 'Gathering geological samples from the lunar surface.', refNumber: '91773' },
+    { id: 'mte7', name: 'Emergency Hatch Seal', description: 'Perform emergency sealing procedure on a compromised hatch.', refNumber: '62548' },
+    { id: 'mte8', name: 'Long-Duration Habitat Check', description: 'Systems check for a long-duration lunar habitat module.', refNumber: '29981' },
 ];
 
-const INITIAL_STUDIES: Study[] = [
+export const INITIAL_STUDIES: Study[] = [
   {
     id: 'study1',
     name: 'Artemis II Mission Prep',
     description: 'Preparation tasks for the Artemis II lunar mission.',
-    mteIds: ['mte1', 'mte2', 'mte3'],
+    mteIds: ['mte1', 'mte2', 'mte3', 'mte7'],
   },
   {
     id: 'study2',
@@ -28,9 +34,16 @@ const INITIAL_STUDIES: Study[] = [
     description: 'Evaluating new maintenance protocols aboard the ISS.',
     mteIds: ['mte4', 'mte5'],
   },
+  {
+    id: 'study3',
+    name: 'Lunar Gateway Operations',
+    description: 'Tasks related to the assembly and operation of the Lunar Gateway station.',
+    mteIds: ['mte6', 'mte8'],
+  }
 ];
 
-const INITIAL_RATINGS: Rating[] = [
+export const INITIAL_RATINGS: Rating[] = [
+  // Study 1: Artemis II
   { id: 'rating1', evaluatorId: 'eval1', studyId: 'study1', mteId: 'mte1', scores: {
     [TLXDimension.MENTAL_DEMAND]: 75,
     [TLXDimension.PHYSICAL_DEMAND]: 30,
@@ -55,6 +68,24 @@ const INITIAL_RATINGS: Rating[] = [
     [TLXDimension.EFFORT]: 55,
     [TLXDimension.FRUSTRATION]: 20,
   }, timestamp: Date.now() - 180000 },
+  { id: 'rating5', evaluatorId: 'eval3', studyId: 'study1', mteId: 'mte1', scores: {
+    [TLXDimension.MENTAL_DEMAND]: 80,
+    [TLXDimension.PHYSICAL_DEMAND]: 40,
+    [TLXDimension.TEMPORAL_DEMAND]: 85,
+    [TLXDimension.PERFORMANCE]: 10,
+    [TLXDimension.EFFORT]: 70,
+    [TLXDimension.FRUSTRATION]: 30,
+  }, timestamp: Date.now() - 160000 },
+  { id: 'rating6', evaluatorId: 'eval3', studyId: 'study1', mteId: 'mte3', scores: {
+    [TLXDimension.MENTAL_DEMAND]: 90,
+    [TLXDimension.PHYSICAL_DEMAND]: 20,
+    [TLXDimension.TEMPORAL_DEMAND]: 95,
+    [TLXDimension.PERFORMANCE]: 25,
+    [TLXDimension.EFFORT]: 75,
+    [TLXDimension.FRUSTRATION]: 60,
+  }, timestamp: Date.now() - 150000 },
+  
+  // Study 2: ISS
   { id: 'rating4', evaluatorId: 'eval2', studyId: 'study2', mteId: 'mte4', scores: {
       [TLXDimension.MENTAL_DEMAND]: 20,
       [TLXDimension.PHYSICAL_DEMAND]: 80,
@@ -63,9 +94,43 @@ const INITIAL_RATINGS: Rating[] = [
       [TLXDimension.EFFORT]: 60,
       [TLXDimension.FRUSTRATION]: 5,
   }, timestamp: Date.now() - 170000 },
+  { id: 'rating7', evaluatorId: 'eval4', studyId: 'study2', mteId: 'mte4', scores: {
+    [TLXDimension.MENTAL_DEMAND]: 25,
+    [TLXDimension.PHYSICAL_DEMAND]: 75,
+    [TLXDimension.TEMPORAL_DEMAND]: 20,
+    [TLXDimension.PERFORMANCE]: 5,
+    [TLXDimension.EFFORT]: 65,
+    [TLXDimension.FRUSTRATION]: 10,
+  }, timestamp: Date.now() - 140000 },
+  { id: 'rating8', evaluatorId: 'eval4', studyId: 'study2', mteId: 'mte5', scores: {
+    [TLXDimension.MENTAL_DEMAND]: 10,
+    [TLXDimension.PHYSICAL_DEMAND]: 30,
+    [TLXDimension.TEMPORAL_DEMAND]: 5,
+    [TLXDimension.PERFORMANCE]: 5,
+    [TLXDimension.EFFORT]: 20,
+    [TLXDimension.FRUSTRATION]: 0,
+  }, timestamp: Date.now() - 130000 },
+  
+  // Study 3: Lunar Gateway
+  { id: 'rating9', evaluatorId: 'eval5', studyId: 'study3', mteId: 'mte6', scores: {
+    [TLXDimension.MENTAL_DEMAND]: 50,
+    [TLXDimension.PHYSICAL_DEMAND]: 85,
+    [TLXDimension.TEMPORAL_DEMAND]: 40,
+    [TLXDimension.PERFORMANCE]: 15,
+    [TLXDimension.EFFORT]: 75,
+    [TLXDimension.FRUSTRATION]: 20,
+  }, timestamp: Date.now() - 120000 },
+  { id: 'rating10', evaluatorId: 'eval5', studyId: 'study3', mteId: 'mte8', scores: {
+    [TLXDimension.MENTAL_DEMAND]: 35,
+    [TLXDimension.PHYSICAL_DEMAND]: 40,
+    [TLXDimension.TEMPORAL_DEMAND]: 25,
+    [TLXDimension.PERFORMANCE]: 10,
+    [TLXDimension.EFFORT]: 30,
+    [TLXDimension.FRUSTRATION]: 10,
+  }, timestamp: Date.now() - 110000 },
 ];
 
-const INITIAL_PAIRWISE_COMPARISONS: PairwiseComparison[] = [
+export const INITIAL_PAIRWISE_COMPARISONS: PairwiseComparison[] = [
   { evaluatorId: 'eval1', studyId: 'study1', weights: {
     [TLXDimension.MENTAL_DEMAND]: 5,
     [TLXDimension.PHYSICAL_DEMAND]: 1,
@@ -83,6 +148,23 @@ const INITIAL_PAIRWISE_COMPARISONS: PairwiseComparison[] = [
     [TLXDimension.FRUSTRATION]: 2,
   }, isWeighted: true },
   { evaluatorId: 'eval2', studyId: 'study2', weights: DEFAULT_WEIGHTS, isWeighted: false },
+  { evaluatorId: 'eval3', studyId: 'study1', weights: {
+    [TLXDimension.MENTAL_DEMAND]: 4,
+    [TLXDimension.PHYSICAL_DEMAND]: 0,
+    [TLXDimension.TEMPORAL_DEMAND]: 5,
+    [TLXDimension.PERFORMANCE]: 1,
+    [TLXDimension.EFFORT]: 3,
+    [TLXDimension.FRUSTRATION]: 2,
+  }, isWeighted: true },
+  { evaluatorId: 'eval4', studyId: 'study2', weights: {
+    [TLXDimension.MENTAL_DEMAND]: 1,
+    [TLXDimension.PHYSICAL_DEMAND]: 5,
+    [TLXDimension.TEMPORAL_DEMAND]: 0,
+    [TLXDimension.PERFORMANCE]: 2,
+    [TLXDimension.EFFORT]: 4,
+    [TLXDimension.FRUSTRATION]: 3,
+  }, isWeighted: true },
+  { evaluatorId: 'eval5', studyId: 'study3', weights: DEFAULT_WEIGHTS, isWeighted: false },
 ];
 
 

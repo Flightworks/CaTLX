@@ -7,6 +7,7 @@ import Button from '../components/ui/Button';
 import Card from '../components/ui/Card';
 import PairwiseWeightsDisplay from '../components/ui/PairwiseWeightsDisplay';
 import ToggleSwitch from '../components/ui/ToggleSwitch';
+import Select from '../components/ui/Select';
 
 const initialScores = TLX_DIMENSIONS_INFO.reduce((acc, dim) => {
   acc[dim.id] = 50;
@@ -483,33 +484,68 @@ const AssessmentRunner: React.FC = () => {
     );
 };
 
+const SessionSelector = () => {
+  const { evaluators, studies } = useData();
+  const { selectedEvaluatorId, setSelectedEvaluatorId, selectedStudyId, setSelectedStudyId } = useSession();
+
+  const handleEvaluatorChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    setSelectedEvaluatorId(e.target.value);
+    setSelectedStudyId(''); // Reset study when evaluator changes
+  };
+
+  const handleStudyChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    setSelectedStudyId(e.target.value);
+  };
+  
+  return (
+    <Card>
+      <div className="flex flex-col sm:flex-row items-center gap-x-6 gap-y-4">
+        <div className="flex-shrink-0">
+          <h2 className="text-lg font-semibold text-white">Assessment Session</h2>
+          <p className="text-sm text-nasa-gray-400">Select an evaluator and study to begin.</p>
+        </div>
+        <div className="w-full flex-grow grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <Select
+            label="Evaluator"
+            id="evaluator-select"
+            value={selectedEvaluatorId}
+            onChange={handleEvaluatorChange}
+            aria-label="Select Evaluator"
+          >
+            <option value="">-- Choose Evaluator --</option>
+            {evaluators.map(e => <option key={e.id} value={e.id}>{e.name}</option>)}
+          </Select>
+          <Select
+            label="Study"
+            id="study-select"
+            value={selectedStudyId}
+            onChange={handleStudyChange}
+            disabled={!selectedEvaluatorId}
+            aria-label="Select Study"
+          >
+            <option value="">-- Choose Study --</option>
+            {studies.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+          </Select>
+        </div>
+      </div>
+    </Card>
+  );
+};
+
 
 const EvaluatorPage: React.FC = () => {
     const { selectedEvaluatorId, selectedStudyId } = useSession();
 
     const renderContent = () => {
-        if (!selectedEvaluatorId) {
+        if (!selectedEvaluatorId || !selectedStudyId) {
             return (
                 <Card>
                     <div className="text-center py-8">
                         <h2 className="text-xl font-semibold mb-2">Welcome to the Evaluator Dashboard</h2>
                         <p className="text-lg text-nasa-gray-300">
-                            Please select an evaluator from the header to begin an assessment session.
+                           Please select an evaluator and a study from the panel above to begin an assessment.
                         </p>
                          <p className="text-sm text-nasa-gray-400 mt-4">If no evaluators are available, please go to the Admin Dashboard to create one.</p>
-                    </div>
-                </Card>
-            );
-        }
-        
-        if (!selectedStudyId) {
-            return (
-                <Card>
-                    <div className="text-center py-8">
-                        <h2 className="text-xl font-semibold mb-2">Ready for Assessment</h2>
-                        <p className="text-lg text-nasa-gray-300">
-                            Please select a study from the header to continue.
-                        </p>
                     </div>
                 </Card>
             );
@@ -521,6 +557,7 @@ const EvaluatorPage: React.FC = () => {
 
     return (
         <div className="space-y-8">
+            <SessionSelector />
             {renderContent()}
         </div>
     );

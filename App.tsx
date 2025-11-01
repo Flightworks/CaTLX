@@ -7,6 +7,7 @@ import LoginPage from './pages/LoginPage';
 import EvaluatorPage from './pages/EvaluatorPage';
 import AdminDashboardPage from './pages/AdminDashboardPage';
 import Layout from './components/layout/Layout';
+import AboutPage from './pages/AboutPage';
 
 function AppRoutes() {
   const { isLoggedIn } = useAuth();
@@ -21,6 +22,7 @@ function AppRoutes() {
                 <Routes>
                     <Route path="/evaluator" element={<EvaluatorPage />} />
                     <Route path="/admin" element={<AdminDashboardPage />} />
+                    <Route path="/about" element={<AboutPage />} />
                     <Route path="/" element={<Navigate to="/evaluator" />} />
                 </Routes>
             </Layout>

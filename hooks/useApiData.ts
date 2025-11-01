@@ -1,5 +1,12 @@
 import { useState, useEffect } from 'react';
 import { Evaluator, Study, MTE, Rating, PairwiseComparison, IDataSource } from '../types';
+import {
+  INITIAL_EVALUATORS,
+  INITIAL_MTES_CATALOG,
+  INITIAL_STUDIES,
+  INITIAL_RATINGS,
+  INITIAL_PAIRWISE_COMPARISONS
+} from './useMockData';
 
 // The base URL for your backend API.
 // When running locally, both frontend and backend might be on localhost.
@@ -8,15 +15,17 @@ const API_BASE_URL = 'http://localhost:8080/api';
 
 
 const useApiData = (): IDataSource => {
-  const [evaluators, setEvaluators] = useState<Evaluator[]>([]);
-  const [studies, setStudies] = useState<Study[]>([]);
-  const [mtes, setMtes] = useState<MTE[]>([]);
-  const [ratings, setRatings] = useState<Rating[]>([]);
-  const [pairwiseComparisons, setPairwiseComparisons] = useState<PairwiseComparison[]>([]);
+  // For development, we'll start with mock data to make the UI functional
+  // even without a fully implemented backend.
+  const [evaluators, setEvaluators] = useState<Evaluator[]>(INITIAL_EVALUATORS);
+  const [studies, setStudies] = useState<Study[]>(INITIAL_STUDIES);
+  const [mtes, setMtes] = useState<MTE[]>(INITIAL_MTES_CATALOG);
+  const [ratings, setRatings] = useState<Rating[]>(INITIAL_RATINGS);
+  const [pairwiseComparisons, setPairwiseComparisons] = useState<PairwiseComparison[]>(INITIAL_PAIRWISE_COMPARISONS);
 
   // Fetch initial data when the hook is used
   useEffect(() => {
-    // Fetch studies from the backend
+    // Attempt to fetch studies from the backend, overwriting the mock data if successful.
     const fetchStudies = async () => {
       try {
         const response = await fetch(`${API_BASE_URL}/studies`);
@@ -25,44 +34,113 @@ const useApiData = (): IDataSource => {
         }
         const data: Study[] = await response.json();
         setStudies(data);
+        console.log('Successfully fetched studies from API.', data);
       } catch (error) {
-        console.error("Failed to fetch studies:", error);
-        // You might want to set an error state here to show in the UI
+        console.error("Failed to fetch studies from API, falling back to mock data:", error);
+        // If fetch fails, we keep the initial mock data.
       }
     };
 
     fetchStudies();
     
-    // In a real app, you would also fetch evaluators, MTEs, etc. here.
-    // For now, we'll leave them empty.
+    // TODO: In a real app, you would also fetch evaluators, MTEs, etc. here.
     
-  }, []); // The empty dependency array ensures this runs only once on mount
+  }, []);
 
-  // --- Placeholder Mutating Functions ---
-  // These functions will need to be implemented to send POST, PUT, DELETE requests
-  // to your backend API. For now, they are just placeholders.
+  // --- Placeholder Mutating Functions (local state manipulation) ---
+  // These functions make the UI interactive. They should be replaced with API calls
+  // to POST, PUT, DELETE data from your backend.
   
-  const addEvaluator = (evaluator: Omit<Evaluator, 'id'>) => console.log('addEvaluator not implemented for API');
-  const updateEvaluator = (evaluator: Evaluator) => console.log('updateEvaluator not implemented for API');
-  const deleteEvaluator = (id: string) => console.log('deleteEvaluator not implemented for API');
+  const addEvaluator = (evaluator: Omit<Evaluator, 'id'>) => {
+    // TODO: Replace with: POST /api/evaluators
+    setEvaluators(prev => [...prev, { ...evaluator, id: `eval${Date.now()}` }]);
+  };
+  
+  const updateEvaluator = (updatedEvaluator: Evaluator) => {
+    // TODO: Replace with: PUT /api/evaluators/:id
+    setEvaluators(prev => prev.map(e => e.id === updatedEvaluator.id ? updatedEvaluator : e));
+  };
+  
+  const deleteEvaluator = (id: string) => {
+    // TODO: Replace with: DELETE /api/evaluators/:id
+    setEvaluators(prev => prev.filter(e => e.id !== id));
+  };
 
-  const addStudy = (study: Omit<Study, 'id' | 'mteIds'>) => console.log('addStudy not implemented for API');
-  const updateStudy = (study: Study) => console.log('updateStudy not implemented for API');
-  const deleteStudy = (id: string) => console.log('deleteStudy not implemented for API');
+  const addStudy = (study: Omit<Study, 'id' | 'mteIds'>) => {
+    // TODO: Replace with: POST /api/studies
+    setStudies(prev => [...prev, { ...study, id: `study${Date.now()}`, mteIds: [] }]);
+  };
+  
+  const updateStudy = (updatedStudy: Study) => {
+    // TODO: Replace with: PUT /api/studies/:id
+    setStudies(prev => prev.map(s => s.id === updatedStudy.id ? updatedStudy : s));
+  };
+
+  const deleteStudy = (id: string) => {
+    // TODO: Replace with: DELETE /api/studies/:id
+    setStudies(prev => prev.filter(s => s.id !== id));
+  };
 
   const addMte = (mte: Omit<MTE, 'id' | 'refNumber'> & { refNumber?: string }): MTE => {
-    console.log('addMte not implemented for API');
-    // Return a dummy object to satisfy the type, though it won't be functional
-    return { ...mte, id: `mte${Date.now()}`, refNumber: mte.refNumber || ''};
+    // TODO: Replace with: POST /api/mtes
+    const newMte = {
+      ...mte,
+      id: `mte${Date.now()}`,
+      refNumber: mte.refNumber || '',
+    };
+    setMtes(prev => [...prev, newMte]);
+    return newMte;
   };
-  const updateMte = (mte: MTE) => console.log('updateMte not implemented for API');
-  const deleteMte = (id: string) => console.log('deleteMte not implemented for API');
 
-  const addMTEToStudy = (studyId: string, mteId: string) => console.log('addMTEToStudy not implemented for API');
-  const removeMTEFromStudy = (studyId: string, mteId: string) => console.log('removeMTEFromStudy not implemented for API');
+  const updateMte = (updatedMte: MTE) => {
+    // TODO: Replace with: PUT /api/mtes/:id
+    setMtes(prev => prev.map(m => m.id === updatedMte.id ? updatedMte : m));
+  };
 
-  const addRating = (rating: Omit<Rating, 'id' | 'timestamp'>) => console.log('addRating not implemented for API');
-  const addPairwiseComparison = (comparison: PairwiseComparison) => console.log('addPairwiseComparison not implemented for API');
+  const deleteMte = (id: string) => {
+    // TODO: Replace with: DELETE /api/mtes/:id
+    setMtes(prev => prev.filter(m => m.id !== id));
+    setStudies(prevStudies => prevStudies.map(study => ({
+      ...study,
+      mteIds: study.mteIds.filter(mteId => mteId !== id)
+    })));
+  };
+
+  const addMTEToStudy = (studyId: string, mteId: string) => {
+    // TODO: Replace with: POST /api/studies/:studyId/mtes
+    setStudies(prev => prev.map(s => {
+      if (s.id === studyId && !s.mteIds.includes(mteId)) {
+        return { ...s, mteIds: [...s.mteIds, mteId] };
+      }
+      return s;
+    }));
+  };
+  
+  const removeMTEFromStudy = (studyId: string, mteId: string) => {
+    // TODO: Replace with: DELETE /api/studies/:studyId/mtes/:mteId
+    setStudies(prev => prev.map(s => {
+      if (s.id === studyId) {
+        return { ...s, mteIds: s.mteIds.filter(mId => mId !== mteId) };
+      }
+      return s;
+    }));
+  };
+
+  const addRating = (rating: Omit<Rating, 'id' | 'timestamp'>) => {
+    // TODO: Replace with: POST /api/ratings
+    setRatings(prev => [...prev, { ...rating, id: `rating${Date.now()}`, timestamp: Date.now() }]);
+  };
+  
+  const addPairwiseComparison = (comparison: PairwiseComparison) => {
+    // TODO: Replace with: POST /api/comparisons
+    setPairwiseComparisons(prev => {
+        const existing = prev.find(pc => pc.evaluatorId === comparison.evaluatorId && pc.studyId === comparison.studyId);
+        if (existing) {
+            return prev.map(pc => pc.evaluatorId === comparison.evaluatorId && pc.studyId === comparison.studyId ? comparison : pc);
+        }
+        return [...prev, comparison];
+    });
+  };
 
   const hasPreviousRatingInStudy = (evaluatorId: string, studyId: string): boolean => {
     // This logic will also need to be moved to the backend
