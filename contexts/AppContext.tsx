@@ -1,12 +1,15 @@
+
 import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
 import useMockData from '../hooks/useMockData';
 import useLocalStorageData from '../hooks/useLocalStorageData';
+import useApiData from '../hooks/useApiData';
 import { IDataSource } from '../types';
 
 
 interface AuthContextType {
-  isAuthenticated: boolean;
-  login: () => void;
+  isLoggedIn: boolean;
+  mode: 'demo' | 'local' | 'api';
+  login: (mode: 'demo' | 'local' | 'api') => void;
   logout: () => void;
 }
 
@@ -23,18 +26,37 @@ const SessionContext = createContext<SessionContextType | undefined>(undefined);
 
 
 export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [mode, setMode] = useState<'demo' | 'local' | 'api'>('demo');
   
   const mockDataHook = useMockData();
   const localStorageDataHook = useLocalStorageData();
-  const dataHook = isAuthenticated ? mockDataHook : localStorageDataHook;
+  const apiDataHook = useApiData();
+
+  let dataHook: IDataSource;
+  switch (mode) {
+    case 'api':
+      dataHook = apiDataHook;
+      break;
+    case 'local':
+      dataHook = localStorageDataHook;
+      break;
+    case 'demo':
+    default:
+      dataHook = mockDataHook;
+      break;
+  }
 
   const [selectedEvaluatorId, setSelectedEvaluatorId] = useState('');
   const [selectedStudyId, setSelectedStudyId] = useState('');
 
-  const login = () => setIsAuthenticated(true);
+  const login = (loginMode: 'demo' | 'local' | 'api') => {
+      setMode(loginMode);
+      setIsLoggedIn(true);
+  };
+
   const logout = () => {
-    setIsAuthenticated(false);
+    setIsLoggedIn(false);
     setSelectedEvaluatorId('');
     setSelectedStudyId('');
   };
@@ -42,10 +64,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   useEffect(() => {
     setSelectedEvaluatorId('');
     setSelectedStudyId('');
-  }, [isAuthenticated]);
+  }, [isLoggedIn]);
 
   return (
-    <AuthContext.Provider value={{ isAuthenticated, login, logout }}>
+    <AuthContext.Provider value={{ isLoggedIn, mode, login, logout }}>
       <DataContext.Provider value={dataHook}>
         <SessionContext.Provider value={{ selectedEvaluatorId, setSelectedEvaluatorId, selectedStudyId, setSelectedStudyId }}>
           {children}

@@ -1,7 +1,9 @@
+
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AppContext';
 import Button from '../components/ui/Button';
+import { APP_ICON } from '../assets';
 
 const GoogleIcon = () => (
   <svg className="w-5 h-5 mr-2" viewBox="0 0 48 48">
@@ -17,8 +19,8 @@ const LoginPage: React.FC = () => {
   const { login } = useAuth();
   const navigate = useNavigate();
 
-  const handleLogin = () => {
-    login();
+  const handleLogin = (mode: 'demo' | 'local' | 'api') => {
+    login(mode);
     navigate('/evaluator');
   };
 
@@ -27,25 +29,36 @@ const LoginPage: React.FC = () => {
       <div className="text-center p-8 max-w-md w-full">
         <div className="mb-8">
             <div className="flex items-center justify-center">
-              <svg className="w-12 h-12 text-nasa-light-blue mr-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" xmlns="http://www.w3.org/2000/svg">
-                <path d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22Z" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                <path d="M10 15C10.6311 15.5103 11.3323 15.8333 12.0833 15.8333C12.8344 15.8333 13.5356 15.5103 14.1667 15" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                <path d="M15.5 9.5C15.5 9.77614 15.2761 10 15 10C14.7239 10 14.5 9.77614 14.5 9.5C14.5 9.22386 14.7239 9 15 9C15.2761 9 15.5 9.22386 15.5 9.5Z" fill="currentColor"/>
-                <path d="M9.5 9.5C9.5 9.77614 9.27614 10 9 10C8.72386 10 8.5 9.77614 8.5 9.5C8.5 9.22386 8.72386 9 9 9C9.27614 9 9.5 9.22386 9.5 9.5Z" fill="currentColor"/>
-                <path d="M19 12C19 8.13401 15.866 5 12 5C8.13401 5 5 8.13401 5 12" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                <path d="M12 11V12" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-              </svg>
+              <img src={APP_ICON} alt="CaTLX Logo" className="w-12 h-12 rounded-full mr-3" />
               <h1 className="text-4xl font-bold text-white tracking-wider">CaTLX</h1>
             </div>
             <p className="text-nasa-gray-300 mt-2">Workload Assessment Tool</p>
         </div>
         <div className="bg-nasa-gray-800 p-8 rounded-lg shadow-2xl">
-            <h2 className="text-2xl font-semibold text-white mb-6">Welcome</h2>
-            <p className="text-nasa-gray-400 mb-8">Sign in to access shared studies or continue in local mode by navigating to the dashboard.</p>
-            <Button onClick={handleLogin} size="lg" className="w-full">
-                <GoogleIcon />
-                Sign in with Google
-            </Button>
+            <h2 className="text-2xl font-semibold text-white mb-8">Choose Your Mode</h2>
+            <div className="space-y-4">
+                <Button onClick={() => handleLogin('demo')} className="w-full !justify-start !p-4 text-left">
+                     <div className="flex flex-col">
+                        <span className="font-bold text-base">Enter Demo Mode</span>
+                        <span className="text-sm font-normal text-nasa-gray-200">Explore with sample data.</span>
+                    </div>
+                </Button>
+                <Button onClick={() => handleLogin('local')} variant="secondary" className="w-full !justify-start !p-4 text-left">
+                    <div className="flex flex-col">
+                        <span className="font-bold text-base">Use Local Mode</span>
+                        <span className="text-sm font-normal text-nasa-gray-300">Save data for offline/cached use.</span>
+                    </div>
+                </Button>
+                <Button onClick={() => handleLogin('api')} variant="secondary" className="w-full !justify-start !p-4 text-left">
+                    <div className="flex items-center">
+                        <GoogleIcon />
+                        <div className="flex flex-col">
+                            <span className="font-bold text-base">Login (Cloud)</span>
+                            <span className="text-sm font-normal text-nasa-gray-300">Connect to the cloud backend.</span>
+                        </div>
+                    </div>
+                </Button>
+            </div>
         </div>
       </div>
     </div>

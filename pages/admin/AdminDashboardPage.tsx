@@ -10,7 +10,8 @@ type AdminTab = 'stats' | 'evaluators' | 'studies' | 'mtes';
 
 const AdminDashboardPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<AdminTab>('stats');
-  const { isAuthenticated } = useAuth();
+  // FIX: Replaced `isAuthenticated` with `mode` as `isAuthenticated` does not exist on `AuthContextType`.
+  const { mode } = useAuth();
 
   const renderTabContent = () => {
     switch (activeTab) {
@@ -44,7 +45,8 @@ const AdminDashboardPage: React.FC = () => {
     <div className="space-y-6">
       <h1 className="text-3xl font-bold text-white">Admin Dashboard</h1>
 
-      {!isAuthenticated && (
+      {/* FIX: The condition was updated to check for 'local' mode, which matches the banner's text content. */}
+      {mode === 'local' && (
         <div className="bg-yellow-900 bg-opacity-50 text-yellow-200 p-4 rounded-lg text-center text-sm">
             You are in <span className="font-bold">Local Mode</span>. All data is saved on this device only. 
             <Link to="/login" className="font-bold underline text-white ml-1 hover:text-yellow-100">Log in</Link> to access shared studies.

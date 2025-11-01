@@ -9,13 +9,14 @@ import AdminDashboardPage from './pages/AdminDashboardPage';
 import Layout from './components/layout/Layout';
 
 function AppRoutes() {
-  const { isAuthenticated } = useAuth();
+  const { isLoggedIn } = useAuth();
 
   return (
     <HashRouter>
       <Routes>
-        <Route path="/login" element={isAuthenticated ? <Navigate to="/evaluator" /> : <LoginPage />} />
+        <Route path="/login" element={isLoggedIn ? <Navigate to="/evaluator" /> : <LoginPage />} />
         <Route path="/*" element={
+          isLoggedIn ? (
             <Layout>
                 <Routes>
                     <Route path="/evaluator" element={<EvaluatorPage />} />
@@ -23,6 +24,9 @@ function AppRoutes() {
                     <Route path="/" element={<Navigate to="/evaluator" />} />
                 </Routes>
             </Layout>
+          ) : (
+            <Navigate to="/login" />
+          )
         } />
       </Routes>
     </HashRouter>

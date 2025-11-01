@@ -1,4 +1,5 @@
 
+
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AppContext';
@@ -11,7 +12,7 @@ type AdminTab = 'stats' | 'evaluators' | 'studies' | 'mtes';
 
 const AdminDashboardPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<AdminTab>('stats');
-  const { isAuthenticated } = useAuth();
+  const { mode } = useAuth();
 
   const renderTabContent = () => {
     switch (activeTab) {
@@ -45,10 +46,9 @@ const AdminDashboardPage: React.FC = () => {
     <div className="space-y-6">
       <h1 className="text-3xl font-bold text-white">Admin Dashboard</h1>
 
-      {!isAuthenticated && (
+      {mode === 'local' && (
         <div className="bg-yellow-900 bg-opacity-50 text-yellow-200 p-4 rounded-lg text-center text-sm">
-            You are in <span className="font-bold">Local Mode</span>. All data is saved on this device only. 
-            <Link to="/login" className="font-bold underline text-white ml-1 hover:text-yellow-100">Log in</Link> to access shared studies.
+            You are in <span className="font-bold">Local Mode</span>. All data is saved on this device only. Use the Logout button to switch modes.
         </div>
       )}
 
