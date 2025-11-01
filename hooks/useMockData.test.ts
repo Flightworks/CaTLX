@@ -9,11 +9,11 @@ describe('useMockData hook', () => {
   it('should initialize with default data', () => {
     const { result } = renderHook(() => useMockData());
     
-    expect(result.current.evaluators.length).toBe(2);
-    expect(result.current.studies.length).toBe(2);
-    expect(result.current.mtes.length).toBe(5);
-    expect(result.current.ratings.length).toBe(4);
-    expect(result.current.pairwiseComparisons.length).toBe(3);
+    expect(result.current.evaluators.length).toBe(5);
+    expect(result.current.studies.length).toBe(3);
+    expect(result.current.mtes.length).toBe(8);
+    expect(result.current.ratings.length).toBe(10);
+    expect(result.current.pairwiseComparisons.length).toBe(6);
   });
 
   it('should add an evaluator', () => {
@@ -23,8 +23,8 @@ describe('useMockData hook', () => {
       result.current.addEvaluator({ name: 'Test Evaluator', email: 'test@nasa.gov' });
     });
 
-    expect(result.current.evaluators.length).toBe(3);
-    expect(result.current.evaluators[2].name).toBe('Test Evaluator');
+    expect(result.current.evaluators.length).toBe(6);
+    expect(result.current.evaluators[5].name).toBe('Test Evaluator');
   });
 
   it('should delete an evaluator', () => {
@@ -59,9 +59,9 @@ describe('useMockData hook', () => {
       });
     });
 
-    expect(result.current.ratings.length).toBe(5);
-    expect(result.current.ratings[4].evaluatorId).toBe('eval1');
-    expect(result.current.ratings[4].studyId).toBe('study2');
+    expect(result.current.ratings.length).toBe(11);
+    expect(result.current.ratings[10].evaluatorId).toBe('eval1');
+    expect(result.current.ratings[10].studyId).toBe('study2');
   });
   
   it('should correctly report if an evaluator has a previous rating in a study', () => {
