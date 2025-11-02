@@ -40,19 +40,16 @@ const PairwiseComparisonView: React.FC<{
   onSubmit: (weights: Record<TLXDimension, number>, isWeighted: boolean) => void;
   onComplete: () => void;
 }> = ({ onSubmit, onComplete }) => {
+  const [currentPairIndex, setCurrentPairIndex] = useState(0);
   const [selections, setSelections] = useState<Record<string, TLXDimension | null>>({});
 
-  const handleSelect = (pairIndex: number, dimension: TLXDimension) => {
-    setSelections(prev => ({ ...prev, [pairIndex]: dimension }));
-  };
-
-  const handleSubmit = () => {
+  const handleSubmit = (finalSelections: Record<string, TLXDimension | null>) => {
     const weights = TLX_DIMENSIONS_INFO.reduce((acc, dim) => {
       acc[dim.id] = 0;
       return acc;
     }, {} as Record<TLXDimension, number>);
 
-    (Object.values(selections) as (TLXDimension | null)[]).forEach(dim => {
+    (Object.values(finalSelections) as (TLXDimension | null)[]).forEach(dim => {
       if (dim) {
         weights[dim]++;
       }
@@ -61,40 +58,73 @@ const PairwiseComparisonView: React.FC<{
     onComplete();
   };
   
+  const handleSelect = (dimension: TLXDimension) => {
+    const newSelections = { ...selections, [currentPairIndex]: dimension };
+    setSelections(newSelections);
+
+    if (currentPairIndex < PAIRWISE_COMBINATIONS.length - 1) {
+      setCurrentPairIndex(prev => prev + 1);
+    } else {
+      // Last selection made, submit automatically
+      handleSubmit(newSelections);
+    }
+  };
+
   const handleSkip = () => {
       onSubmit(DEFAULT_WEIGHTS, false);
       onComplete();
   }
 
-  const allPairsSelected = Object.keys(selections).length === PAIRWISE_COMBINATIONS.length;
+  const currentPair = PAIRWISE_COMBINATIONS[currentPairIndex];
+  const dimensionA = TLX_DIMENSIONS_INFO.find(d => d.id === currentPair[0]);
+  const dimensionB = TLX_DIMENSIONS_INFO.find(d => d.id === currentPair[1]);
+  const progress = ((currentPairIndex + 1) / PAIRWISE_COMBINATIONS.length) * 100;
+  
+  if (!dimensionA || !dimensionB) return null; // Should not happen
+
+  const DimensionCard: React.FC<{ dimension: typeof dimensionA, onSelect: () => void }> = ({ dimension, onSelect }) => (
+    <div
+      onClick={onSelect}
+      className="w-full sm:w-1/2 p-6 bg-nasa-gray-900 rounded-lg cursor-pointer transition-all duration-200 ease-in-out hover:bg-nasa-light-blue hover:shadow-2xl hover:scale-105 border-2 border-nasa-gray-700 hover:border-nasa-blue"
+      role="button"
+      tabIndex={0}
+      onKeyPress={(e) => { if(e.key === 'Enter' || e.key === ' ') onSelect() }}
+      aria-label={`Select ${dimension.title}`}
+    >
+      <h3 className="text-xl font-bold text-center text-white">{dimension.title}</h3>
+      <p className="text-sm text-nasa-gray-400 mt-2 text-center">{dimension.description}</p>
+    </div>
+  );
 
   return (
-    <Card title="Pairwise Comparison">
-      <div className="space-y-4">
-        <p className="text-nasa-gray-300">For each pair, select the dimension that contributed more to the workload of the tasks in this study.</p>
-        {PAIRWISE_COMBINATIONS.map((pair, index) => (
-          <div key={index} className="p-3 bg-nasa-gray-900 rounded-md">
-            <p className="text-center text-sm font-medium mb-2 text-nasa-gray-400">Which was a more important source of workload?</p>
-            <div className="grid grid-cols-2 gap-2">
-              <Button
-                onClick={() => handleSelect(index, pair[0])}
-                variant={selections[index] === pair[0] ? 'primary' : 'secondary'}
-              >
-                {pair[0]}
-              </Button>
-              <Button
-                onClick={() => handleSelect(index, pair[1])}
-                variant={selections[index] === pair[1] ? 'primary' : 'secondary'}
-              >
-                {pair[1]}
-              </Button>
+    <Card title="Determine Dimension Weights">
+      <div className="space-y-6">
+        <div>
+            <p className="text-nasa-gray-300 mb-4 text-center">To accurately calculate your workload, we need to determine the importance of each TLX dimension. For each pair below, please select the dimension that you felt contributed <span className="font-bold text-white">more</span> to the workload in this study.</p>
+        </div>
+        
+        {/* Progress Bar */}
+        <div>
+            <div className="flex justify-between mb-1">
+                <span className="text-base font-medium text-nasa-blue">Comparison {currentPairIndex + 1} of {PAIRWISE_COMBINATIONS.length}</span>
             </div>
-          </div>
-        ))}
+            <div className="w-full bg-nasa-gray-700 rounded-full h-2.5">
+                <div className="bg-nasa-blue h-2.5 rounded-full transition-all duration-300 ease-in-out" style={{ width: `${progress}%` }}></div>
+            </div>
+        </div>
+
+        {/* Comparison Section */}
+        <div className="text-center">
+            <h2 className="text-lg font-semibold text-white mb-4">Which was a more significant source of workload?</h2>
+            <div className="flex flex-col sm:flex-row items-stretch justify-center gap-4">
+               <DimensionCard dimension={dimensionA} onSelect={() => handleSelect(dimensionA.id)} />
+               <DimensionCard dimension={dimensionB} onSelect={() => handleSelect(dimensionB.id)} />
+            </div>
+        </div>
       </div>
-      <div className="flex flex-col sm:flex-row justify-end space-y-2 sm:space-y-0 sm:space-x-3 mt-6 pt-4 border-t border-nasa-gray-700">
-        <Button onClick={handleSkip} variant="secondary" className="w-full sm:w-auto">Skip for Now</Button>
-        <Button onClick={handleSubmit} disabled={!allPairsSelected} className="w-full sm:w-auto">Submit Weights</Button>
+      
+      <div className="flex justify-center mt-8 pt-4 border-t border-nasa-gray-700">
+        <Button onClick={handleSkip} variant="secondary" className="w-full sm:w-auto">Skip Weighting Process</Button>
       </div>
     </Card>
   );
@@ -142,6 +172,7 @@ const AssessmentSummary: React.FC<{ onReturnToTasks: () => void }> = ({ onReturn
                 weightedScores,
                 totalWeightedScore: totalWeight > 0 ? totalWeightedScore / totalWeight : 0,
                 isWeighted,
+                comments: rating.comments,
             };
         });
     }, [ratings, currentComparison, evaluators, studies, mtes, selectedEvaluatorId, selectedStudyId]);
@@ -183,6 +214,12 @@ const AssessmentSummary: React.FC<{ onReturnToTasks: () => void }> = ({ onReturn
                                 ))}
                             </div>
                         </div>
+                        {score.comments && (
+                            <div className="mt-4 pt-4 border-t border-nasa-gray-700">
+                                <h5 className="text-sm font-semibold text-nasa-gray-300 mb-2">Comments</h5>
+                                <p className="text-sm text-nasa-gray-300 bg-nasa-gray-800 p-3 rounded-md whitespace-pre-wrap">{score.comments}</p>
+                            </div>
+                        )}
                     </Card>
                 ))}
             </div>
@@ -202,6 +239,7 @@ const AssessmentRunner: React.FC = () => {
 
     const [selectedMte, setSelectedMte] = useState<MTE | null>(null);
     const [scores, setScores] = useState<Record<TLXDimension, number>>(initialScores);
+    const [comments, setComments] = useState('');
     const [view, setView] = useState<'loading' | 'pairwise' | 'tasks' | 'summary'>('loading');
     const [notification, setNotification] = useState('');
     const [ratingMode, setRatingMode] = useState<'express' | 'step-by-step'>(() => {
@@ -273,6 +311,7 @@ const AssessmentRunner: React.FC = () => {
             studyId: selectedStudyId,
             mteId: selectedMte.id,
             scores,
+            comments: comments.trim() ? comments.trim() : undefined,
         };
         addRating(newRating);
         setNotification(`Rating for "${selectedMte.name}" submitted successfully!`);
@@ -286,6 +325,7 @@ const AssessmentRunner: React.FC = () => {
         setScores(initialScores);
         setSelectedMte(null);
         setCurrentStep(0);
+        setComments('');
 
         setTimeout(() => setNotification(''), 3000);
     };
@@ -314,7 +354,6 @@ const AssessmentRunner: React.FC = () => {
     }
 
     if (selectedMte) {
-        const currentDimension = TLX_DIMENSIONS_INFO[currentStep];
         return (
             <Card>
                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
@@ -334,35 +373,74 @@ const AssessmentRunner: React.FC = () => {
                 </div>
                 <form onSubmit={handleSubmitRating}>
                     {ratingMode === 'express' ? (
-                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                            {TLX_DIMENSIONS_INFO.map(dim => (
-                                <TlxSlider
-                                    key={dim.id}
-                                    title={dim.title}
-                                    description={dim.description}
-                                    lowAnchor={dim.lowAnchor}
-                                    highAnchor={dim.highAnchor}
-                                    value={scores[dim.id]}
-                                    onChange={(val) => handleScoreChange(dim.id, val)}
-                                    compact={true}
+                        <>
+                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                                {TLX_DIMENSIONS_INFO.map(dim => (
+                                    <TlxSlider
+                                        key={dim.id}
+                                        title={dim.title}
+                                        description={dim.description}
+                                        lowAnchor={dim.lowAnchor}
+                                        highAnchor={dim.highAnchor}
+                                        value={scores[dim.id]}
+                                        onChange={(val) => handleScoreChange(dim.id, val)}
+                                        compact={true}
+                                    />
+                                ))}
+                            </div>
+                            <div className="mt-6">
+                                <label htmlFor="comments" className="block text-sm font-medium text-nasa-gray-300">
+                                    Optional Comments
+                                </label>
+                                <textarea
+                                    id="comments"
+                                    rows={3}
+                                    className="mt-1 block w-full bg-nasa-gray-900 border-nasa-gray-600 rounded-md shadow-sm focus:ring-nasa-blue focus:border-nasa-blue text-white"
+                                    value={comments}
+                                    onChange={(e) => setComments(e.target.value)}
+                                    placeholder="Add any additional notes about the workload for this task..."
                                 />
-                            ))}
-                        </div>
+                            </div>
+                        </>
                     ) : (
                         <div>
-                             <TlxSlider
-                                key={currentDimension.id}
-                                title={currentDimension.title}
-                                description={currentDimension.description}
-                                lowAnchor={currentDimension.lowAnchor}
-                                highAnchor={currentDimension.highAnchor}
-                                value={scores[currentDimension.id]}
-                                onChange={(val) => handleScoreChange(currentDimension.id, val)}
-                            />
+                            {(() => {
+                                if (currentStep < TLX_DIMENSIONS_INFO.length) {
+                                    const currentDimension = TLX_DIMENSIONS_INFO[currentStep];
+                                    return (
+                                        <TlxSlider
+                                            key={currentDimension.id}
+                                            title={currentDimension.title}
+                                            description={currentDimension.description}
+                                            lowAnchor={currentDimension.lowAnchor}
+                                            highAnchor={currentDimension.highAnchor}
+                                            value={scores[currentDimension.id]}
+                                            onChange={(val) => handleScoreChange(currentDimension.id, val)}
+                                        />
+                                    );
+                                } else {
+                                    return (
+                                        <div className="p-4 bg-nasa-gray-900 rounded-lg">
+                                            <h3 className="text-lg font-semibold text-white">Optional Comments</h3>
+                                            <p className="text-sm text-nasa-gray-400 my-2">Provide any additional qualitative feedback about your experience performing this task. This can include sources of frustration, moments of high demand, or anything else you feel is relevant.</p>
+                                            <textarea
+                                                id="comments"
+                                                rows={5}
+                                                className="mt-1 block w-full bg-nasa-gray-700 border-nasa-gray-600 rounded-md shadow-sm focus:ring-nasa-blue focus:border-nasa-blue text-white"
+                                                value={comments}
+                                                onChange={(e) => setComments(e.target.value)}
+                                                placeholder="Add any additional notes about the workload for this task..."
+                                                autoFocus
+                                            />
+                                        </div>
+                                    );
+                                }
+                            })()}
                         </div>
                     )}
+                    
                     <div className="flex flex-col-reverse sm:flex-row justify-between items-center gap-4 mt-6">
-                         <Button type="button" variant="secondary" onClick={() => { setSelectedMte(null); setCurrentStep(0); }} className="w-full sm:w-auto">Back to Tasks</Button>
+                         <Button type="button" variant="secondary" onClick={() => { setSelectedMte(null); setCurrentStep(0); setComments(''); }} className="w-full sm:w-auto">Back to Tasks</Button>
                         
                         {ratingMode === 'express' ? (
                             <Button type="submit" className="w-full sm:w-auto">Submit Rating</Button>
@@ -371,9 +449,9 @@ const AssessmentRunner: React.FC = () => {
                                 <Button type="button" onClick={() => setCurrentStep(prev => prev - 1)} disabled={currentStep === 0} className="w-1/2 sm:w-auto">
                                     Previous
                                 </Button>
-                                {currentStep < TLX_DIMENSIONS_INFO.length - 1 ? (
+                                {currentStep < TLX_DIMENSIONS_INFO.length ? (
                                     <Button type="button" onClick={() => setCurrentStep(prev => prev + 1)} className="w-1/2 sm:w-auto">
-                                        Next ({currentStep + 1}/{TLX_DIMENSIONS_INFO.length})
+                                        Next ({currentStep + 1}/{TLX_DIMENSIONS_INFO.length + 1})
                                     </Button>
                                 ) : (
                                     <Button type="submit" className="w-1/2 sm:w-auto">Submit Rating</Button>
@@ -457,6 +535,12 @@ const AssessmentRunner: React.FC = () => {
                                             ))}
                                         </div>
                                     </div>
+                                    {rating.comments && (
+                                        <div className="mt-4 pt-4 border-t border-nasa-gray-700">
+                                            <h5 className="text-sm font-semibold text-nasa-gray-300 mb-2">Comments</h5>
+                                            <p className="text-sm text-nasa-gray-300 bg-nasa-gray-800 p-3 rounded-md whitespace-pre-wrap">{rating.comments}</p>
+                                        </div>
+                                    )}
                                 </div>
                             );
                         } else {

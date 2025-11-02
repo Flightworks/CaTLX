@@ -41,6 +41,7 @@ export interface Rating {
   mteId: string;
   scores: Record<TLXDimension, number>;
   timestamp: number;
+  comments?: string;
 }
 
 export interface ComputedTLXScore {
@@ -54,6 +55,7 @@ export interface ComputedTLXScore {
   studyId: string;
   mteId: string;
   isWeighted: boolean;
+  comments?: string;
 }
 
 export interface IDataSource {

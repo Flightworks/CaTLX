@@ -1,4 +1,3 @@
-
 import React, { useMemo, useState } from 'react';
 import { useData } from '../../contexts/AppContext';
 import { ComputedTLXScore, TLXDimension, MTE, Study } from '../../types';
@@ -59,6 +58,7 @@ const ViewStats: React.FC = () => {
         weightedScores,
         totalWeightedScore: totalWeight > 0 ? totalWeightedScore / totalWeight : 0,
         isWeighted,
+        comments: rating.comments,
       };
     });
   }, [ratings, pairwiseComparisons, evaluators, studies, mtes]);

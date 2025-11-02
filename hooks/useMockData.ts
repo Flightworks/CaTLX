@@ -51,7 +51,7 @@ export const INITIAL_RATINGS: Rating[] = [
     [TLXDimension.PERFORMANCE]: 20,
     [TLXDimension.EFFORT]: 65,
     [TLXDimension.FRUSTRATION]: 40,
-  }, timestamp: Date.now() - 200000 },
+  }, timestamp: Date.now() - 200000, comments: 'The time pressure was the most difficult aspect of this simulation. Controls felt a bit sluggish.' },
   { id: 'rating2', evaluatorId: 'eval1', studyId: 'study1', mteId: 'mte2', scores: {
     [TLXDimension.MENTAL_DEMAND]: 85,
     [TLXDimension.PHYSICAL_DEMAND]: 70,
@@ -59,7 +59,7 @@ export const INITIAL_RATINGS: Rating[] = [
     [TLXDimension.PERFORMANCE]: 15,
     [TLXDimension.EFFORT]: 80,
     [TLXDimension.FRUSTRATION]: 50,
-  }, timestamp: Date.now() - 190000 },
+  }, timestamp: Date.now() - 190000, comments: 'High physical and mental effort required for precision.' },
   { id: 'rating3', evaluatorId: 'eval2', studyId: 'study1', mteId: 'mte1', scores: {
     [TLXDimension.MENTAL_DEMAND]: 60,
     [TLXDimension.PHYSICAL_DEMAND]: 25,
@@ -83,7 +83,7 @@ export const INITIAL_RATINGS: Rating[] = [
     [TLXDimension.PERFORMANCE]: 25,
     [TLXDimension.EFFORT]: 75,
     [TLXDimension.FRUSTRATION]: 60,
-  }, timestamp: Date.now() - 150000 },
+  }, timestamp: Date.now() - 150000, comments: 'Extremely stressful scenario. The alarm sounds were distracting.' },
   
   // Study 2: ISS
   { id: 'rating4', evaluatorId: 'eval2', studyId: 'study2', mteId: 'mte4', scores: {
@@ -93,7 +93,7 @@ export const INITIAL_RATINGS: Rating[] = [
       [TLXDimension.PERFORMANCE]: 10,
       [TLXDimension.EFFORT]: 60,
       [TLXDimension.FRUSTRATION]: 5,
-  }, timestamp: Date.now() - 170000 },
+  }, timestamp: Date.now() - 170000, comments: 'Very physically demanding, but straightforward mentally.' },
   { id: 'rating7', evaluatorId: 'eval4', studyId: 'study2', mteId: 'mte4', scores: {
     [TLXDimension.MENTAL_DEMAND]: 25,
     [TLXDimension.PHYSICAL_DEMAND]: 75,
