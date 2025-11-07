@@ -20,9 +20,9 @@ interface SessionContextType {
   setSelectedStudyId: React.Dispatch<React.SetStateAction<string>>;
 }
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
-const DataContext = createContext<IDataSource | undefined>(undefined);
-const SessionContext = createContext<SessionContextType | undefined>(undefined);
+export const AuthContext = createContext<AuthContextType | undefined>(undefined);
+export const DataContext = createContext<IDataSource | undefined>(undefined);
+export const SessionContext = createContext<SessionContextType | undefined>(undefined);
 
 
 export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
