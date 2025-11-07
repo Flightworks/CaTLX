@@ -1,0 +1,74 @@
+const CACHE_NAME = 'catlx-cache-v1';
+
+// Pre-cache the essential parts of the app shell.
+const ASSETS_TO_CACHE = [
+  '/',
+  '/index.html',
+  '/icon.svg'
+];
+
+// Install event: open cache and add app shell files.
+self.addEventListener('install', (event) => {
+  event.waitUntil(
+    caches.open(CACHE_NAME).then((cache) => {
+      console.log('Service Worker: Caching App Shell');
+      return cache.addAll(ASSETS_TO_CACHE);
+    })
+  );
+});
+
+// Activate event: clean up old caches.
+self.addEventListener('activate', (event) => {
+  const cacheWhitelist = [CACHE_NAME];
+  event.waitUntil(
+    caches.keys().then((cacheNames) => {
+      return Promise.all(
+        cacheNames.map((cacheName) => {
+          if (cacheWhitelist.indexOf(cacheName) === -1) {
+            console.log('Service Worker: Deleting old cache', cacheName);
+            return caches.delete(cacheName);
+          }
+        })
+      );
+    })
+  );
+  return self.clients.claim();
+});
+
+// Fetch event: serve assets from cache, falling back to network.
+// This strategy is known as "Cache, falling back to Network".
+self.addEventListener('fetch', (event) => {
+  // We only want to cache GET requests.
+  if (event.request.method !== 'GET') {
+    return;
+  }
+
+  event.respondWith(
+    caches.match(event.request).then((response) => {
+      // If the asset is in the cache, return it.
+      if (response) {
+        return response;
+      }
+
+      // If the asset is not in the cache, fetch it from the network.
+      return fetch(event.request).then((response) => {
+        // Check if we received a valid response.
+        if (!response || response.status !== 200 || (response.type !== 'basic' && response.type !== 'cors')) {
+          return response;
+        }
+
+        // IMPORTANT: Clone the response. A response is a stream
+        // and because we want the browser to consume the response
+        // as well as the cache consuming the response, we need
+        // to clone it so we have two streams.
+        const responseToCache = response.clone();
+
+        caches.open(CACHE_NAME).then((cache) => {
+          cache.put(event.request, responseToCache);
+        });
+
+        return response;
+      });
+    })
+  );
+});

@@ -1,4 +1,3 @@
-
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App';
@@ -13,9 +12,9 @@ if (!rootElement) {
 const faviconLink = document.querySelector<HTMLLinkElement>('link[rel="icon"]');
 if (faviconLink) {
   faviconLink.href = APP_ICON;
-  const typeMatch = APP_ICON.match(/^data:([^;]+);/);
+  const typeMatch = APP_ICON.match(/\.([^.]+)$/);
   if (typeMatch) {
-    faviconLink.type = typeMatch[1];
+    faviconLink.type = `image/${typeMatch[1]}`;
   }
 }
 
@@ -26,3 +25,16 @@ root.render(
     <App />
   </React.StrictMode>
 );
+
+// Register the service worker for PWA functionality
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/service-worker.js')
+      .then(registration => {
+        console.log('ServiceWorker registration successful with scope: ', registration.scope);
+      })
+      .catch(error => {
+        console.log('ServiceWorker registration failed: ', error);
+      });
+  });
+}
