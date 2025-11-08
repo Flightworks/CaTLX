@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AppContext';
-import ManageEvaluations from './admin/ManageEvaluators';
+import ManageEvaluations from './admin/ManageEvaluations';
 import ManageStudies from './admin/ManageStudies';
 import ViewStats from './admin/ViewStats';
 import ManageMTEs from './admin/ManageMTEs';
