@@ -653,7 +653,7 @@ const EvaluatorPage: React.FC = () => {
             return (
                 <Card>
                     <div className="text-center py-8">
-                        <h2 className="text-xl font-semibold mb-2">Welcome to the Evaluator Dashboard</h2>
+                        <h2 className="text-xl font-semibold mb-2">Welcome to the Evaluations Dashboard</h2>
                         <p className="text-lg text-nasa-gray-300">
                            Please select an evaluator and a study from the panel above to begin an assessment.
                         </p>
