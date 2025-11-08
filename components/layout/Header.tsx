@@ -50,7 +50,7 @@ const Header: React.FC = () => {
             <nav className="hidden md:block ml-10">
               <div className="flex items-center space-x-4">
                 <NavLink to="/evaluator" className={navLinkClass}>
-                  Evaluator
+                  Evaluations
                 </NavLink>
                 <NavLink to="/admin" className={navLinkClass}>
                   Admin Dashboard
@@ -86,7 +86,7 @@ const Header: React.FC = () => {
        {isMenuOpen && (
         <div className="md:hidden" id="mobile-menu">
           <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3">
-            <NavLink to="/evaluator" className={mobileNavLinkClass} onClick={() => setIsMenuOpen(false)}>Evaluator</NavLink>
+            <NavLink to="/evaluator" className={mobileNavLinkClass} onClick={() => setIsMenuOpen(false)}>Evaluations</NavLink>
             <NavLink to="/admin" className={mobileNavLinkClass} onClick={() => setIsMenuOpen(false)}>Admin Dashboard</NavLink>
             <NavLink to="/about" className={mobileNavLinkClass} onClick={() => setIsMenuOpen(false)}>About</NavLink>
           </div>
