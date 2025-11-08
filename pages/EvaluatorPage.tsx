@@ -250,6 +250,11 @@ const AssessmentRunner: React.FC = () => {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [submissionError, setSubmissionError] = useState<string | null>(null);
 
+    const totalSteps = TLX_DIMENSIONS_INFO.length + 1;
+    const isCommentsStep = currentStep >= TLX_DIMENSIONS_INFO.length;
+    const currentStepNumber = Math.min(currentStep + 1, totalSteps);
+    const currentDimension = !isCommentsStep ? TLX_DIMENSIONS_INFO[currentStep] : null;
+
     const selectedStudy = useMemo(() => studies.find(s => s.id === selectedStudyId), [studies, selectedStudyId]);
     
     const mtesInStudy = useMemo(() => {
@@ -427,39 +432,39 @@ const AssessmentRunner: React.FC = () => {
                             </div>
                         </>
                     ) : (
-                        <div>
-                            {(() => {
-                                if (currentStep < TLX_DIMENSIONS_INFO.length) {
-                                    const currentDimension = TLX_DIMENSIONS_INFO[currentStep];
-                                    return (
-                                        <TlxSlider
-                                            key={currentDimension.id}
-                                            title={currentDimension.title}
-                                            description={currentDimension.description}
-                                            lowAnchor={currentDimension.lowAnchor}
-                                            highAnchor={currentDimension.highAnchor}
-                                            value={scores[currentDimension.id]}
-                                            onChange={(val) => handleScoreChange(currentDimension.id, val)}
-                                        />
-                                    );
-                                } else {
-                                    return (
-                                        <div className="p-4 bg-nasa-gray-900 rounded-lg">
-                                            <h3 className="text-lg font-semibold text-white">Optional Comments</h3>
-                                            <p className="text-sm text-nasa-gray-400 my-2">Provide any additional qualitative feedback about your experience performing this task. This can include sources of frustration, moments of high demand, or anything else you feel is relevant.</p>
-                                            <textarea
-                                                id="comments"
-                                                rows={5}
-                                                className="mt-1 block w-full bg-nasa-gray-700 border-nasa-gray-600 rounded-md shadow-sm focus:ring-nasa-blue focus:border-nasa-blue text-white"
-                                                value={comments}
-                                                onChange={(e) => setComments(e.target.value)}
-                                                placeholder="Add any additional notes about the workload for this task..."
-                                                autoFocus
-                                            />
-                                        </div>
-                                    );
-                                }
-                            })()}
+                        <div className="space-y-4">
+                            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+                                <span className="text-sm font-medium text-nasa-gray-300">Step {currentStepNumber} of {totalSteps}</span>
+                                <span className="text-xs uppercase tracking-wide text-nasa-gray-500">
+                                    {isCommentsStep ? 'Comments' : currentDimension?.title}
+                                </span>
+                            </div>
+                            {isCommentsStep && (
+                                <div className="p-4 bg-nasa-gray-900 rounded-lg">
+                                    <h3 className="text-lg font-semibold text-white">Optional Comments</h3>
+                                    <p className="text-sm text-nasa-gray-400 my-2">Provide any additional qualitative feedback about your experience performing this task. This can include sources of frustration, moments of high demand, or anything else you feel is relevant.</p>
+                                    <textarea
+                                        id="comments"
+                                        rows={5}
+                                        className="mt-1 block w-full bg-nasa-gray-700 border-nasa-gray-600 rounded-md shadow-sm focus:ring-nasa-blue focus:border-nasa-blue text-white"
+                                        value={comments}
+                                        onChange={(e) => setComments(e.target.value)}
+                                        placeholder="Add any additional notes about the workload for this task..."
+                                        autoFocus
+                                    />
+                                </div>
+                            )}
+                            {!isCommentsStep && currentDimension && (
+                                <TlxSlider
+                                    key={currentDimension.id}
+                                    title={currentDimension.title}
+                                    description={currentDimension.description}
+                                    lowAnchor={currentDimension.lowAnchor}
+                                    highAnchor={currentDimension.highAnchor}
+                                    value={scores[currentDimension.id]}
+                                    onChange={(val) => handleScoreChange(currentDimension.id, val)}
+                                />
+                            )}
                         </div>
                     )}
                     
@@ -477,11 +482,11 @@ const AssessmentRunner: React.FC = () => {
                                 </Button>
                                 {currentStep < TLX_DIMENSIONS_INFO.length ? (
                                     <Button type="button" onClick={() => setCurrentStep(prev => prev + 1)} disabled={isSubmitting} className="w-1/2 sm:w-auto">
-                                        Next ({currentStep + 1}/{TLX_DIMENSIONS_INFO.length + 1})
+                                        Next
                                     </Button>
                                 ) : (
                                     <Button type="submit" className="w-1/2 sm:w-auto" disabled={isSubmitting}>
-                                        {isSubmitting ? 'Submitting...' : 'Submit Rating'}
+                                        {isSubmitting ? 'Submitting...' : `Submit Rating (Step ${totalSteps} of ${totalSteps})`}
                                     </Button>
                                 )}
                             </div>
