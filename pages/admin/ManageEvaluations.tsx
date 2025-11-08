@@ -51,7 +51,7 @@ const EvaluatorForm: React.FC<{
   );
 };
 
-const ManageEvaluators: React.FC = () => {
+const ManageEvaluations: React.FC = () => {
   const { evaluators, addEvaluator, updateEvaluator, deleteEvaluator } = useData();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingEvaluator, setEditingEvaluator] = useState<Evaluator | null>(null);
@@ -79,8 +79,8 @@ const ManageEvaluators: React.FC = () => {
   return (
     <Card>
       <div className="flex justify-between items-center mb-4">
-        <h2 className="text-xl font-bold">Evaluators</h2>
-        <Button onClick={handleAddNew}>Add New Evaluator</Button>
+        <h2 className="text-xl font-bold">Evaluations</h2>
+        <Button onClick={handleAddNew}>Add New Evaluation</Button>
       </div>
       <div className="overflow-x-auto">
         <table className="min-w-full divide-y divide-nasa-gray-700">
@@ -116,4 +116,4 @@ const ManageEvaluators: React.FC = () => {
   );
 };
 
-export default ManageEvaluators;
+export default ManageEvaluations;

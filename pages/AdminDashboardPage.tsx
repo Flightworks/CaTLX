@@ -1,14 +1,13 @@
 
-
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AppContext';
-import ManageEvaluators from './admin/ManageEvaluators';
+import ManageEvaluations from './admin/ManageEvaluators';
 import ManageStudies from './admin/ManageStudies';
 import ViewStats from './admin/ViewStats';
 import ManageMTEs from './admin/ManageMTEs';
 
-type AdminTab = 'stats' | 'evaluators' | 'studies' | 'mtes';
+type AdminTab = 'stats' | 'evaluations' | 'studies' | 'mtes';
 
 const AdminDashboardPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<AdminTab>('stats');
@@ -18,8 +17,8 @@ const AdminDashboardPage: React.FC = () => {
     switch (activeTab) {
       case 'stats':
         return <ViewStats />;
-      case 'evaluators':
-        return <ManageEvaluators />;
+      case 'evaluations':
+        return <ManageEvaluations />;
       case 'studies':
         return <ManageStudies />;
       case 'mtes':
@@ -55,7 +54,7 @@ const AdminDashboardPage: React.FC = () => {
       <div className="border-b border-nasa-gray-700">
         <nav className="-mb-px flex space-x-4 flex-wrap" aria-label="Tabs">
           <TabButton tabId="stats">Statistics</TabButton>
-          <TabButton tabId="evaluators">Manage Evaluators</TabButton>
+          <TabButton tabId="evaluations">Manage Evaluations</TabButton>
           <TabButton tabId="studies">Manage Studies</TabButton>
           <TabButton tabId="mtes">MTE Catalog</TabButton>
         </nav>
