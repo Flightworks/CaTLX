@@ -239,7 +239,7 @@ const useMockData = (): IDataSource => {
     }));
   };
 
-  const addRating = (rating: Omit<Rating, 'id' | 'timestamp'>) => {
+  const addRating = async (rating: Omit<Rating, 'id' | 'timestamp'>): Promise<void> => {
     setRatings(prev => [...prev, { ...rating, id: `rating${Date.now()}`, timestamp: Date.now() }]);
   };
   

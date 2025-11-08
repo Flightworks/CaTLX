@@ -21,6 +21,7 @@ function useLocalStorage<T>(key: string, initialValue: T): [T, Dispatch<SetState
             window.localStorage.setItem(key, JSON.stringify(valueToStore));
         } catch (error) {
             console.error(`Error setting localStorage key “${key}”:`, error);
+            throw new Error('Failed to save to local storage. Device storage might be full.');
         }
     };
     return [storedValue, setValue];
@@ -98,7 +99,7 @@ const useLocalStorageData = (): IDataSource => {
     }));
   };
 
-  const addRating = (rating: Omit<Rating, 'id' | 'timestamp'>) => {
+  const addRating = async (rating: Omit<Rating, 'id' | 'timestamp'>): Promise<void> => {
     setRatings(prev => [...prev, { ...rating, id: `rating${Date.now()}`, timestamp: Date.now() }]);
   };
   

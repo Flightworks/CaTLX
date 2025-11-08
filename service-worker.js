@@ -1,10 +1,41 @@
-const CACHE_NAME = 'catlx-cache-v1';
+const CACHE_NAME = 'catlx-cache-v3';
 
 // Pre-cache the essential parts of the app shell.
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',
-  '/icon.svg'
+  '/icon.svg',
+  '/manifest.json',
+  '/index.tsx',
+  '/App.tsx',
+  '/types.ts',
+  '/constants.ts',
+  '/assets.ts',
+  '/contexts/AppContext.tsx',
+  '/hooks/useMockData.ts',
+  '/hooks/useLocalStorageData.ts',
+  '/hooks/useApiData.ts',
+  '/components/layout/Layout.tsx',
+  '/components/layout/Header.tsx',
+  '/components/ui/Button.tsx',
+  '/components/ui/Card.tsx',
+  '/components/ui/Modal.tsx',
+  '/components/ui/Select.tsx',
+  '/components/ui/TlxSlider.tsx',
+  '/components/ui/PairwiseWeightsDisplay.tsx',
+  '/components/ui/ToggleSwitch.tsx',
+  '/pages/LoginPage.tsx',
+  '/pages/EvaluatorPage.tsx',
+  '/pages/AdminDashboardPage.tsx',
+  '/pages/AboutPage.tsx',
+  '/pages/admin/ManageEvaluators.tsx',
+  '/pages/admin/ManageStudies.tsx',
+  '/pages/admin/ViewStats.tsx',
+  '/pages/admin/ManageMTEs.tsx',
+  '/components/admin/MteStatsCard.tsx',
+  '/components/admin/MteDetailModal.tsx',
+  '/components/admin/MteComparisonChart.tsx',
+  '/components/admin/ScoreDistributionChart.tsx',
 ];
 
 // Install event: open cache and add app shell files.

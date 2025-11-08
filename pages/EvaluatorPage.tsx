@@ -247,6 +247,8 @@ const AssessmentRunner: React.FC = () => {
         return (savedMode as 'express' | 'step-by-step') || 'step-by-step';
     });
     const [currentStep, setCurrentStep] = useState(0);
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [submissionError, setSubmissionError] = useState<string | null>(null);
 
     const selectedStudy = useMemo(() => studies.find(s => s.id === selectedStudyId), [studies, selectedStudyId]);
     
@@ -302,9 +304,13 @@ const AssessmentRunner: React.FC = () => {
         setCurrentStep(0); // Reset step when changing mode
     };
 
-    const handleSubmitRating = (e: React.FormEvent) => {
+    const handleSubmitRating = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!selectedMte) return;
+        if (!selectedMte || isSubmitting) return;
+
+        setIsSubmitting(true);
+        setSubmissionError(null);
+        setNotification('');
 
         const newRating: Omit<Rating, 'id' | 'timestamp'> = {
             evaluatorId: selectedEvaluatorId,
@@ -313,21 +319,33 @@ const AssessmentRunner: React.FC = () => {
             scores,
             comments: comments.trim() ? comments.trim() : undefined,
         };
-        addRating(newRating);
-        setNotification(`Rating for "${selectedMte.name}" submitted successfully!`);
-        
-        const ratedMteIdsAfterThisOne = new Set([...ratedMteIds, selectedMte.id]);
-        
-        if (mtesInStudy.length > 0 && mtesInStudy.every(mte => ratedMteIdsAfterThisOne.has(mte.id))) {
-            setView('summary');
+
+        try {
+            await addRating(newRating);
+            setNotification(`Rating for "${selectedMte.name}" submitted successfully!`);
+            
+            const ratedMteIdsAfterThisOne = new Set([...ratedMteIds, selectedMte.id]);
+            
+            if (mtesInStudy.length > 0 && mtesInStudy.every(mte => ratedMteIdsAfterThisOne.has(mte.id))) {
+                setView('summary');
+            }
+
+            // Reset form on success
+            setScores(initialScores);
+            setSelectedMte(null);
+            setCurrentStep(0);
+            setComments('');
+
+            setTimeout(() => setNotification(''), 3000);
+
+        } catch (error) {
+            console.error("Rating submission failed:", error);
+            const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred.';
+            setSubmissionError(`Failed to submit rating. ${errorMessage} Please try again.`);
+            // Do NOT reset form state, so user can retry
+        } finally {
+            setIsSubmitting(false);
         }
-
-        setScores(initialScores);
-        setSelectedMte(null);
-        setCurrentStep(0);
-        setComments('');
-
-        setTimeout(() => setNotification(''), 3000);
     };
 
      const handleResetWeights = () => {
@@ -372,6 +390,12 @@ const AssessmentRunner: React.FC = () => {
                     />
                 </div>
                 <form onSubmit={handleSubmitRating}>
+                    {submissionError && (
+                      <div className="mb-4 p-3 rounded-md bg-red-900 bg-opacity-50 text-red-300 text-sm border border-red-700" role="alert">
+                        <p className="font-bold">Error Submitting Rating</p>
+                        <p>{submissionError}</p>
+                      </div>
+                    )}
                     {ratingMode === 'express' ? (
                         <>
                             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -440,21 +464,25 @@ const AssessmentRunner: React.FC = () => {
                     )}
                     
                     <div className="flex flex-col-reverse sm:flex-row justify-between items-center gap-4 mt-6">
-                         <Button type="button" variant="secondary" onClick={() => { setSelectedMte(null); setCurrentStep(0); setComments(''); }} className="w-full sm:w-auto">Back to Tasks</Button>
+                         <Button type="button" variant="secondary" onClick={() => { setSelectedMte(null); setCurrentStep(0); setComments(''); setSubmissionError(null); }} className="w-full sm:w-auto">Back to Tasks</Button>
                         
                         {ratingMode === 'express' ? (
-                            <Button type="submit" className="w-full sm:w-auto">Submit Rating</Button>
+                            <Button type="submit" className="w-full sm:w-auto" disabled={isSubmitting}>
+                                {isSubmitting ? 'Submitting...' : 'Submit Rating'}
+                            </Button>
                         ) : (
                             <div className="flex items-center gap-2 w-full sm:w-auto">
-                                <Button type="button" onClick={() => setCurrentStep(prev => prev - 1)} disabled={currentStep === 0} className="w-1/2 sm:w-auto">
+                                <Button type="button" onClick={() => setCurrentStep(prev => prev - 1)} disabled={currentStep === 0 || isSubmitting} className="w-1/2 sm:w-auto">
                                     Previous
                                 </Button>
                                 {currentStep < TLX_DIMENSIONS_INFO.length ? (
-                                    <Button type="button" onClick={() => setCurrentStep(prev => prev + 1)} className="w-1/2 sm:w-auto">
+                                    <Button type="button" onClick={() => setCurrentStep(prev => prev + 1)} disabled={isSubmitting} className="w-1/2 sm:w-auto">
                                         Next ({currentStep + 1}/{TLX_DIMENSIONS_INFO.length + 1})
                                     </Button>
                                 ) : (
-                                    <Button type="submit" className="w-1/2 sm:w-auto">Submit Rating</Button>
+                                    <Button type="submit" className="w-1/2 sm:w-auto" disabled={isSubmitting}>
+                                        {isSubmitting ? 'Submitting...' : 'Submit Rating'}
+                                    </Button>
                                 )}
                             </div>
                         )}

@@ -5,6 +5,7 @@ import { TLX_DIMENSIONS_INFO } from '../../constants';
 import Modal from '../ui/Modal';
 import Button from '../ui/Button';
 import PairwiseWeightsDisplay from '../ui/PairwiseWeightsDisplay';
+import ScoreDistributionChart from './ScoreDistributionChart';
 
 const getScoreColor = (score: number): string => {
   const green = [74, 222, 128];
@@ -41,6 +42,7 @@ const MteDetailModal: React.FC<{
 }> = ({ mteStats, scores, onClose }) => {
   
   const relevantScores = scores.filter(score => score.mteId === mteStats.mteId);
+  const overallScores = relevantScores.map(s => s.totalWeightedScore);
 
   return (
     <Modal
@@ -52,6 +54,7 @@ const MteDetailModal: React.FC<{
         <Button variant="secondary" onClick={onClose}>Close</Button>
       }
     >
+      <div className="space-y-6">
         <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-nasa-gray-700">
                 <thead className="bg-nasa-gray-800">
@@ -110,6 +113,12 @@ const MteDetailModal: React.FC<{
                 </tbody>
             </table>
         </div>
+        {relevantScores.length > 0 && (
+            <div className="mt-4 pt-4 border-t border-nasa-gray-700">
+                <ScoreDistributionChart scores={overallScores} />
+            </div>
+        )}
+      </div>
     </Modal>
   );
 };

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Evaluator, Study, MTE, Rating, PairwiseComparison, IDataSource } from '../types';
+import { Evaluator, Study, MTE, Rating, PairwiseComparison, IDataSource, TLXDimension } from '../types';
 import {
   INITIAL_EVALUATORS,
   INITIAL_MTES_CATALOG,
@@ -126,9 +126,38 @@ const useApiData = (): IDataSource => {
     }));
   };
 
-  const addRating = (rating: Omit<Rating, 'id' | 'timestamp'>) => {
-    // TODO: Replace with: POST /api/ratings
-    setRatings(prev => [...prev, { ...rating, id: `rating${Date.now()}`, timestamp: Date.now() }]);
+  const addRating = (rating: Omit<Rating, 'id' | 'timestamp'>): Promise<void> => {
+    return new Promise((resolve, reject) => {
+        console.log("Simulating API call to submit rating:", rating);
+
+        // Simulate network delay
+        setTimeout(() => {
+            // Simulate a server error for testing purposes if Frustration is high
+            if (rating.scores[TLXDimension.FRUSTRATION] > 90) {
+                console.error("Simulated API Error: High frustration detected.");
+                reject(new Error("Server is too frustrated to process this rating."));
+                return;
+            }
+
+            // Simulate a generic network failure
+            if (Math.random() < 0.1) { // 10% chance of failure
+                console.error("Simulated API Error: Network connection failed.");
+                reject(new Error("Could not connect to the server."));
+                return;
+            }
+
+            // On success:
+            console.log("Simulated API call successful.");
+            const newRatingWithId: Rating = {
+                ...rating,
+                id: `rating${Date.now()}`,
+                timestamp: Date.now(),
+            };
+            setRatings(prev => [...prev, newRatingWithId]);
+            resolve();
+
+        }, 1000); // 1 second delay
+    });
   };
   
   const addPairwiseComparison = (comparison: PairwiseComparison) => {

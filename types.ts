@@ -75,7 +75,7 @@ export interface IDataSource {
   deleteMte: (id: string) => void;
   addMTEToStudy: (studyId: string, mteId: string) => void;
   removeMTEFromStudy: (studyId: string, mteId: string) => void;
-  addRating: (rating: Omit<Rating, 'id' | 'timestamp'>) => void;
+  addRating: (rating: Omit<Rating, 'id' | 'timestamp'>) => Promise<void>;
   addPairwiseComparison: (comparison: PairwiseComparison) => void;
   hasPreviousRatingInStudy: (evaluatorId: string, studyId: string) => boolean;
 }

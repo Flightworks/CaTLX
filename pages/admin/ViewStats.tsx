@@ -6,6 +6,7 @@ import Card from '../../components/ui/Card';
 import Select from '../../components/ui/Select';
 import MteStatsCard from '../../components/admin/MteStatsCard';
 import MteDetailModal from '../../components/admin/MteDetailModal';
+import MteComparisonChart from '../../components/admin/MteComparisonChart';
 
 export interface AggregatedMteStats {
   mteId: string;
@@ -128,35 +129,37 @@ const ViewStats: React.FC = () => {
   }, [computedScores, filterStudyId, mtes, studies]);
 
   return (
-    <Card>
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
-        <h2 className="text-xl font-bold">MTE Statistics Dashboard</h2>
-        <div className="flex flex-col sm:flex-row gap-4 w-full md:w-auto">
-          <div className="w-full sm:w-64">
-            <Select label="Filter by Study" value={filterStudyId} onChange={(e) => setFilterStudyId(e.target.value)}>
-              <option value="">All Studies</option>
-              {studies.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+    <div className="space-y-6">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <h2 className="text-2xl font-bold text-white">MTE Statistics Dashboard</h2>
+        <div className="w-full sm:w-64">
+            <Select label="Filter by Study" id="study-filter" value={filterStudyId} onChange={(e) => setFilterStudyId(e.target.value)}>
+                <option value="">All Studies</option>
+                {studies.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
             </Select>
-          </div>
         </div>
       </div>
       
-      {aggregatedMteData.length > 0 ? (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {aggregatedMteData.map(stats => (
-                <MteStatsCard 
-                  key={stats.mteId} 
-                  mteStats={stats} 
-                  onClick={() => setSelectedMte(stats)}
-                />
-            ))}
-        </div>
-      ) : (
-         <div className="text-center py-16 text-nasa-gray-500">
-            <h3 className="text-lg font-semibold">No Matching Data Found</h3>
-            <p>There are no ratings for the selected criteria.</p>
-        </div>
-      )}
+      <MteComparisonChart data={aggregatedMteData} />
+
+      <Card title="Individual MTE Breakdown">
+        {aggregatedMteData.length > 0 ? (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {aggregatedMteData.map(stats => (
+                  <MteStatsCard 
+                    key={stats.mteId} 
+                    mteStats={stats} 
+                    onClick={() => setSelectedMte(stats)}
+                  />
+              ))}
+          </div>
+        ) : (
+           <div className="text-center py-16 text-nasa-gray-500">
+              <h3 className="text-lg font-semibold">No Matching Data Found</h3>
+              <p>There are no ratings for the selected criteria.</p>
+          </div>
+        )}
+      </Card>
 
       {selectedMte && (
         <MteDetailModal
@@ -165,7 +168,7 @@ const ViewStats: React.FC = () => {
           onClose={() => setSelectedMte(null)}
         />
       )}
-    </Card>
+    </div>
   );
 };
 
