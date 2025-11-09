@@ -6,8 +6,8 @@ import ManageEvaluators from './admin/ManageEvaluators';
 import ManageStudies from './admin/ManageStudies';
 import ViewStats from './admin/ViewStats';
 import ManageMTEs from './admin/ManageMTEs';
-import Card from '../../components/ui/Card';
-import Select from '../../components/ui/Select';
+import Card from '../components/ui/Card';
+import Select from '../components/ui/Select';
 
 type AdminTab = 'stats' | 'evaluators' | 'studies' | 'mtes';
 
