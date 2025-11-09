@@ -163,7 +163,9 @@ describe('ViewStats Component Logic and Display', () => {
     // Avg Overall Score: (50 + 100) / 2 = 75.0
     // Avg Raw Scores (for each dim): (50 + 100) / 2 = 75.0
 
-    const mte1Card = await screen.findByText(/Docking Maneuver/i);
+    const mte1HeadingCandidates = await screen.findAllByText(/Docking Maneuver/i);
+    const mte1Card = mte1HeadingCandidates.find(element => element.tagName === 'H3');
+    expect(mte1Card).toBeDefined();
     // Find the parent Card element to scope the queries
     const mte1Container = mte1Card.closest('[class*="bg-nasa-gray-900"]');
     expect(mte1Container).not.toBeNull();
@@ -173,8 +175,10 @@ describe('ViewStats Component Logic and Display', () => {
     expect(within(mte1Container!).queryByText('EVALS')).not.toBeNull();
     
     // Check average overall score. There will be multiple '75.0' texts, we need to find the main one.
-    const avgScoreElement = within(mte1Container!).queryByText('75.0');
-    expect(avgScoreElement).not.toBeNull();
+    const avgScoreElement = within(mte1Container!)
+      .getAllByText('75.0')
+      .find(element => element.className.includes('text-5xl'));
+    expect(avgScoreElement).toBeDefined();
     expect(avgScoreElement!.tagName).toBe('SPAN');
     expect(avgScoreElement!.className).toContain('text-5xl'); // Ensure it's the big score display
     
@@ -189,24 +193,35 @@ describe('ViewStats Component Logic and Display', () => {
     renderWithProviders(<ViewStats />);
 
     // Initially, all MTEs should be visible.
-    expect(screen.queryByText(/Docking Maneuver/i)).not.toBeNull();
-    expect(screen.queryByText(/System Anomaly/i)).not.toBeNull();
-    expect(screen.queryByText(/EVA Simulation/i)).not.toBeNull();
+    const getCardHeading = (pattern: RegExp) =>
+      screen.getAllByText(pattern).find(element => element.tagName === 'H3');
+
+    expect(getCardHeading(/Docking Maneuver/i)).toBeDefined();
+    expect(getCardHeading(/System Anomaly/i)).toBeDefined();
+    expect(getCardHeading(/EVA Simulation/i)).toBeDefined();
 
     // Select 'Alpha Test' (study1) from the dropdown
     const studyFilterDropdown = screen.getByLabelText(/Filter by Study/i);
     fireEvent.change(studyFilterDropdown, { target: { value: 'study1' } });
     
     // After filtering, only MTEs from study1 should be visible
-    expect(screen.queryByText(/Docking Maneuver/i)).not.toBeNull();
-    expect(screen.queryByText(/EVA Simulation/i)).not.toBeNull();
-    expect(screen.queryByText(/System Anomaly/i)).toBeNull(); // mte2 from study2 should be hidden
+    const filteredHeading = (pattern: RegExp) =>
+      screen.getAllByText(pattern).find(element => element.tagName === 'H3');
+
+    expect(filteredHeading(/Docking Maneuver/i)).toBeDefined();
+    expect(filteredHeading(/EVA Simulation/i)).toBeDefined();
+    expect(screen
+      .queryAllByText(/System Anomaly/i)
+      .some(element => element.tagName === 'H3'))
+      .toBe(false); // mte2 from study2 should be hidden
   });
 
   it('should display a "no data" message for MTEs without evaluations', async () => {
     renderWithProviders(<ViewStats />);
     
-    const mte3Card = await screen.findByText(/EVA Simulation/i);
+    const mte3HeadingCandidates = await screen.findAllByText(/EVA Simulation/i);
+    const mte3Card = mte3HeadingCandidates.find(element => element.tagName === 'H3');
+    expect(mte3Card).toBeDefined();
     const mte3Container = mte3Card.closest('[class*="bg-nasa-gray-900"]');
     expect(mte3Container).not.toBeNull();
     

@@ -1,6 +1,6 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useId } from 'react';
 import { useData, useSession } from '../contexts/AppContext';
-import { TLXDimension, Rating, MTE, Study, ComputedTLXScore } from '../types';
+import { TLXDimension, Rating, MTE, ComputedTLXScore } from '../types';
 import { TLX_DIMENSIONS_INFO, PAIRWISE_COMBINATIONS, DEFAULT_WEIGHTS } from '../constants';
 import TlxSlider from '../components/ui/TlxSlider';
 import Button from '../components/ui/Button';
@@ -8,6 +8,7 @@ import Card from '../components/ui/Card';
 import PairwiseWeightsDisplay from '../components/ui/PairwiseWeightsDisplay';
 import ToggleSwitch from '../components/ui/ToggleSwitch';
 import Select from '../components/ui/Select';
+import Modal from '../components/ui/Modal';
 
 const initialScores = TLX_DIMENSIONS_INFO.reduce((acc, dim) => {
   acc[dim.id] = 50;
@@ -34,6 +35,86 @@ const getScoreColor = (score: number): string => {
   }
 
   return `rgb(${r}, ${g}, ${b})`;
+};
+
+const formatMteDisplayName = (mte: MTE | null | undefined) => {
+  if (!mte) {
+    return 'Unknown';
+  }
+
+  return mte.refNumber?.trim()
+    ? `[${mte.refNumber.trim()}] ${mte.name}`
+    : mte.name;
+};
+
+const MTEEditForm: React.FC<{
+  mte: MTE;
+  onSave: (updatedMte: MTE) => void;
+  onCancel: () => void;
+}> = ({ mte, onSave, onCancel }) => {
+  const [name, setName] = useState(mte.name);
+  const [description, setDescription] = useState(mte.description);
+  const [refNumber, setRefNumber] = useState(mte.refNumber);
+  const nameInputId = useId();
+  const refInputId = useId();
+  const descriptionInputId = useId();
+
+  useEffect(() => {
+    setName(mte.name);
+    setDescription(mte.description);
+    setRefNumber(mte.refNumber);
+  }, [mte]);
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    onSave({
+      ...mte,
+      name: name.trim(),
+      description: description.trim(),
+      refNumber: refNumber.trim(),
+    });
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-4">
+      <div>
+        <label htmlFor={nameInputId} className="block text-sm font-medium text-nasa-gray-300">Name</label>
+        <input
+          type="text"
+          id={nameInputId}
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          className="mt-1 block w-full bg-nasa-gray-700 border-nasa-gray-600 rounded-md shadow-sm focus:ring-nasa-blue focus:border-nasa-blue text-white"
+          required
+        />
+      </div>
+      <div>
+        <label htmlFor={refInputId} className="block text-sm font-medium text-nasa-gray-300">Reference Number (optional)</label>
+        <input
+          type="text"
+          id={refInputId}
+          value={refNumber}
+          onChange={(e) => setRefNumber(e.target.value)}
+          className="mt-1 block w-full bg-nasa-gray-700 border-nasa-gray-600 rounded-md shadow-sm focus:ring-nasa-blue focus:border-nasa-blue text-white"
+        />
+      </div>
+      <div>
+        <label htmlFor={descriptionInputId} className="block text-sm font-medium text-nasa-gray-300">Description</label>
+        <textarea
+          id={descriptionInputId}
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+          className="mt-1 block w-full bg-nasa-gray-700 border-nasa-gray-600 rounded-md shadow-sm focus:ring-nasa-blue focus:border-nasa-blue text-white"
+          required
+          rows={4}
+        />
+      </div>
+      <div className="flex justify-end space-x-2">
+        <Button type="button" variant="secondary" onClick={onCancel}>Cancel</Button>
+        <Button type="submit">Save Changes</Button>
+      </div>
+    </form>
+  );
 };
 
 const PairwiseComparisonView: React.FC<{
@@ -88,7 +169,12 @@ const PairwiseComparisonView: React.FC<{
       className="w-full sm:w-1/2 p-6 bg-nasa-gray-900 rounded-lg cursor-pointer transition-all duration-200 ease-in-out hover:bg-nasa-light-blue hover:shadow-2xl hover:scale-105 border-2 border-nasa-gray-700 hover:border-nasa-blue"
       role="button"
       tabIndex={0}
-      onKeyPress={(e) => { if(e.key === 'Enter' || e.key === ' ') onSelect() }}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          onSelect();
+        }
+      }}
       aria-label={`Select ${dimension.title}`}
     >
       <h3 className="text-xl font-bold text-center text-white">{dimension.title}</h3>
@@ -166,7 +252,7 @@ const AssessmentSummary: React.FC<{ onReturnToTasks: () => void }> = ({ onReturn
                 studyName: study?.name || 'Unknown',
                 studyId: study?.id || '',
                 mteId: rating.mteId,
-                mteName: mte ? `[${mte.refNumber}] ${mte.name}` : 'Unknown',
+                mteName: formatMteDisplayName(mte),
                 rawScores: rating.scores,
                 weights,
                 weightedScores,
@@ -232,7 +318,7 @@ const AssessmentSummary: React.FC<{ onReturnToTasks: () => void }> = ({ onReturn
 
 
 const AssessmentRunner: React.FC = () => {
-    const { studies, mtes, ratings, addRating, addPairwiseComparison, pairwiseComparisons } = useData();
+    const { studies, mtes, ratings, addRating, addPairwiseComparison, pairwiseComparisons, updateMte } = useData();
     const { selectedEvaluatorId, selectedStudyId } = useSession();
     
     const storageKey = useMemo(() => `ratingMode_${selectedEvaluatorId}`, [selectedEvaluatorId]);
@@ -249,6 +335,8 @@ const AssessmentRunner: React.FC = () => {
     const [currentStep, setCurrentStep] = useState(0);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [submissionError, setSubmissionError] = useState<string | null>(null);
+    const [isMteModalOpen, setIsMteModalOpen] = useState(false);
+    const [editingMte, setEditingMte] = useState<MTE | null>(null);
 
     const selectedStudy = useMemo(() => studies.find(s => s.id === selectedStudyId), [studies, selectedStudyId]);
     
@@ -348,6 +436,26 @@ const AssessmentRunner: React.FC = () => {
         }
     };
 
+    const handleOpenMteModal = (mte: MTE) => {
+        setEditingMte(mte);
+        setIsMteModalOpen(true);
+    };
+
+    const handleCloseMteModal = () => {
+        setIsMteModalOpen(false);
+        setEditingMte(null);
+    };
+
+    const handleSaveMte = (updatedMte: MTE) => {
+        updateMte(updatedMte);
+        setNotification(`MTE "${updatedMte.name}" updated successfully.`);
+        if (selectedMte && selectedMte.id === updatedMte.id) {
+            setSelectedMte(updatedMte);
+        }
+        handleCloseMteModal();
+        setTimeout(() => setNotification(''), 3000);
+    };
+
      const handleResetWeights = () => {
         if (selectedEvaluatorId && selectedStudyId) {
             addPairwiseComparison({
@@ -376,7 +484,7 @@ const AssessmentRunner: React.FC = () => {
             <Card>
                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
                     <div>
-                        <h3 className="text-lg leading-6 font-medium text-white">{`Rating for: [${selectedMte.refNumber}] ${selectedMte.name}`}</h3>
+                        <h3 className="text-lg leading-6 font-medium text-white">{`Rating for: ${formatMteDisplayName(selectedMte)}`}</h3>
                         <p className="mt-1 text-sm text-nasa-gray-400">{selectedMte.description}</p>
                     </div>
                     <ToggleSwitch
@@ -497,6 +605,19 @@ const AssessmentRunner: React.FC = () => {
 
     return (
          <>
+            {editingMte && (
+                <Modal
+                    isOpen={isMteModalOpen}
+                    onClose={handleCloseMteModal}
+                    title={`Edit Mission Task Element – ${formatMteDisplayName(editingMte)}`}
+                >
+                    <MTEEditForm
+                        mte={editingMte}
+                        onSave={handleSaveMte}
+                        onCancel={handleCloseMteModal}
+                    />
+                </Modal>
+            )}
             <div className="mb-6">
                 <Card title="Current Study Dimension Weights">
                     <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
@@ -516,7 +637,7 @@ const AssessmentRunner: React.FC = () => {
             </div>
             <Card title={`Mission Task Elements for: ${selectedStudy.name}`}>
                  {notification && <div className="mb-4 p-3 rounded-md bg-green-500 bg-opacity-20 text-green-300 text-sm">{notification}</div>}
-                 <p className="text-nasa-gray-300 mb-4">Select a task to begin rating.</p>
+                 <p className="text-nasa-gray-300 mb-4">Select a task to begin rating. Click a task card to edit its details.</p>
                 <div className="space-y-3">
                     {mtesInStudy.map(mte => {
                         const isRated = ratedMteIds.has(mte.id);
@@ -535,11 +656,27 @@ const AssessmentRunner: React.FC = () => {
                             const score = totalWeight > 0 ? totalWeightedScoreSum / totalWeight : 0;
 
                             return (
-                                <div key={mte.id} className="p-4 bg-nasa-gray-900 rounded-md">
+                                <div
+                                    key={mte.id}
+                                    className="p-4 bg-nasa-gray-900 rounded-md cursor-pointer hover:bg-nasa-gray-800 focus:outline-none focus:ring-2 focus:ring-nasa-blue transition-colors"
+                                    role="button"
+                                    tabIndex={0}
+                                    aria-label={`Edit ${mte.name} task details`}
+                                    onClick={() => handleOpenMteModal(mte)}
+                                    onKeyDown={(e) => {
+                                        if (e.key === 'Enter' || e.key === ' ') {
+                                            e.preventDefault();
+                                            handleOpenMteModal(mte);
+                                        }
+                                    }}
+                                >
                                     <div className="flex flex-col sm:flex-row justify-between sm:items-start gap-4 mb-4">
                                         <div className="w-full">
                                             <h4 className="font-semibold text-white">
-                                                <span className="font-mono text-sm text-nasa-gray-400 mr-2">[{mte.refNumber}]</span>{mte.name}
+                                                {mte.refNumber?.trim() && (
+                                                    <span className="font-mono text-sm text-nasa-gray-400 mr-2">[{mte.refNumber.trim()}]</span>
+                                                )}
+                                                {mte.name}
                                             </h4>
                                             <p className="text-sm text-nasa-gray-400">{mte.description}</p>
                                         </div>
@@ -573,15 +710,39 @@ const AssessmentRunner: React.FC = () => {
                             );
                         } else {
                             return (
-                                <div key={mte.id} className="flex flex-col sm:flex-row justify-between items-start sm:items-center p-4 bg-nasa-gray-900 rounded-md gap-4">
+                                <div
+                                    key={mte.id}
+                                    className="flex flex-col sm:flex-row justify-between items-start sm:items-center p-4 bg-nasa-gray-900 rounded-md gap-4 cursor-pointer hover:bg-nasa-gray-800 focus:outline-none focus:ring-2 focus:ring-nasa-blue transition-colors"
+                                    role="button"
+                                    tabIndex={0}
+                                    aria-label={`Edit ${mte.name} task details`}
+                                    onClick={() => handleOpenMteModal(mte)}
+                                    onKeyDown={(e) => {
+                                        if (e.key === 'Enter' || e.key === ' ') {
+                                            e.preventDefault();
+                                            handleOpenMteModal(mte);
+                                        }
+                                    }}
+                                >
                                     <div className="w-full">
                                         <h4 className="font-semibold text-white">
-                                            <span className="font-mono text-sm text-nasa-gray-400 mr-2">[{mte.refNumber}]</span>{mte.name}
+                                            {mte.refNumber?.trim() && (
+                                                <span className="font-mono text-sm text-nasa-gray-400 mr-2">[{mte.refNumber.trim()}]</span>
+                                            )}
+                                            {mte.name}
                                         </h4>
                                         <p className="text-sm text-nasa-gray-400">{mte.description}</p>
                                     </div>
                                     <div className="flex-shrink-0 w-full sm:w-auto">
-                                        <Button onClick={() => { setSelectedMte(mte); setCurrentStep(0); }} size="sm" className="w-full sm:w-auto">
+                                        <Button
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                setSelectedMte(mte);
+                                                setCurrentStep(0);
+                                            }}
+                                            size="sm"
+                                            className="w-full sm:w-auto"
+                                        >
                                             Rate Task
                                         </Button>
                                     </div>
