@@ -1,4 +1,4 @@
-const CACHE_NAME = 'catlx-cache-v3';
+const CACHE_NAME = 'catlx-cache-v4';
 
 // Pre-cache the essential parts of the app shell.
 const ASSETS_TO_CACHE = [
@@ -29,7 +29,7 @@ const ASSETS_TO_CACHE = [
   '/pages/AdminDashboardPage.tsx',
   '/pages/AboutPage.tsx',
   '/pages/admin/ManageEvaluators.tsx',
-  '/pages/admin/ManageStudies.tsx',
+  '/pages/admin/ManageProjects.tsx',
   '/pages/admin/ViewStats.tsx',
   '/pages/admin/ManageMTEs.tsx',
   '/components/admin/MteStatsCard.tsx',
@@ -43,7 +43,11 @@ self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
       console.log('Service Worker: Caching App Shell');
-      return cache.addAll(ASSETS_TO_CACHE);
+      // Use addAll with a new Request object with cache: 'reload' to bypass HTTP cache.
+      const promises = ASSETS_TO_CACHE.map((asset) => {
+        return cache.add(new Request(asset, { cache: 'reload' }));
+      });
+      return Promise.all(promises);
     })
   );
 });
@@ -71,6 +75,15 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
   // We only want to cache GET requests.
   if (event.request.method !== 'GET') {
+    return;
+  }
+
+  // For navigation requests, use a network-first strategy to ensure
+  // the user gets the latest version of the app shell.
+  if (event.request.mode === 'navigate') {
+    event.respondWith(
+      fetch(event.request).catch(() => caches.match('/index.html'))
+    );
     return;
   }
 

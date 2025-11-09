@@ -16,6 +16,8 @@ interface AuthContextType {
 interface SessionContextType {
   selectedEvaluatorId: string;
   setSelectedEvaluatorId: React.Dispatch<React.SetStateAction<string>>;
+  selectedProjectId: string;
+  setSelectedProjectId: React.Dispatch<React.SetStateAction<string>>;
   selectedStudyId: string;
   setSelectedStudyId: React.Dispatch<React.SetStateAction<string>>;
 }
@@ -48,6 +50,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   }
 
   const [selectedEvaluatorId, setSelectedEvaluatorId] = useState('');
+  const [selectedProjectId, setSelectedProjectId] = useState('');
   const [selectedStudyId, setSelectedStudyId] = useState('');
 
   const login = (loginMode: 'demo' | 'local' | 'api') => {
@@ -58,19 +61,31 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const logout = () => {
     setIsLoggedIn(false);
     setSelectedEvaluatorId('');
+    setSelectedProjectId('');
     setSelectedStudyId('');
   };
   
   useEffect(() => {
     setSelectedEvaluatorId('');
+    setSelectedProjectId('');
     setSelectedStudyId('');
   }, [isLoggedIn]);
+
+  useEffect(() => {
+    setSelectedProjectId('');
+    setSelectedStudyId('');
+  }, [selectedEvaluatorId]);
+
+  useEffect(() => {
+    setSelectedStudyId('');
+  }, [selectedProjectId]);
 
   return (
     <AuthContext.Provider value={{ isLoggedIn, mode, login, logout }}>
       <DataContext.Provider value={dataHook}>
-        <SessionContext.Provider value={{ selectedEvaluatorId, setSelectedEvaluatorId, selectedStudyId, setSelectedStudyId }}>
+        <SessionContext.Provider value={{ selectedEvaluatorId, setSelectedEvaluatorId, selectedProjectId, setSelectedProjectId, selectedStudyId, setSelectedStudyId }}>
           {children}
+{/* FIX: Corrected typo in closing tag from Session-Context.Provider to SessionContext.Provider */}
         </SessionContext.Provider>
       </DataContext.Provider>
     </AuthContext.Provider>

@@ -250,11 +250,6 @@ const AssessmentRunner: React.FC = () => {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [submissionError, setSubmissionError] = useState<string | null>(null);
 
-    const totalSteps = TLX_DIMENSIONS_INFO.length + 1;
-    const isCommentsStep = currentStep >= TLX_DIMENSIONS_INFO.length;
-    const currentStepNumber = Math.min(currentStep + 1, totalSteps);
-    const currentDimension = !isCommentsStep ? TLX_DIMENSIONS_INFO[currentStep] : null;
-
     const selectedStudy = useMemo(() => studies.find(s => s.id === selectedStudyId), [studies, selectedStudyId]);
     
     const mtesInStudy = useMemo(() => {
@@ -432,39 +427,39 @@ const AssessmentRunner: React.FC = () => {
                             </div>
                         </>
                     ) : (
-                        <div className="space-y-4">
-                            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
-                                <span className="text-sm font-medium text-nasa-gray-300">Step {currentStepNumber} of {totalSteps}</span>
-                                <span className="text-xs uppercase tracking-wide text-nasa-gray-500">
-                                    {isCommentsStep ? 'Comments' : currentDimension?.title}
-                                </span>
-                            </div>
-                            {isCommentsStep && (
-                                <div className="p-4 bg-nasa-gray-900 rounded-lg">
-                                    <h3 className="text-lg font-semibold text-white">Optional Comments</h3>
-                                    <p className="text-sm text-nasa-gray-400 my-2">Provide any additional qualitative feedback about your experience performing this task. This can include sources of frustration, moments of high demand, or anything else you feel is relevant.</p>
-                                    <textarea
-                                        id="comments"
-                                        rows={5}
-                                        className="mt-1 block w-full bg-nasa-gray-700 border-nasa-gray-600 rounded-md shadow-sm focus:ring-nasa-blue focus:border-nasa-blue text-white"
-                                        value={comments}
-                                        onChange={(e) => setComments(e.target.value)}
-                                        placeholder="Add any additional notes about the workload for this task..."
-                                        autoFocus
-                                    />
-                                </div>
-                            )}
-                            {!isCommentsStep && currentDimension && (
-                                <TlxSlider
-                                    key={currentDimension.id}
-                                    title={currentDimension.title}
-                                    description={currentDimension.description}
-                                    lowAnchor={currentDimension.lowAnchor}
-                                    highAnchor={currentDimension.highAnchor}
-                                    value={scores[currentDimension.id]}
-                                    onChange={(val) => handleScoreChange(currentDimension.id, val)}
-                                />
-                            )}
+                        <div>
+                            {(() => {
+                                if (currentStep < TLX_DIMENSIONS_INFO.length) {
+                                    const currentDimension = TLX_DIMENSIONS_INFO[currentStep];
+                                    return (
+                                        <TlxSlider
+                                            key={currentDimension.id}
+                                            title={currentDimension.title}
+                                            description={currentDimension.description}
+                                            lowAnchor={currentDimension.lowAnchor}
+                                            highAnchor={currentDimension.highAnchor}
+                                            value={scores[currentDimension.id]}
+                                            onChange={(val) => handleScoreChange(currentDimension.id, val)}
+                                        />
+                                    );
+                                } else {
+                                    return (
+                                        <div className="p-4 bg-nasa-gray-900 rounded-lg">
+                                            <h3 className="text-lg font-semibold text-white">Optional Comments</h3>
+                                            <p className="text-sm text-nasa-gray-400 my-2">Provide any additional qualitative feedback about your experience performing this task. This can include sources of frustration, moments of high demand, or anything else you feel is relevant.</p>
+                                            <textarea
+                                                id="comments"
+                                                rows={5}
+                                                className="mt-1 block w-full bg-nasa-gray-700 border-nasa-gray-600 rounded-md shadow-sm focus:ring-nasa-blue focus:border-nasa-blue text-white"
+                                                value={comments}
+                                                onChange={(e) => setComments(e.target.value)}
+                                                placeholder="Add any additional notes about the workload for this task..."
+                                                autoFocus
+                                            />
+                                        </div>
+                                    );
+                                }
+                            })()}
                         </div>
                     )}
                     
@@ -482,11 +477,11 @@ const AssessmentRunner: React.FC = () => {
                                 </Button>
                                 {currentStep < TLX_DIMENSIONS_INFO.length ? (
                                     <Button type="button" onClick={() => setCurrentStep(prev => prev + 1)} disabled={isSubmitting} className="w-1/2 sm:w-auto">
-                                        Next
+                                        Next ({currentStep + 1}/{TLX_DIMENSIONS_INFO.length + 1})
                                     </Button>
                                 ) : (
                                     <Button type="submit" className="w-1/2 sm:w-auto" disabled={isSubmitting}>
-                                        {isSubmitting ? 'Submitting...' : `Submit Rating (Step ${totalSteps} of ${totalSteps})`}
+                                        {isSubmitting ? 'Submitting...' : 'Submit Rating'}
                                     </Button>
                                 )}
                             </div>
@@ -602,46 +597,62 @@ const AssessmentRunner: React.FC = () => {
 };
 
 const SessionSelector = () => {
-  const { evaluators, studies } = useData();
-  const { selectedEvaluatorId, setSelectedEvaluatorId, selectedStudyId, setSelectedStudyId } = useSession();
+  const { evaluators, studies, projects } = useData();
+  const { 
+    selectedEvaluatorId, setSelectedEvaluatorId, 
+    selectedProjectId, setSelectedProjectId,
+    selectedStudyId, setSelectedStudyId 
+  } = useSession();
 
-  const handleEvaluatorChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    setSelectedEvaluatorId(e.target.value);
-    setSelectedStudyId(''); // Reset study when evaluator changes
-  };
+  const availableProjects = useMemo(() => {
+    if (!selectedEvaluatorId) return [];
+    return projects.filter(p => p.memberIds.includes(selectedEvaluatorId));
+  }, [projects, selectedEvaluatorId]);
 
-  const handleStudyChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    setSelectedStudyId(e.target.value);
-  };
+  const availableStudies = useMemo(() => {
+    if (!selectedProjectId) return [];
+    return studies.filter(s => s.projectId === selectedProjectId);
+  }, [studies, selectedProjectId]);
   
   return (
     <Card>
       <div className="flex flex-col sm:flex-row items-center gap-x-6 gap-y-4">
         <div className="flex-shrink-0">
           <h2 className="text-lg font-semibold text-white">Assessment Session</h2>
-          <p className="text-sm text-nasa-gray-400">Select an evaluator and study to begin.</p>
+          <p className="text-sm text-nasa-gray-400">Select an evaluator, project, and study.</p>
         </div>
-        <div className="w-full flex-grow grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="w-full flex-grow grid grid-cols-1 sm:grid-cols-3 gap-4">
           <Select
             label="Evaluator"
             id="evaluator-select"
             value={selectedEvaluatorId}
-            onChange={handleEvaluatorChange}
+            onChange={(e) => setSelectedEvaluatorId(e.target.value)}
             aria-label="Select Evaluator"
           >
             <option value="">-- Choose Evaluator --</option>
             {evaluators.map(e => <option key={e.id} value={e.id}>{e.name}</option>)}
           </Select>
           <Select
+            label="Project"
+            id="project-select"
+            value={selectedProjectId}
+            onChange={(e) => setSelectedProjectId(e.target.value)}
+            disabled={!selectedEvaluatorId}
+            aria-label="Select Project"
+          >
+            <option value="">-- Choose Project --</option>
+            {availableProjects.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+          </Select>
+          <Select
             label="Study"
             id="study-select"
             value={selectedStudyId}
-            onChange={handleStudyChange}
-            disabled={!selectedEvaluatorId}
+            onChange={(e) => setSelectedStudyId(e.target.value)}
+            disabled={!selectedProjectId}
             aria-label="Select Study"
           >
             <option value="">-- Choose Study --</option>
-            {studies.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+            {availableStudies.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
           </Select>
         </div>
       </div>
@@ -651,16 +662,16 @@ const SessionSelector = () => {
 
 
 const EvaluatorPage: React.FC = () => {
-    const { selectedEvaluatorId, selectedStudyId } = useSession();
+    const { selectedStudyId } = useSession();
 
     const renderContent = () => {
-        if (!selectedEvaluatorId || !selectedStudyId) {
+        if (!selectedStudyId) {
             return (
                 <Card>
                     <div className="text-center py-8">
                         <h2 className="text-xl font-semibold mb-2">Welcome to the Evaluations Dashboard</h2>
                         <p className="text-lg text-nasa-gray-300">
-                           Please select an evaluator and a study from the panel above to begin an assessment.
+                           Please select an evaluator, project, and study from the panel above to begin an assessment.
                         </p>
                          <p className="text-sm text-nasa-gray-400 mt-4">If no evaluators are available, please go to the Admin Dashboard to create one.</p>
                     </div>

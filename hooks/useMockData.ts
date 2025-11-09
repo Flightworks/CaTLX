@@ -1,13 +1,37 @@
 import { useState } from 'react';
-import { Evaluator, Study, MTE, Rating, PairwiseComparison, TLXDimension, IDataSource } from '../types';
+import { Evaluator, Study, MTE, Rating, PairwiseComparison, TLXDimension, IDataSource, Project } from '../types';
 import { DEFAULT_WEIGHTS } from '../constants';
 
 export const INITIAL_EVALUATORS: Evaluator[] = [
-  { id: 'eval1', name: 'John Glenn', email: 'john.g@nasa.gov' },
-  { id: 'eval2', name: 'Sally Ride', email: 'sally.r@nasa.gov' },
-  { id: 'eval3', name: 'Neil Armstrong', email: 'neil.a@nasa.gov' },
-  { id: 'eval4', name: 'Mae Jemison', email: 'mae.j@nasa.gov' },
-  { id: 'eval5', name: 'Chris Hadfield', email: 'chris.h@nasa.gov' },
+  { id: 'eval1', name: 'John Glenn', quality: 'Commander', company: 'NASA' },
+  { id: 'eval2', name: 'Sally Ride', quality: 'Mission Specialist', company: 'NASA' },
+  { id: 'eval3', name: 'Neil Armstrong', quality: 'Commander', company: 'NASA' },
+  { id: 'eval4', name: 'Mae Jemison', quality: 'Science Mission Specialist', company: 'NASA' },
+  { id: 'eval5', name: 'Chris Hadfield', quality: 'Commander', company: 'CSA' },
+];
+
+export const INITIAL_PROJECTS: Project[] = [
+  {
+    id: 'proj1',
+    name: 'Artemis Program',
+    description: 'All studies related to the Artemis missions to the Moon.',
+    ownerId: 'eval3',
+    memberIds: ['eval1', 'eval2', 'eval3'],
+  },
+  {
+    id: 'proj2',
+    name: 'ISS Operations & Maintenance',
+    description: 'Studies focusing on International Space Station long-duration mission tasks.',
+    ownerId: 'eval2',
+    memberIds: ['eval2', 'eval4', 'eval5'],
+  },
+  {
+    id: 'proj_eval5_personal',
+    name: "Chris Hadfield's Personal Project",
+    description: "Personal studies and evaluations.",
+    ownerId: 'eval5',
+    memberIds: ['eval5'],
+  }
 ];
 
 export const INITIAL_MTES_CATALOG: MTE[] = [
@@ -27,18 +51,21 @@ export const INITIAL_STUDIES: Study[] = [
     name: 'Artemis II Mission Prep',
     description: 'Preparation tasks for the Artemis II lunar mission.',
     mteIds: ['mte1', 'mte2', 'mte3', 'mte7'],
+    projectId: 'proj1',
   },
   {
     id: 'study2',
     name: 'ISS Maintenance Protocols',
     description: 'Evaluating new maintenance protocols aboard the ISS.',
     mteIds: ['mte4', 'mte5'],
+    projectId: 'proj2',
   },
   {
     id: 'study3',
     name: 'Lunar Gateway Operations',
     description: 'Tasks related to the assembly and operation of the Lunar Gateway station.',
     mteIds: ['mte6', 'mte8'],
+    projectId: 'proj1',
   }
 ];
 
@@ -169,14 +196,55 @@ export const INITIAL_PAIRWISE_COMPARISONS: PairwiseComparison[] = [
 
 
 const useMockData = (): IDataSource => {
+  const [projects, setProjects] = useState<Project[]>(INITIAL_PROJECTS);
   const [evaluators, setEvaluators] = useState<Evaluator[]>(INITIAL_EVALUATORS);
   const [studies, setStudies] = useState<Study[]>(INITIAL_STUDIES);
   const [mtes, setMtes] = useState<MTE[]>(INITIAL_MTES_CATALOG);
   const [ratings, setRatings] = useState<Rating[]>(INITIAL_RATINGS);
   const [pairwiseComparisons, setPairwiseComparisons] = useState<PairwiseComparison[]>(INITIAL_PAIRWISE_COMPARISONS);
+
+  const addProject = (project: Omit<Project, 'id' | 'ownerId' | 'memberIds'>, ownerId: string) => {
+    const newProject: Project = {
+      ...project,
+      id: `proj${Date.now()}`,
+      ownerId: ownerId,
+      memberIds: [ownerId]
+    };
+    setProjects(prev => [...prev, newProject]);
+  };
+
+  const updateProject = (updatedProject: Project) => {
+    setProjects(prev => prev.map(p => p.id === updatedProject.id ? updatedProject : p));
+  };
   
+  const deleteProject = (id: string) => {
+    setProjects(prev => prev.filter(p => p.id !== id));
+    // Also delete associated studies
+    setStudies(prev => prev.filter(s => s.projectId !== id));
+  };
+
+  const addMemberToProject = (projectId: string, evaluatorId: string) => {
+    setProjects(prev => prev.map(p => {
+      if (p.id === projectId && !p.memberIds.includes(evaluatorId)) {
+        return { ...p, memberIds: [...p.memberIds, evaluatorId] };
+      }
+      return p;
+    }));
+  };
+
+  const removeMemberFromProject = (projectId: string, evaluatorId: string) => {
+    setProjects(prev => prev.map(p => {
+      if (p.id === projectId) {
+        return { ...p, memberIds: p.memberIds.filter(id => id !== evaluatorId) };
+      }
+      return p;
+    }));
+  };
+
   const addEvaluator = (evaluator: Omit<Evaluator, 'id'>) => {
-    setEvaluators(prev => [...prev, { ...evaluator, id: `eval${Date.now()}` }]);
+    const newEvaluator = { ...evaluator, id: `eval${Date.now()}` };
+    setEvaluators(prev => [...prev, newEvaluator]);
+    addProject({ name: `${newEvaluator.name}'s Personal Project`, description: `Personal studies for ${newEvaluator.name}.`}, newEvaluator.id);
   };
   
   const updateEvaluator = (updatedEvaluator: Evaluator) => {
@@ -258,7 +326,8 @@ const useMockData = (): IDataSource => {
   };
   
   return { 
-    evaluators, studies, mtes, ratings, pairwiseComparisons,
+    projects, evaluators, studies, mtes, ratings, pairwiseComparisons,
+    addProject, updateProject, deleteProject, addMemberToProject, removeMemberFromProject,
     addEvaluator, updateEvaluator, deleteEvaluator,
     addStudy, updateStudy, deleteStudy, addMte, updateMte, deleteMte, addMTEToStudy, removeMTEFromStudy,
     addRating, addPairwiseComparison, hasPreviousRatingInStudy

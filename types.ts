@@ -7,10 +7,19 @@ export enum TLXDimension {
   FRUSTRATION = 'Frustration',
 }
 
+export interface Project {
+  id: string;
+  name: string;
+  description: string;
+  ownerId: string;
+  memberIds: string[];
+}
+
 export interface Evaluator {
   id: string;
   name: string;
-  email: string;
+  quality: string;
+  company: string;
 }
 
 export interface MTE {
@@ -25,6 +34,7 @@ export interface Study {
   name: string;
   description: string;
   mteIds: string[];
+  projectId: string;
 }
 
 export interface PairwiseComparison {
@@ -59,11 +69,19 @@ export interface ComputedTLXScore {
 }
 
 export interface IDataSource {
+  projects: Project[];
   evaluators: Evaluator[];
   studies: Study[];
   mtes: MTE[];
   ratings: Rating[];
   pairwiseComparisons: PairwiseComparison[];
+
+  addProject: (project: Omit<Project, 'id' | 'ownerId' | 'memberIds'>, ownerId: string) => void;
+  updateProject: (project: Project) => void;
+  deleteProject: (id: string) => void;
+  addMemberToProject: (projectId: string, evaluatorId: string) => void;
+  removeMemberFromProject: (projectId: string, evaluatorId: string) => void;
+
   addEvaluator: (evaluator: Omit<Evaluator, 'id'>) => void;
   updateEvaluator: (evaluator: Evaluator) => void;
   deleteEvaluator: (id: string) => void;

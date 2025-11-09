@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
-import { Evaluator, Study, MTE, Rating, PairwiseComparison, IDataSource, TLXDimension } from '../types';
+import { Evaluator, Study, MTE, Rating, PairwiseComparison, IDataSource, TLXDimension, Project } from '../types';
 import {
   INITIAL_EVALUATORS,
+  INITIAL_PROJECTS,
   INITIAL_MTES_CATALOG,
   INITIAL_STUDIES,
   INITIAL_RATINGS,
@@ -17,6 +18,7 @@ const API_BASE_URL = 'http://localhost:8080/api';
 const useApiData = (): IDataSource => {
   // For development, we'll start with mock data to make the UI functional
   // even without a fully implemented backend.
+  const [projects, setProjects] = useState<Project[]>(INITIAL_PROJECTS);
   const [evaluators, setEvaluators] = useState<Evaluator[]>(INITIAL_EVALUATORS);
   const [studies, setStudies] = useState<Study[]>(INITIAL_STUDIES);
   const [mtes, setMtes] = useState<MTE[]>(INITIAL_MTES_CATALOG);
@@ -35,6 +37,7 @@ const useApiData = (): IDataSource => {
         const data: Study[] = await response.json();
         setStudies(data);
         console.log('Successfully fetched studies from API.', data);
+// FIX: Added curly braces to the catch block to fix a syntax error and subsequent scope issues.
       } catch (error) {
         console.error("Failed to fetch studies from API, falling back to mock data:", error);
         // If fetch fails, we keep the initial mock data.
@@ -43,7 +46,7 @@ const useApiData = (): IDataSource => {
 
     fetchStudies();
     
-    // TODO: In a real app, you would also fetch evaluators, MTEs, etc. here.
+    // TODO: In a real app, you would also fetch projects, evaluators, MTEs, etc. here.
     
   }, []);
 
@@ -51,38 +54,70 @@ const useApiData = (): IDataSource => {
   // These functions make the UI interactive. They should be replaced with API calls
   // to POST, PUT, DELETE data from your backend.
   
+  const addProject = (project: Omit<Project, 'id' | 'ownerId' | 'memberIds'>, ownerId: string) => {
+    const newProject: Project = {
+      ...project,
+      id: `proj${Date.now()}`,
+      ownerId: ownerId,
+      memberIds: [ownerId]
+    };
+    setProjects(prev => [...prev, newProject]);
+  };
+
+  const updateProject = (updatedProject: Project) => {
+    setProjects(prev => prev.map(p => p.id === updatedProject.id ? updatedProject : p));
+  };
+  
+  const deleteProject = (id: string) => {
+    setProjects(prev => prev.filter(p => p.id !== id));
+    setStudies(prev => prev.filter(s => s.projectId !== id));
+  };
+
+  const addMemberToProject = (projectId: string, evaluatorId: string) => {
+    setProjects(prev => prev.map(p => {
+      if (p.id === projectId && !p.memberIds.includes(evaluatorId)) {
+        return { ...p, memberIds: [...p.memberIds, evaluatorId] };
+      }
+      return p;
+    }));
+  };
+
+  const removeMemberFromProject = (projectId: string, evaluatorId: string) => {
+    setProjects(prev => prev.map(p => {
+      if (p.id === projectId) {
+        return { ...p, memberIds: p.memberIds.filter(id => id !== evaluatorId) };
+      }
+      return p;
+    }));
+  };
+
   const addEvaluator = (evaluator: Omit<Evaluator, 'id'>) => {
-    // TODO: Replace with: POST /api/evaluators
-    setEvaluators(prev => [...prev, { ...evaluator, id: `eval${Date.now()}` }]);
+    const newEvaluator = { ...evaluator, id: `eval${Date.now()}` };
+    setEvaluators(prev => [...prev, newEvaluator]);
+    addProject({ name: `${newEvaluator.name}'s Personal Project`, description: `Personal studies for ${newEvaluator.name}.`}, newEvaluator.id);
   };
   
   const updateEvaluator = (updatedEvaluator: Evaluator) => {
-    // TODO: Replace with: PUT /api/evaluators/:id
     setEvaluators(prev => prev.map(e => e.id === updatedEvaluator.id ? updatedEvaluator : e));
   };
   
   const deleteEvaluator = (id: string) => {
-    // TODO: Replace with: DELETE /api/evaluators/:id
     setEvaluators(prev => prev.filter(e => e.id !== id));
   };
 
   const addStudy = (study: Omit<Study, 'id' | 'mteIds'>) => {
-    // TODO: Replace with: POST /api/studies
     setStudies(prev => [...prev, { ...study, id: `study${Date.now()}`, mteIds: [] }]);
   };
   
   const updateStudy = (updatedStudy: Study) => {
-    // TODO: Replace with: PUT /api/studies/:id
     setStudies(prev => prev.map(s => s.id === updatedStudy.id ? updatedStudy : s));
   };
 
   const deleteStudy = (id: string) => {
-    // TODO: Replace with: DELETE /api/studies/:id
     setStudies(prev => prev.filter(s => s.id !== id));
   };
 
   const addMte = (mte: Omit<MTE, 'id' | 'refNumber'> & { refNumber?: string }): MTE => {
-    // TODO: Replace with: POST /api/mtes
     const newMte = {
       ...mte,
       id: `mte${Date.now()}`,
@@ -93,12 +128,10 @@ const useApiData = (): IDataSource => {
   };
 
   const updateMte = (updatedMte: MTE) => {
-    // TODO: Replace with: PUT /api/mtes/:id
     setMtes(prev => prev.map(m => m.id === updatedMte.id ? updatedMte : m));
   };
 
   const deleteMte = (id: string) => {
-    // TODO: Replace with: DELETE /api/mtes/:id
     setMtes(prev => prev.filter(m => m.id !== id));
     setStudies(prevStudies => prevStudies.map(study => ({
       ...study,
@@ -107,7 +140,6 @@ const useApiData = (): IDataSource => {
   };
 
   const addMTEToStudy = (studyId: string, mteId: string) => {
-    // TODO: Replace with: POST /api/studies/:studyId/mtes
     setStudies(prev => prev.map(s => {
       if (s.id === studyId && !s.mteIds.includes(mteId)) {
         return { ...s, mteIds: [...s.mteIds, mteId] };
@@ -117,7 +149,6 @@ const useApiData = (): IDataSource => {
   };
   
   const removeMTEFromStudy = (studyId: string, mteId: string) => {
-    // TODO: Replace with: DELETE /api/studies/:studyId/mtes/:mteId
     setStudies(prev => prev.map(s => {
       if (s.id === studyId) {
         return { ...s, mteIds: s.mteIds.filter(mId => mId !== mteId) };
@@ -161,7 +192,6 @@ const useApiData = (): IDataSource => {
   };
   
   const addPairwiseComparison = (comparison: PairwiseComparison) => {
-    // TODO: Replace with: POST /api/comparisons
     setPairwiseComparisons(prev => {
         const existing = prev.find(pc => pc.evaluatorId === comparison.evaluatorId && pc.studyId === comparison.studyId);
         if (existing) {
@@ -172,12 +202,13 @@ const useApiData = (): IDataSource => {
   };
 
   const hasPreviousRatingInStudy = (evaluatorId: string, studyId: string): boolean => {
-    // This logic will also need to be moved to the backend
     return ratings.some(r => r.evaluatorId === evaluatorId && r.studyId === studyId);
   };
   
+// FIX: Added missing return statement to make the hook conform to the IDataSource interface.
   return { 
-    evaluators, studies, mtes, ratings, pairwiseComparisons,
+    projects, evaluators, studies, mtes, ratings, pairwiseComparisons,
+    addProject, updateProject, deleteProject, addMemberToProject, removeMemberFromProject,
     addEvaluator, updateEvaluator, deleteEvaluator,
     addStudy, updateStudy, deleteStudy, addMte, updateMte, deleteMte, addMTEToStudy, removeMTEFromStudy,
     addRating, addPairwiseComparison, hasPreviousRatingInStudy

@@ -7,38 +7,24 @@ const AboutPage: React.FC = () => {
   return (
     <div className="space-y-6 max-w-4xl mx-auto">
       <h1 className="text-3xl font-bold text-white">About CaTLX & NASA-TLX</h1>
+      
       <Card>
-        <h2 className="text-2xl font-semibold text-white mb-4">What is the NASA Task Load Index (TLX)?</h2>
+        <h2 className="text-2xl font-semibold text-white mb-4">The NASA Task Load Index (TLX)</h2>
         <div className="space-y-4 text-nasa-gray-300">
           <p>
-            The NASA Task Load Index (NASA-TLX) is a widely used subjective assessment tool developed by the NASA Ames Research Center. Its primary purpose is to measure the perceived workload of an operator while they perform a task. By quantifying workload, researchers and designers can better understand the demands a task places on a user, identify potential sources of stress, and optimize system design for better performance and safety.
+            The NASA Task Load Index (TLX) is a widely-used tool for measuring the perceived workload of a task. It helps quantify the demands placed on a person by breaking down workload into six key dimensions:
           </p>
-          <p>
-            The assessment is based on a multi-dimensional approach, breaking down workload into six distinct subscales:
-          </p>
-          <ul className="list-disc list-inside space-y-2 pl-4">
+          <ul className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-2 pl-4">
             {TLX_DIMENSIONS_INFO.map(dim => (
-                <li key={dim.id}>
-                    <span className="font-semibold text-white">{dim.title}:</span> {dim.description}
-                </li>
+                <li key={dim.id} className="font-semibold text-white list-disc list-inside">{dim.title}</li>
             ))}
           </ul>
           <p>
-            The NASA-TLX method involves two parts:
-          </p>
-          <ol className="list-decimal list-inside space-y-2 pl-4">
-              <li>
-                  <span className="font-semibold">Ratings:</span> An operator provides a rating (from 0 to 100) for each of the six dimensions based on their experience performing a specific task.
-              </li>
-              <li>
-                  <span className="font-semibold">Weights:</span> Through a series of pairwise comparisons, the operator chooses which dimension was a more significant source of workload. This process creates a set of weights that reflect the individual's unique perception of workload for that task.
-              </li>
-          </ol>
-          <p>
-            The final workload score is calculated by multiplying each dimension's rating by its corresponding weight and then summing the results. This provides a comprehensive and individually tailored workload score.
+            An assessment involves two steps: first, a series of pairwise comparisons determines the relative importance (weight) of each dimension to the individual (this is done once per study). Second, each dimension is rated on a scale from 0 to 100 for each task. The final score is a weighted average of the ratings, providing a comprehensive and personally-tailored workload measurement.
           </p>
         </div>
       </Card>
+
       <Card>
         <h2 className="text-2xl font-semibold text-white mb-4">About This Application (CaTLX)</h2>
          <div className="space-y-4 text-nasa-gray-300">
@@ -49,6 +35,30 @@ const AboutPage: React.FC = () => {
                 Developed by Mlr.
             </p>
          </div>
+      </Card>
+
+      <Card>
+        <h2 className="text-2xl font-semibold text-white mb-4">Offline Use & Installation (PWA)</h2>
+        <div className="space-y-4 text-nasa-gray-300">
+            <p>
+                CaTLX is a Progressive Web App (PWA), which means you can install it on your device for a more app-like experience and use it even when you're offline (in "Local Mode").
+            </p>
+            <h3 className="text-lg font-semibold text-white">How to Install:</h3>
+            <ul className="list-disc list-inside space-y-2 pl-4">
+                <li>
+                    <span className="font-semibold">Chrome (Desktop):</span> Look for the "Install" icon (a computer with a down arrow) in the address bar and click it.
+                </li>
+                <li>
+                    <span className="font-semibold">Safari (iOS/iPadOS):</span> Tap the "Share" button, then scroll down and select "Add to Home Screen".
+                </li>
+                <li>
+                    <span className="font-semibold">Android (Chrome/Firefox):</span> Tap the browser's menu button (three dots) and select "Install app" or "Add to Home screen".
+                </li>
+            </ul>
+            <p>
+                Once installed, you can launch CaTLX directly from your home screen or app drawer, just like a native application.
+            </p>
+        </div>
       </Card>
     </div>
   );

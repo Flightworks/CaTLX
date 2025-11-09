@@ -1,7 +1,7 @@
 // FIX: To fix "Cannot find namespace 'React'", Dispatch and SetStateAction types are imported from 'react'
 // and used directly instead of via the React namespace.
-import { useState, useEffect, Dispatch, SetStateAction } from 'react';
-import { Evaluator, Study, MTE, Rating, PairwiseComparison, TLXDimension, IDataSource } from '../types';
+import { useState, Dispatch, SetStateAction } from 'react';
+import { Evaluator, Study, MTE, Rating, PairwiseComparison, TLXDimension, IDataSource, Project } from '../types';
 
 function useLocalStorage<T>(key: string, initialValue: T): [T, Dispatch<SetStateAction<T>>] {
     const [storedValue, setStoredValue] = useState<T>(() => {
@@ -29,14 +29,54 @@ function useLocalStorage<T>(key: string, initialValue: T): [T, Dispatch<SetState
 
 
 const useLocalStorageData = (): IDataSource => {
+  const [projects, setProjects] = useLocalStorage<Project[]>('catlx_projects', []);
   const [evaluators, setEvaluators] = useLocalStorage<Evaluator[]>('catlx_evaluators', []);
   const [studies, setStudies] = useLocalStorage<Study[]>('catlx_studies', []);
   const [mtes, setMtes] = useLocalStorage<MTE[]>('catlx_mtes', []);
   const [ratings, setRatings] = useLocalStorage<Rating[]>('catlx_ratings', []);
   const [pairwiseComparisons, setPairwiseComparisons] = useLocalStorage<PairwiseComparison[]>('catlx_pairwise_comparisons', []);
   
+  const addProject = (project: Omit<Project, 'id' | 'ownerId' | 'memberIds'>, ownerId: string) => {
+    const newProject: Project = {
+      ...project,
+      id: `proj${Date.now()}`,
+      ownerId: ownerId,
+      memberIds: [ownerId]
+    };
+    setProjects(prev => [...prev, newProject]);
+  };
+
+  const updateProject = (updatedProject: Project) => {
+    setProjects(prev => prev.map(p => p.id === updatedProject.id ? updatedProject : p));
+  };
+  
+  const deleteProject = (id: string) => {
+    setProjects(prev => prev.filter(p => p.id !== id));
+    setStudies(prev => prev.filter(s => s.projectId !== id));
+  };
+
+  const addMemberToProject = (projectId: string, evaluatorId: string) => {
+    setProjects(prev => prev.map(p => {
+      if (p.id === projectId && !p.memberIds.includes(evaluatorId)) {
+        return { ...p, memberIds: [...p.memberIds, evaluatorId] };
+      }
+      return p;
+    }));
+  };
+
+  const removeMemberFromProject = (projectId: string, evaluatorId: string) => {
+    setProjects(prev => prev.map(p => {
+      if (p.id === projectId) {
+        return { ...p, memberIds: p.memberIds.filter(id => id !== evaluatorId) };
+      }
+      return p;
+    }));
+  };
+
   const addEvaluator = (evaluator: Omit<Evaluator, 'id'>) => {
-    setEvaluators(prev => [...prev, { ...evaluator, id: `eval${Date.now()}` }]);
+    const newEvaluator = { ...evaluator, id: `eval${Date.now()}` };
+    setEvaluators(prev => [...prev, newEvaluator]);
+    addProject({ name: `${newEvaluator.name}'s Personal Project`, description: `Personal studies for ${newEvaluator.name}.`}, newEvaluator.id);
   };
   
   const updateEvaluator = (updatedEvaluator: Evaluator) => {
@@ -118,7 +158,8 @@ const useLocalStorageData = (): IDataSource => {
   };
   
   return { 
-    evaluators, studies, mtes, ratings, pairwiseComparisons,
+    projects, evaluators, studies, mtes, ratings, pairwiseComparisons,
+    addProject, updateProject, deleteProject, addMemberToProject, removeMemberFromProject,
     addEvaluator, updateEvaluator, deleteEvaluator,
     addStudy, updateStudy, deleteStudy, addMte, updateMte, deleteMte, addMTEToStudy, removeMTEFromStudy,
     addRating, addPairwiseComparison, hasPreviousRatingInStudy

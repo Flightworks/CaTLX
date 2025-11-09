@@ -3,13 +3,13 @@ import React from 'react';
 import { render, screen, within, fireEvent } from '@testing-library/react';
 import { describe, it, expect, vi } from 'vitest';
 import ViewStats from './ViewStats';
-import { TLXDimension, Evaluator, Study, MTE, Rating, PairwiseComparison, IDataSource } from '../../types';
+import { TLXDimension, Evaluator, Study, MTE, Rating, PairwiseComparison, IDataSource, Project } from '../../types';
 import { DataContext } from '../../contexts/AppContext';
 
 // Mock data for testing
 const mockEvaluators: Evaluator[] = [
-  { id: 'eval1', name: 'Test Pilot 1', email: 'tp1@test.com' },
-  { id: 'eval2', name: 'Test Pilot 2', email: 'tp2@test.com' },
+  { id: 'eval1', name: 'Test Pilot 1', quality: 'Lead', company: 'Test Corp' },
+  { id: 'eval2', name: 'Test Pilot 2', quality: 'Junior', company: 'Test Corp' },
 ];
 
 const mockMtes: MTE[] = [
@@ -18,9 +18,10 @@ const mockMtes: MTE[] = [
   { id: 'mte3', name: 'EVA Simulation', description: 'MTE with no ratings', refNumber: 'T03' },
 ];
 
+// FIX: Added required `projectId` property to mock Study objects.
 const mockStudies: Study[] = [
-  { id: 'study1', name: 'Alpha Test', description: 'Study 1', mteIds: ['mte1', 'mte3'] },
-  { id: 'study2', name: 'Bravo Test', description: 'Study 2', mteIds: ['mte2'] },
+  { id: 'study1', name: 'Alpha Test', description: 'Study 1', mteIds: ['mte1', 'mte3'], projectId: 'proj1' },
+  { id: 'study2', name: 'Bravo Test', description: 'Study 2', mteIds: ['mte2'], projectId: 'proj1' },
 ];
 
 const mockRatings: Rating[] = [
@@ -100,12 +101,23 @@ const mockPairwiseComparisons: PairwiseComparison[] = [
   },
 ];
 
+// FIX: Added missing properties to mockDataSource to fully implement IDataSource.
+const mockProjects: Project[] = [
+  { id: 'proj1', name: 'Test Project', description: 'A test project', ownerId: 'eval1', memberIds: ['eval1', 'eval2'] }
+];
+
 const mockDataSource: IDataSource = {
+  projects: mockProjects,
   evaluators: mockEvaluators,
   studies: mockStudies,
   mtes: mockMtes,
   ratings: mockRatings,
   pairwiseComparisons: mockPairwiseComparisons,
+  addProject: vi.fn(),
+  updateProject: vi.fn(),
+  deleteProject: vi.fn(),
+  addMemberToProject: vi.fn(),
+  removeMemberFromProject: vi.fn(),
   addEvaluator: vi.fn(),
   updateEvaluator: vi.fn(),
   deleteEvaluator: vi.fn(),
