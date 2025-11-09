@@ -1,13 +1,13 @@
 
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AppContext';
 import ManageEvaluations from './admin/ManageEvaluations';
 import ManageStudies from './admin/ManageStudies';
 import ViewStats from './admin/ViewStats';
 import ManageMTEs from './admin/ManageMTEs';
+import ManageProjects from './admin/ManageProjects';
 
-type AdminTab = 'stats' | 'evaluations' | 'studies' | 'mtes';
+type AdminTab = 'stats' | 'evaluations' | 'studies' | 'mtes' | 'projects';
 
 const AdminDashboardPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<AdminTab>('stats');
@@ -23,6 +23,8 @@ const AdminDashboardPage: React.FC = () => {
         return <ManageStudies />;
       case 'mtes':
         return <ManageMTEs />;
+      case 'projects':
+        return <ManageProjects />;
       default:
         return null;
     }
@@ -45,9 +47,11 @@ const AdminDashboardPage: React.FC = () => {
     <div className="space-y-6">
       <h1 className="text-3xl font-bold text-white">Admin Dashboard</h1>
 
-      {mode === 'local' && (
+      {mode !== 'api' && (
         <div className="bg-yellow-900 bg-opacity-50 text-yellow-200 p-4 rounded-lg text-center text-sm">
-            You are in <span className="font-bold">Local Mode</span>. All data is saved on this device only. Use the Logout button to switch modes.
+            You are in <span className="font-bold">{mode === 'demo' ? 'Demo Mode' : 'Local Mode'}</span>. 
+            {mode === 'demo' && " All data is sample data and will reset on page refresh."}
+            {mode === 'local' && " All data is saved on this device only."}
         </div>
       )}
 
@@ -57,6 +61,7 @@ const AdminDashboardPage: React.FC = () => {
           <TabButton tabId="evaluations">Manage Evaluations</TabButton>
           <TabButton tabId="studies">Manage Studies</TabButton>
           <TabButton tabId="mtes">MTE Catalog</TabButton>
+          <TabButton tabId="projects">Manage Projects</TabButton>
         </nav>
       </div>
       <div>{renderTabContent()}</div>

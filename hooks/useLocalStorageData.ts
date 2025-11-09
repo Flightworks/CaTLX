@@ -1,58 +1,69 @@
-// FIX: To fix "Cannot find namespace 'React'", Dispatch and SetStateAction types are imported from 'react'
-// and used directly instead of via the React namespace.
-import { useState, useEffect, Dispatch, SetStateAction } from 'react';
-import { Evaluator, Study, MTE, Rating, PairwiseComparison, TLXDimension, IDataSource } from '../types';
+import { useState, useEffect } from 'react';
+import { IDataSource, Evaluator, Study, MTE, Rating, PairwiseComparison, Project } from '../types';
 
-function useLocalStorage<T>(key: string, initialValue: T): [T, Dispatch<SetStateAction<T>>] {
-    const [storedValue, setStoredValue] = useState<T>(() => {
-        try {
-            const item = window.localStorage.getItem(key);
-            return item ? JSON.parse(item) : initialValue;
-        } catch (error) {
-            console.error(`Error reading localStorage key “${key}”:`, error);
-            return initialValue;
-        }
-    });
+const useLocalStorage = <T>(key: string, initialValue: T): [T, (value: T | ((val: T) => T)) => void] => {
+  const [storedValue, setStoredValue] = useState<T>(() => {
+    try {
+      const item = window.localStorage.getItem(key);
+      return item ? JSON.parse(item) : initialValue;
+    } catch (error) {
+      console.error(`Error reading localStorage key “${key}”:`, error);
+      return initialValue;
+    }
+  });
 
-    const setValue: Dispatch<SetStateAction<T>> = (value) => {
-        try {
-            const valueToStore = value instanceof Function ? value(storedValue) : value;
-            setStoredValue(valueToStore);
-            window.localStorage.setItem(key, JSON.stringify(valueToStore));
-        } catch (error) {
-            console.error(`Error setting localStorage key “${key}”:`, error);
-            throw new Error('Failed to save to local storage. Device storage might be full.');
-        }
-    };
-    return [storedValue, setValue];
-}
+  const setValue = (value: T | ((val: T) => T)) => {
+    try {
+      const valueToStore = value instanceof Function ? value(storedValue) : value;
+      setStoredValue(valueToStore);
+      window.localStorage.setItem(key, JSON.stringify(valueToStore));
+    } catch (error) {
+      console.error(`Error setting localStorage key “${key}”:`, error);
+    }
+  };
 
+  return [storedValue, setValue];
+};
 
 const useLocalStorageData = (): IDataSource => {
+  const [projects, setProjects] = useLocalStorage<Project[]>('catlx_projects', []);
   const [evaluators, setEvaluators] = useLocalStorage<Evaluator[]>('catlx_evaluators', []);
   const [studies, setStudies] = useLocalStorage<Study[]>('catlx_studies', []);
   const [mtes, setMtes] = useLocalStorage<MTE[]>('catlx_mtes', []);
   const [ratings, setRatings] = useLocalStorage<Rating[]>('catlx_ratings', []);
   const [pairwiseComparisons, setPairwiseComparisons] = useLocalStorage<PairwiseComparison[]>('catlx_pairwise_comparisons', []);
   
+  useEffect(() => {
+    if (projects.length === 0) {
+      const defaultProject: Project = {
+        id: 'default_local_project',
+        name: 'Local Project',
+        studyIds: [],
+        evaluatorIds: [],
+      };
+      setProjects([defaultProject]);
+    }
+  }, [projects, setProjects]);
+
   const addEvaluator = (evaluator: Omit<Evaluator, 'id'>) => {
     setEvaluators(prev => [...prev, { ...evaluator, id: `eval${Date.now()}` }]);
   };
-  
+
   const updateEvaluator = (updatedEvaluator: Evaluator) => {
     setEvaluators(prev => prev.map(e => e.id === updatedEvaluator.id ? updatedEvaluator : e));
   };
-  
+
   const deleteEvaluator = (id: string) => {
     setEvaluators(prev => prev.filter(e => e.id !== id));
   };
-
-  const addStudy = (study: Omit<Study, 'id' | 'mteIds'>) => {
-    setStudies(prev => [...prev, { ...study, id: `study${Date.now()}`, mteIds: [] }]);
+  
+  const addStudy = (study: Omit<Study, 'id' | 'mteIds' | 'projectId'> & { projectId: string }) => {
+    const newStudy = { ...study, id: `study${Date.now()}`, mteIds: [] };
+    setStudies(prev => [...prev, newStudy]);
   };
   
   const updateStudy = (updatedStudy: Study) => {
-     setStudies(prev => prev.map(s => s.id === updatedStudy.id ? updatedStudy : s));
+    setStudies(prev => prev.map(s => s.id === updatedStudy.id ? updatedStudy : s));
   };
 
   const deleteStudy = (id: string) => {
@@ -63,12 +74,12 @@ const useLocalStorageData = (): IDataSource => {
     const newMte = {
       ...mte,
       id: `mte${Date.now()}`,
-      refNumber: mte.refNumber || '',
+      refNumber: mte.refNumber || `ref${Date.now()}`,
     };
     setMtes(prev => [...prev, newMte]);
     return newMte;
   };
-
+  
   const updateMte = (updatedMte: MTE) => {
     setMtes(prev => prev.map(m => m.id === updatedMte.id ? updatedMte : m));
   };
@@ -91,7 +102,7 @@ const useLocalStorageData = (): IDataSource => {
   };
   
   const removeMTEFromStudy = (studyId: string, mteId: string) => {
-      setStudies(prev => prev.map(s => {
+    setStudies(prev => prev.map(s => {
       if (s.id === studyId) {
         return { ...s, mteIds: s.mteIds.filter(mId => mId !== mteId) };
       }
@@ -99,10 +110,18 @@ const useLocalStorageData = (): IDataSource => {
     }));
   };
 
-  const addRating = async (rating: Omit<Rating, 'id' | 'timestamp'>): Promise<void> => {
-    setRatings(prev => [...prev, { ...rating, id: `rating${Date.now()}`, timestamp: Date.now() }]);
+  const addRating = (rating: Omit<Rating, 'id' | 'timestamp'>): Promise<void> => {
+    return new Promise((resolve) => {
+      const newRating: Rating = {
+        ...rating,
+        id: `rating${Date.now()}`,
+        timestamp: Date.now(),
+      };
+      setRatings(prev => [...prev, newRating]);
+      resolve();
+    });
   };
-  
+
   const addPairwiseComparison = (comparison: PairwiseComparison) => {
     setPairwiseComparisons(prev => {
         const existing = prev.find(pc => pc.evaluatorId === comparison.evaluatorId && pc.studyId === comparison.studyId);
@@ -118,10 +137,26 @@ const useLocalStorageData = (): IDataSource => {
   };
   
   return { 
-    evaluators, studies, mtes, ratings, pairwiseComparisons,
-    addEvaluator, updateEvaluator, deleteEvaluator,
-    addStudy, updateStudy, deleteStudy, addMte, updateMte, deleteMte, addMTEToStudy, removeMTEFromStudy,
-    addRating, addPairwiseComparison, hasPreviousRatingInStudy
+    projects,
+    evaluators,
+    studies,
+    mtes,
+    ratings,
+    pairwiseComparisons,
+    addEvaluator,
+    updateEvaluator,
+    deleteEvaluator,
+    addStudy,
+    updateStudy,
+    deleteStudy,
+    addMte,
+    updateMte,
+    deleteMte,
+    addMTEToStudy,
+    removeMTEFromStudy,
+    addRating,
+    addPairwiseComparison,
+    hasPreviousRatingInStudy
   };
 };
 

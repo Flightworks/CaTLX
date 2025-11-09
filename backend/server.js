@@ -3,19 +3,11 @@ const cors = require('cors');
 const admin = require('firebase-admin');
 
 // --- Firebase Initialization ---
-// When running on Google Cloud Run, the service account is automatically
-// discovered. For local development, you need to set the
-// GOOGLE_APPLICATION_CREDENTIALS environment variable to point to your
-// service account key file.
-// e.g., export GOOGLE_APPLICATION_CREDENTIALS="/path/to/your/key.json"
 try {
-  admin.initializeApp({
-    // projectId is automatically inferred from the environment
-  });
+  admin.initializeApp();
   console.log("Firebase Admin SDK initialized successfully.");
 } catch (error) {
   console.error("Firebase Admin SDK initialization error:", error);
-  // Exit if Firebase can't be initialized, as it's critical for the app.
   process.exit(1);
 }
 
@@ -23,15 +15,37 @@ const db = admin.firestore();
 const app = express();
 
 // --- Middleware ---
-// Enable CORS for all routes. In a production environment, you would
-// want to restrict this to your frontend's domain.
 app.use(cors());
-app.use(express.json()); // Middleware to parse JSON bodies
+app.use(express.json());
 
 // --- API Routes ---
 app.get('/', (req, res) => {
   res.send('CaTLX Backend API is running!');
 });
+
+// GET all projects
+app.get('/api/projects', async (req, res) => {
+  try {
+    const projectsSnapshot = await db.collection('projects').get();
+    const projects = projectsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    res.status(200).json(projects);
+  } catch (error) {
+    console.error('Error fetching projects:', error);
+    res.status(500).send('Error fetching projects');
+  }
+});
+
+// POST a new project
+app.post('/api/projects', async (req, res) => {
+    try {
+      const newProject = req.body;
+      const docRef = await db.collection('projects').add(newProject);
+      res.status(201).json({ id: docRef.id, ...newProject });
+    } catch (error) {
+      console.error('Error creating project:', error);
+      res.status(500).send('Error creating project');
+    }
+  });
 
 // GET all studies
 app.get('/api/studies', async (req, res) => {
@@ -49,43 +63,65 @@ app.get('/api/studies', async (req, res) => {
 const PORT = process.env.PORT || 8080;
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
-  // seedDatabase(); // Optional: Uncomment to seed data on startup
+  seedDatabase(); 
 });
 
 
-// --- Seeding Function (for initial setup) ---
-// This function adds some initial data to your Firestore database so the
-// API has something to return. You can run this once or call it on startup
-// during development.
+// --- Seeding Function ---
 async function seedDatabase() {
     console.log("Checking if seeding is necessary...");
+    
+    // Seed Studies
     const studiesRef = db.collection('studies');
-    const snapshot = await studiesRef.limit(1).get();
-
-    if (snapshot.empty) {
+    const studiesSnapshot = await studiesRef.limit(1).get();
+    if (studiesSnapshot.empty) {
         console.log("No studies found. Seeding database...");
         const seedStudies = [
           {
             name: 'Artemis II Mission Prep',
             description: 'Preparation tasks for the Artemis II lunar mission.',
             mteIds: ['mte1', 'mte2', 'mte3'],
+            projectId: 'default_project'
           },
           {
             name: 'ISS Maintenance Protocols',
             description: 'Evaluating new maintenance protocols aboard the ISS.',
             mteIds: ['mte4', 'mte5'],
+            projectId: 'default_project'
           },
         ];
-
         const batch = db.batch();
         seedStudies.forEach(study => {
-            const docRef = studiesRef.doc(); // Automatically generate a document ID
+            const docRef = studiesRef.doc();
             batch.set(docRef, study);
         });
-
         await batch.commit();
         console.log("Database seeded successfully with 2 studies.");
     } else {
-        console.log("Database already contains data. Skipping seed.");
+        console.log("Studies collection already contains data. Skipping seed.");
+    }
+
+    // Seed Projects
+    const projectsRef = db.collection('projects');
+    const projectsSnapshot = await projectsRef.limit(1).get();
+    if (projectsSnapshot.empty) {
+        console.log("No projects found. Seeding database...");
+        const seedProjects = [
+            {
+                id: 'default_project',
+                name: 'Default Project',
+                studyIds: [],
+                evaluatorIds: []
+            }
+        ];
+        const batch = db.batch();
+        seedProjects.forEach(project => {
+            const docRef = projectsRef.doc(project.id);
+            batch.set(docRef, project);
+        });
+        await batch.commit();
+        console.log("Database seeded successfully with 1 project.");
+    } else {
+        console.log("Projects collection already contains data. Skipping seed.");
     }
 }

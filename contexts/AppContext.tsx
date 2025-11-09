@@ -1,10 +1,9 @@
 
 import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
-import useMockData from '../hooks/useMockData';
+import { useApiData } from '../hooks/useApiData';
 import useLocalStorageData from '../hooks/useLocalStorageData';
-import useApiData from '../hooks/useApiData';
+import useMockData from '../hooks/useMockData';
 import { IDataSource } from '../types';
-
 
 interface AuthContextType {
   isLoggedIn: boolean;
@@ -24,14 +23,13 @@ export const AuthContext = createContext<AuthContextType | undefined>(undefined)
 export const DataContext = createContext<IDataSource | undefined>(undefined);
 export const SessionContext = createContext<SessionContextType | undefined>(undefined);
 
-
 export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [mode, setMode] = useState<'demo' | 'local' | 'api'>('demo');
   
-  const mockDataHook = useMockData();
-  const localStorageDataHook = useLocalStorageData();
   const apiDataHook = useApiData();
+  const localStorageDataHook = useLocalStorageData();
+  const mockDataHook = useMockData();
 
   let dataHook: IDataSource;
   switch (mode) {
@@ -51,8 +49,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const [selectedStudyId, setSelectedStudyId] = useState('');
 
   const login = (loginMode: 'demo' | 'local' | 'api') => {
-      setMode(loginMode);
-      setIsLoggedIn(true);
+    setMode(loginMode);
+    setIsLoggedIn(true);
   };
 
   const logout = () => {
@@ -60,7 +58,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     setSelectedEvaluatorId('');
     setSelectedStudyId('');
   };
-  
+
   useEffect(() => {
     setSelectedEvaluatorId('');
     setSelectedStudyId('');
@@ -85,7 +83,7 @@ export const useAuth = () => {
   return context;
 };
 
-export const useData = () => {
+export const useData = () of IDataSource => {
   const context = useContext(DataContext);
   if (context === undefined) {
     throw new Error('useData must be used within an AppProvider');
