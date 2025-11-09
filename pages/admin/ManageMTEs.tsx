@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useData } from '../../contexts/AppContext';
 import { MTE } from '../../types';
 import Card from '../../components/ui/Card';
@@ -66,6 +66,18 @@ const ManageMTEs: React.FC = () => {
   const { mtes, addMte, updateMte, deleteMte } = useData();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingMte, setEditingMte] = useState<MTE | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+
+  const filteredMtes = useMemo(() => {
+    if (!searchQuery) {
+      return mtes;
+    }
+    const lowercasedQuery = searchQuery.toLowerCase();
+    return mtes.filter(mte =>
+      mte.name.toLowerCase().includes(lowercasedQuery) ||
+      mte.refNumber.toLowerCase().includes(lowercasedQuery)
+    );
+  }, [mtes, searchQuery]);
 
   const handleSave = (mte: (Omit<MTE, 'id' | 'refNumber'> & { refNumber?: string }) | MTE) => {
     if ('id' in mte) {
@@ -89,10 +101,23 @@ const ManageMTEs: React.FC = () => {
 
   return (
     <Card>
-      <div className="flex justify-between items-center mb-4">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-4">
         <h2 className="text-xl font-bold">Mission Task Element (MTE) Catalog</h2>
-        <Button onClick={handleAddNew}>Add New MTE</Button>
+        <Button onClick={handleAddNew} className="w-full sm:w-auto">Add New MTE</Button>
       </div>
+
+      <div className="mb-4">
+        <label htmlFor="mte-search" className="sr-only">Search MTEs</label>
+        <input
+          type="search"
+          id="mte-search"
+          placeholder="Search by name or reference number..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          className="block w-full bg-nasa-gray-700 border-nasa-gray-600 rounded-md shadow-sm focus:ring-nasa-blue focus:border-nasa-blue text-white placeholder-nasa-gray-400"
+        />
+      </div>
+
       <div className="overflow-x-auto">
         <table className="min-w-full divide-y divide-nasa-gray-700">
           <thead className="bg-nasa-gray-800">
@@ -104,7 +129,7 @@ const ManageMTEs: React.FC = () => {
             </tr>
           </thead>
           <tbody className="bg-nasa-gray-900 divide-y divide-nasa-gray-700">
-            {mtes.map((mte) => (
+            {filteredMtes.map((mte) => (
               <tr key={mte.id}>
                 <td className="px-6 py-4 whitespace-nowrap text-sm font-mono text-nasa-gray-400">{mte.refNumber}</td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-white">{mte.name}</td>
@@ -119,6 +144,13 @@ const ManageMTEs: React.FC = () => {
                 <tr>
                     <td colSpan={4} className="text-center py-10 text-nasa-gray-500">No MTEs in the catalog yet.</td>
                 </tr>
+            )}
+            {mtes.length > 0 && filteredMtes.length === 0 && (
+              <tr>
+                <td colSpan={4} className="text-center py-10 text-nasa-gray-500">
+                  No MTEs found matching your search for "{searchQuery}".
+                </td>
+              </tr>
             )}
           </tbody>
         </table>

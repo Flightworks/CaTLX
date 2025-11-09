@@ -600,14 +600,16 @@ const SessionSelector = () => {
   const { evaluators, studies, projects } = useData();
   const { 
     selectedEvaluatorId, setSelectedEvaluatorId, 
-    selectedProjectId, setSelectedProjectId,
+    selectedProjectId,
     selectedStudyId, setSelectedStudyId 
   } = useSession();
 
-  const availableProjects = useMemo(() => {
-    if (!selectedEvaluatorId) return [];
-    return projects.filter(p => p.memberIds.includes(selectedEvaluatorId));
-  }, [projects, selectedEvaluatorId]);
+  const availableEvaluators = useMemo(() => {
+    if (!selectedProjectId) return [];
+    const project = projects.find(p => p.id === selectedProjectId);
+    if (!project) return [];
+    return evaluators.filter(e => project.memberIds.includes(e.id));
+  }, [evaluators, projects, selectedProjectId]);
 
   const availableStudies = useMemo(() => {
     if (!selectedProjectId) return [];
@@ -619,29 +621,19 @@ const SessionSelector = () => {
       <div className="flex flex-col sm:flex-row items-center gap-x-6 gap-y-4">
         <div className="flex-shrink-0">
           <h2 className="text-lg font-semibold text-white">Assessment Session</h2>
-          <p className="text-sm text-nasa-gray-400">Select an evaluator, project, and study.</p>
+          <p className="text-sm text-nasa-gray-400">Select an evaluator and study.</p>
         </div>
-        <div className="w-full flex-grow grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="w-full flex-grow grid grid-cols-1 sm:grid-cols-2 gap-4">
           <Select
             label="Evaluator"
             id="evaluator-select"
             value={selectedEvaluatorId}
             onChange={(e) => setSelectedEvaluatorId(e.target.value)}
             aria-label="Select Evaluator"
+            disabled={!selectedProjectId}
           >
             <option value="">-- Choose Evaluator --</option>
-            {evaluators.map(e => <option key={e.id} value={e.id}>{e.name}</option>)}
-          </Select>
-          <Select
-            label="Project"
-            id="project-select"
-            value={selectedProjectId}
-            onChange={(e) => setSelectedProjectId(e.target.value)}
-            disabled={!selectedEvaluatorId}
-            aria-label="Select Project"
-          >
-            <option value="">-- Choose Project --</option>
-            {availableProjects.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+            {availableEvaluators.map(e => <option key={e.id} value={e.id}>{e.name}</option>)}
           </Select>
           <Select
             label="Study"
@@ -671,7 +663,7 @@ const EvaluatorPage: React.FC = () => {
                     <div className="text-center py-8">
                         <h2 className="text-xl font-semibold mb-2">Welcome to the Evaluations Dashboard</h2>
                         <p className="text-lg text-nasa-gray-300">
-                           Please select an evaluator, project, and study from the panel above to begin an assessment.
+                           Please select an evaluator and study from the panel above to begin an assessment.
                         </p>
                          <p className="text-sm text-nasa-gray-400 mt-4">If no evaluators are available, please go to the Admin Dashboard to create one.</p>
                     </div>

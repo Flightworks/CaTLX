@@ -73,10 +73,10 @@ const useLocalStorageData = (): IDataSource => {
     }));
   };
 
-  const addEvaluator = (evaluator: Omit<Evaluator, 'id'>) => {
+  const addEvaluator = (evaluator: Omit<Evaluator, 'id'>): Evaluator => {
     const newEvaluator = { ...evaluator, id: `eval${Date.now()}` };
     setEvaluators(prev => [...prev, newEvaluator]);
-    addProject({ name: `${newEvaluator.name}'s Personal Project`, description: `Personal studies for ${newEvaluator.name}.`}, newEvaluator.id);
+    return newEvaluator;
   };
   
   const updateEvaluator = (updatedEvaluator: Evaluator) => {
@@ -85,10 +85,20 @@ const useLocalStorageData = (): IDataSource => {
   
   const deleteEvaluator = (id: string) => {
     setEvaluators(prev => prev.filter(e => e.id !== id));
+    // Also remove from any project memberships
+    setProjects(prevProjects => prevProjects.map(p => ({
+      ...p,
+      memberIds: p.memberIds.filter(memberId => memberId !== id)
+    })));
+    // Also remove from any study assignments
+    setStudies(prevStudies => prevStudies.map(s => ({
+      ...s,
+      evaluatorIds: s.evaluatorIds.filter(evaluatorId => evaluatorId !== id)
+    })));
   };
 
-  const addStudy = (study: Omit<Study, 'id' | 'mteIds'>) => {
-    setStudies(prev => [...prev, { ...study, id: `study${Date.now()}`, mteIds: [] }]);
+  const addStudy = (study: Omit<Study, 'id' | 'mteIds' | 'evaluatorIds'>) => {
+    setStudies(prev => [...prev, { ...study, id: `study${Date.now()}`, mteIds: [], evaluatorIds: [] }]);
   };
   
   const updateStudy = (updatedStudy: Study) => {
@@ -138,6 +148,24 @@ const useLocalStorageData = (): IDataSource => {
       return s;
     }));
   };
+  
+  const addEvaluatorToStudy = (studyId: string, evaluatorId: string) => {
+    setStudies(prev => prev.map(s => {
+      if (s.id === studyId && !s.evaluatorIds.includes(evaluatorId)) {
+        return { ...s, evaluatorIds: [...s.evaluatorIds, evaluatorId] };
+      }
+      return s;
+    }));
+  };
+
+  const removeEvaluatorFromStudy = (studyId: string, evaluatorId: string) => {
+    setStudies(prev => prev.map(s => {
+      if (s.id === studyId) {
+        return { ...s, evaluatorIds: s.evaluatorIds.filter(eId => eId !== evaluatorId) };
+      }
+      return s;
+    }));
+  };
 
   const addRating = async (rating: Omit<Rating, 'id' | 'timestamp'>): Promise<void> => {
     setRatings(prev => [...prev, { ...rating, id: `rating${Date.now()}`, timestamp: Date.now() }]);
@@ -161,7 +189,8 @@ const useLocalStorageData = (): IDataSource => {
     projects, evaluators, studies, mtes, ratings, pairwiseComparisons,
     addProject, updateProject, deleteProject, addMemberToProject, removeMemberFromProject,
     addEvaluator, updateEvaluator, deleteEvaluator,
-    addStudy, updateStudy, deleteStudy, addMte, updateMte, deleteMte, addMTEToStudy, removeMTEFromStudy,
+    addStudy, updateStudy, deleteStudy, addMte, updateMte, deleteMte, 
+    addMTEToStudy, removeMTEFromStudy, addEvaluatorToStudy, removeEvaluatorFromStudy,
     addRating, addPairwiseComparison, hasPreviousRatingInStudy
   };
 };

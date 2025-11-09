@@ -1,6 +1,6 @@
 
-import React, { useState } from 'react';
-import { useData } from '../../contexts/AppContext';
+import React, { useState, useMemo } from 'react';
+import { useData, useSession } from '../../contexts/AppContext';
 import { Evaluator } from '../../types';
 import Card from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
@@ -64,15 +64,29 @@ const EvaluatorForm: React.FC<{
 };
 
 const ManageEvaluators: React.FC = () => {
-  const { evaluators, addEvaluator, updateEvaluator, deleteEvaluator } = useData();
+  const { evaluators, projects, addEvaluator, updateEvaluator, deleteEvaluator, addMemberToProject } = useData();
+  const { selectedProjectId } = useSession();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingEvaluator, setEditingEvaluator] = useState<Evaluator | null>(null);
+
+  const projectEvaluators = useMemo(() => {
+    if (!selectedProjectId) return [];
+    const project = projects.find(p => p.id === selectedProjectId);
+    if (!project) return [];
+    return evaluators
+      .filter(e => project.memberIds.includes(e.id))
+      .sort((a,b) => a.name.localeCompare(b.name));
+  }, [evaluators, projects, selectedProjectId]);
+
 
   const handleSave = (evaluator: Omit<Evaluator, 'id'> | Evaluator) => {
     if ('id' in evaluator) {
       updateEvaluator(evaluator);
     } else {
-      addEvaluator(evaluator);
+      const newEvaluator = addEvaluator(evaluator);
+      if (selectedProjectId) {
+        addMemberToProject(selectedProjectId, newEvaluator.id);
+      }
     }
     setIsModalOpen(false);
     setEditingEvaluator(null);
@@ -87,15 +101,25 @@ const ManageEvaluators: React.FC = () => {
     setEditingEvaluator(evaluator);
     setIsModalOpen(true);
   }
+  
+  if (!selectedProjectId) {
+      return (
+        <Card>
+            <div className="text-center py-8 text-nasa-gray-400">
+                <p>Please select a project to manage its evaluators.</p>
+            </div>
+        </Card>
+      )
+  }
 
   return (
     <Card>
       <div className="flex justify-between items-center mb-4">
-        <h2 className="text-xl font-bold">Evaluators</h2>
-        <Button onClick={handleAddNew}>Add New Evaluator</Button>
+        <h2 className="text-xl font-bold">Manage Project Evaluators</h2>
+        <Button onClick={handleAddNew} disabled={!selectedProjectId}>Add New Evaluator</Button>
       </div>
        <p className="text-sm text-nasa-gray-400 mb-4">
-        This is a global list of all evaluators in the system. Adding an evaluator here will automatically create a personal project for them. You can assign them to other projects in the "Manage Projects" tab.
+        This is a list of all evaluators assigned to the current project. Use the 'Add New Evaluator' button to create a new evaluator profile; they will be automatically added to this project.
       </p>
       <div className="overflow-x-auto">
         <table className="min-w-full divide-y divide-nasa-gray-700">
@@ -108,7 +132,7 @@ const ManageEvaluators: React.FC = () => {
             </tr>
           </thead>
           <tbody className="bg-nasa-gray-900 divide-y divide-nasa-gray-700">
-            {evaluators.map((evaluator) => (
+            {projectEvaluators.map((evaluator) => (
               <tr key={evaluator.id}>
                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-white">{evaluator.name}</td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-nasa-gray-300">{evaluator.quality}</td>
@@ -119,6 +143,13 @@ const ManageEvaluators: React.FC = () => {
                 </td>
               </tr>
             ))}
+            {projectEvaluators.length === 0 && (
+                <tr>
+                    <td colSpan={4} className="text-center py-10 text-nasa-gray-500">
+                        No evaluators have been assigned to this project yet.
+                    </td>
+                </tr>
+            )}
           </tbody>
         </table>
       </div>

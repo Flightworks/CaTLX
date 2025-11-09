@@ -1,14 +1,47 @@
 
 
-import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
-import { useAuth } from '../contexts/AppContext';
+import React, { useState, useEffect } from 'react';
+import { useAuth, useData, useSession } from '../contexts/AppContext';
 import ManageEvaluators from './admin/ManageEvaluators';
-import ManageProjects from './admin/ManageStudies';
+import ManageStudies from './admin/ManageStudies';
 import ViewStats from './admin/ViewStats';
 import ManageMTEs from './admin/ManageMTEs';
+import Card from '../../components/ui/Card';
+import Select from '../../components/ui/Select';
 
-type AdminTab = 'stats' | 'evaluators' | 'projects' | 'mtes';
+type AdminTab = 'stats' | 'evaluators' | 'studies' | 'mtes';
+
+const ProjectSelector = () => {
+    const { projects } = useData();
+    const { selectedProjectId, setSelectedProjectId } = useSession();
+
+    useEffect(() => {
+        if (!selectedProjectId && projects.length > 0) {
+            setSelectedProjectId(projects[0].id);
+        }
+    }, [projects, selectedProjectId, setSelectedProjectId]);
+    
+    // Do not render selector if there's only one project or none
+    if (projects.length <= 1) {
+        return null;
+    }
+
+    return (
+        <Card>
+            <div className="flex items-center gap-x-4">
+                <label htmlFor="project-selector" className="text-sm font-medium text-nasa-gray-300 whitespace-nowrap">Current Project:</label>
+                <div className="flex-grow max-w-md">
+                     <select id="project-selector" value={selectedProjectId} onChange={e => setSelectedProjectId(e.target.value)}
+                       className="block w-full pl-3 pr-10 py-2 text-base bg-nasa-gray-700 border-nasa-gray-600 focus:outline-none focus:ring-nasa-blue focus:border-nasa-blue sm:text-sm rounded-md text-white"
+                     >
+                        {projects.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+                    </select>
+                </div>
+            </div>
+        </Card>
+    );
+};
+
 
 const AdminDashboardPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<AdminTab>('stats');
@@ -20,8 +53,8 @@ const AdminDashboardPage: React.FC = () => {
         return <ViewStats />;
       case 'evaluators':
         return <ManageEvaluators />;
-      case 'projects':
-        return <ManageProjects />;
+      case 'studies':
+        return <ManageStudies />;
       case 'mtes':
         return <ManageMTEs />;
       default:
@@ -52,11 +85,13 @@ const AdminDashboardPage: React.FC = () => {
         </div>
       )}
 
+      <ProjectSelector />
+
       <div className="border-b border-nasa-gray-700">
         <nav className="-mb-px flex space-x-4 flex-wrap" aria-label="Tabs">
           <TabButton tabId="stats">Statistics</TabButton>
+          <TabButton tabId="studies">Manage Studies</TabButton>
           <TabButton tabId="evaluators">Manage Evaluators</TabButton>
-          <TabButton tabId="projects">Manage Projects</TabButton>
           <TabButton tabId="mtes">MTE Catalog</TabButton>
         </nav>
       </div>

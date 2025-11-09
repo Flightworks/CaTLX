@@ -1,4 +1,5 @@
 
+
 import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
 import useMockData from '../hooks/useMockData';
 import useLocalStorageData from '../hooks/useLocalStorageData';
@@ -72,12 +73,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   }, [isLoggedIn]);
 
   useEffect(() => {
-    setSelectedProjectId('');
     setSelectedStudyId('');
-  }, [selectedEvaluatorId]);
-
-  useEffect(() => {
-    setSelectedStudyId('');
+    setSelectedEvaluatorId('');
   }, [selectedProjectId]);
 
   return (

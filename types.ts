@@ -33,7 +33,9 @@ export interface Study {
   id: string;
   name: string;
   description: string;
+  date: number; // Timestamp of the study date
   mteIds: string[];
+  evaluatorIds: string[];
   projectId: string;
 }
 
@@ -82,10 +84,10 @@ export interface IDataSource {
   addMemberToProject: (projectId: string, evaluatorId: string) => void;
   removeMemberFromProject: (projectId: string, evaluatorId: string) => void;
 
-  addEvaluator: (evaluator: Omit<Evaluator, 'id'>) => void;
+  addEvaluator: (evaluator: Omit<Evaluator, 'id'>) => Evaluator;
   updateEvaluator: (evaluator: Evaluator) => void;
   deleteEvaluator: (id: string) => void;
-  addStudy: (study: Omit<Study, 'id' | 'mteIds'>) => void;
+  addStudy: (study: Omit<Study, 'id' | 'mteIds' | 'evaluatorIds'>) => void;
   updateStudy: (study: Study) => void;
   deleteStudy: (id: string) => void;
   addMte: (mte: Omit<MTE, 'id' | 'refNumber'> & { refNumber?: string }) => MTE;
@@ -93,6 +95,8 @@ export interface IDataSource {
   deleteMte: (id: string) => void;
   addMTEToStudy: (studyId: string, mteId: string) => void;
   removeMTEFromStudy: (studyId: string, mteId: string) => void;
+  addEvaluatorToStudy: (studyId: string, evaluatorId: string) => void;
+  removeEvaluatorFromStudy: (studyId: string, evaluatorId: string) => void;
   addRating: (rating: Omit<Rating, 'id' | 'timestamp'>) => Promise<void>;
   addPairwiseComparison: (comparison: PairwiseComparison) => void;
   hasPreviousRatingInStudy: (evaluatorId: string, studyId: string) => boolean;

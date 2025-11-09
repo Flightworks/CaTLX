@@ -1,55 +1,148 @@
 import React, { useState, useMemo } from 'react';
-import { useData } from '../../contexts/AppContext';
-import { Project, Study, MTE, Evaluator } from '../../types';
+import { useData, useSession } from '../../contexts/AppContext';
+import { Study, MTE, Evaluator } from '../../types';
 import Card from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
 import Modal from '../../components/ui/Modal';
 import Select from '../../components/ui/Select';
 
 
-const ProjectForm: React.FC<{
-  project?: Project | null;
-  onSave: (project: Omit<Project, 'id' | 'ownerId' | 'memberIds'> | Project) => void;
-  onCancel: () => void;
-}> = ({ project, onSave, onCancel }) => {
-  const [name, setName] = useState(project?.name || '');
-  const [description, setDescription] = useState(project?.description || '');
+const ManageStudyMTEsModal: React.FC<{
+  study: Study;
+  onClose: () => void;
+}> = ({ study, onClose }) => {
+  const { mtes, addMTEToStudy, removeMTEFromStudy } = useData();
+  const [searchQuery, setSearchQuery] = useState('');
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    onSave(project ? { ...project, name, description } : { name, description });
-  };
-  
+  const mtesInStudy = useMemo(() => {
+    return study.mteIds
+      .map(id => mtes.find(m => m.id === id))
+      .filter((m): m is MTE => !!m)
+      .sort((a, b) => a.name.localeCompare(b.name));
+  }, [study.mteIds, mtes]);
+
+  const availableMtes = useMemo(() => {
+    const lowercasedQuery = searchQuery.toLowerCase();
+    return mtes
+      .filter(mte => 
+        !study.mteIds.includes(mte.id) &&
+        (searchQuery === '' || mte.name.toLowerCase().includes(lowercasedQuery) || mte.refNumber.toLowerCase().includes(lowercasedQuery))
+      )
+      .sort((a, b) => a.name.localeCompare(b.name));
+  }, [mtes, study.mteIds, searchQuery]);
+
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      <div>
-        <label className="block text-sm font-medium text-nasa-gray-300">Project Name</label>
-        <input type="text" value={name} onChange={e => setName(e.target.value)} required className="mt-1 block w-full bg-nasa-gray-700 border-nasa-gray-600 rounded-md shadow-sm focus:ring-nasa-blue focus:border-nasa-blue text-white" />
+    <Modal isOpen={true} onClose={onClose} title={`Manage MTEs for: ${study.name}`} size="4xl">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* Available MTEs */}
+        <div>
+          <h3 className="text-lg font-semibold text-white mb-2">Available MTEs</h3>
+          <input
+            type="search"
+            placeholder="Search catalog..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full bg-nasa-gray-900 border-nasa-gray-600 rounded-md shadow-sm focus:ring-nasa-blue focus:border-nasa-blue text-white placeholder-nasa-gray-400 mb-3"
+          />
+          <div className="space-y-2 max-h-80 overflow-y-auto pr-2">
+            {availableMtes.map(mte => (
+              <div key={mte.id} className="flex justify-between items-center p-2 bg-nasa-gray-700 rounded">
+                <div>
+                  <p className="text-sm font-medium text-white">{mte.name}</p>
+                  <p className="text-xs text-nasa-gray-400 font-mono">[{mte.refNumber}]</p>
+                </div>
+                <Button size="sm" onClick={() => addMTEToStudy(study.id, mte.id)}>Add</Button>
+              </div>
+            ))}
+            {availableMtes.length === 0 && <p className="text-sm text-nasa-gray-500 text-center py-4">No available MTEs match your search.</p>}
+          </div>
+        </div>
+        {/* MTEs in Study */}
+        <div>
+          <h3 className="text-lg font-semibold text-white mb-2">MTEs in this Study ({mtesInStudy.length})</h3>
+           <div className="space-y-2 max-h-96 overflow-y-auto pr-2">
+            {mtesInStudy.map(mte => (
+              <div key={mte.id} className="flex justify-between items-center p-2 bg-nasa-gray-700 rounded">
+                <div>
+                  <p className="text-sm font-medium text-white">{mte.name}</p>
+                  <p className="text-xs text-nasa-gray-400 font-mono">[{mte.refNumber}]</p>
+                </div>
+                <Button size="sm" variant="danger" onClick={() => removeMTEFromStudy(study.id, mte.id)}>Remove</Button>
+              </div>
+            ))}
+            {mtesInStudy.length === 0 && <p className="text-sm text-nasa-gray-500 text-center py-4">No MTEs have been added to this study.</p>}
+           </div>
+        </div>
       </div>
-      <div>
-        <label className="block text-sm font-medium text-nasa-gray-300">Project Description</label>
-        <textarea value={description} onChange={e => setDescription(e.target.value)} required className="mt-1 block w-full bg-nasa-gray-700 border-nasa-gray-600 rounded-md shadow-sm focus:ring-nasa-blue focus:border-nasa-blue text-white" />
-      </div>
-      <div className="flex justify-end space-x-2">
-        <Button type="button" variant="secondary" onClick={onCancel}>Cancel</Button>
-        <Button type="submit">Save Project</Button>
-      </div>
-    </form>
+    </Modal>
   );
 };
+
+const ManageStudyEvaluatorsModal: React.FC<{
+  study: Study;
+  onClose: () => void;
+}> = ({ study, onClose }) => {
+  const { evaluators, addEvaluatorToStudy, removeEvaluatorFromStudy } = useData();
+
+  const evaluatorsInStudy = useMemo(() => {
+    return study.evaluatorIds
+      .map(id => evaluators.find(e => e.id === id))
+      .filter((e): e is Evaluator => !!e)
+      .sort((a, b) => a.name.localeCompare(b.name));
+  }, [study.evaluatorIds, evaluators]);
+
+  const availableEvaluators = useMemo(() => {
+    return evaluators
+      .filter(e => !study.evaluatorIds.includes(e.id))
+      .sort((a, b) => a.name.localeCompare(b.name));
+  }, [evaluators, study.evaluatorIds]);
+
+  return (
+    <Modal isOpen={true} onClose={onClose} title={`Manage Evaluators for: ${study.name}`} size="4xl">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div>
+          <h3 className="text-lg font-semibold text-white mb-2">Available Evaluators</h3>
+          <div className="space-y-2 max-h-80 overflow-y-auto pr-2">
+            {availableEvaluators.map(evaluator => (
+              <div key={evaluator.id} className="flex justify-between items-center p-2 bg-nasa-gray-700 rounded">
+                <p className="text-sm font-medium text-white">{evaluator.name}</p>
+                <Button size="sm" onClick={() => addEvaluatorToStudy(study.id, evaluator.id)}>Add</Button>
+              </div>
+            ))}
+            {availableEvaluators.length === 0 && <p className="text-sm text-nasa-gray-500 text-center py-4">No other evaluators available.</p>}
+          </div>
+        </div>
+        <div>
+          <h3 className="text-lg font-semibold text-white mb-2">Evaluators in this Study ({evaluatorsInStudy.length})</h3>
+           <div className="space-y-2 max-h-96 overflow-y-auto pr-2">
+            {evaluatorsInStudy.map(evaluator => (
+              <div key={evaluator.id} className="flex justify-between items-center p-2 bg-nasa-gray-700 rounded">
+                <p className="text-sm font-medium text-white">{evaluator.name}</p>
+                <Button size="sm" variant="danger" onClick={() => removeEvaluatorFromStudy(study.id, evaluator.id)}>Remove</Button>
+              </div>
+            ))}
+            {evaluatorsInStudy.length === 0 && <p className="text-sm text-nasa-gray-500 text-center py-4">No evaluators have been added to this study.</p>}
+           </div>
+        </div>
+      </div>
+    </Modal>
+  );
+}
 
 const StudyForm: React.FC<{
   study?: Study | null;
   projectId: string;
-  onSave: (study: Omit<Study, 'id' | 'mteIds'> | Study) => void;
+  onSave: (study: Omit<Study, 'id' | 'mteIds' | 'evaluatorIds'> | Study) => void;
   onCancel: () => void;
 }> = ({ study, projectId, onSave, onCancel }) => {
   const [name, setName] = useState(study?.name || '');
   const [description, setDescription] = useState(study?.description || '');
+  const [date, setDate] = useState(study ? new Date(study.date).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onSave(study ? { ...study, name, description } : { name, description, projectId });
+    const studyDate = new Date(date).getTime();
+    onSave(study ? { ...study, name, description, date: studyDate } : { name, description, date: studyDate, projectId });
   };
   
   return (
@@ -58,9 +151,13 @@ const StudyForm: React.FC<{
         <label className="block text-sm font-medium text-nasa-gray-300">Study Name</label>
         <input type="text" value={name} onChange={e => setName(e.target.value)} required className="mt-1 block w-full bg-nasa-gray-700 border-nasa-gray-600 rounded-md shadow-sm focus:ring-nasa-blue focus:border-nasa-blue text-white" />
       </div>
+       <div>
+        <label className="block text-sm font-medium text-nasa-gray-300">Study Date</label>
+        <input type="date" value={date} onChange={e => setDate(e.target.value)} required className="mt-1 block w-full bg-nasa-gray-700 border-nasa-gray-600 rounded-md shadow-sm focus:ring-nasa-blue focus:border-nasa-blue text-white" />
+      </div>
       <div>
         <label className="block text-sm font-medium text-nasa-gray-300">Study Description</label>
-        <textarea value={description} onChange={e => setDescription(e.target.value)} required className="mt-1 block w-full bg-nasa-gray-700 border-nasa-gray-600 rounded-md shadow-sm focus:ring-nasa-blue focus:border-nasa-blue text-white" />
+        <textarea value={description} onChange={e => setDescription(e.target.value)} required rows={3} className="mt-1 block w-full bg-nasa-gray-700 border-nasa-gray-600 rounded-md shadow-sm focus:ring-nasa-blue focus:border-nasa-blue text-white" />
       </div>
       <div className="flex justify-end space-x-2">
         <Button type="button" variant="secondary" onClick={onCancel}>Cancel</Button>
@@ -70,80 +167,24 @@ const StudyForm: React.FC<{
   );
 };
 
-const AddMemberModal: React.FC<{
-    project: Project;
-    onClose: () => void;
-}> = ({ project, onClose }) => {
-    const { evaluators, addMemberToProject } = useData();
-    const [selectedEvaluatorId, setSelectedEvaluatorId] = useState('');
 
-    const availableEvaluators = useMemo(() => {
-        return evaluators.filter(e => !project.memberIds.includes(e.id));
-    }, [evaluators, project]);
-
-    React.useEffect(() => {
-        if (availableEvaluators.length > 0) {
-            setSelectedEvaluatorId(availableEvaluators[0].id);
-        }
-    }, [availableEvaluators]);
-
-    const handleAdd = () => {
-        if (selectedEvaluatorId) {
-            addMemberToProject(project.id, selectedEvaluatorId);
-            onClose();
-        }
-    }
-
-    return (
-        <Modal isOpen={true} onClose={onClose} title={`Add Member to ${project.name}`}>
-            {availableEvaluators.length > 0 ? (
-                 <div className="flex items-end gap-4">
-                    <div className="flex-grow">
-                        <Select label="Select Evaluator" id="member-select" value={selectedEvaluatorId} onChange={e => setSelectedEvaluatorId(e.target.value)}>
-                            {availableEvaluators.map(e => <option key={e.id} value={e.id}>{e.name}</option>)}
-                        </Select>
-                    </div>
-                     <Button onClick={handleAdd}>Add Member</Button>
-                </div>
-            ) : (
-                <p className="text-nasa-gray-400 text-center">All available evaluators are already members of this project.</p>
-            )}
-        </Modal>
-    )
-}
-
-
-const ManageProjects: React.FC = () => {
-  const { 
-      projects, evaluators, studies, addProject, updateProject, deleteProject, 
-      addStudy, updateStudy, deleteStudy, addMemberToProject, removeMemberFromProject 
-    } = useData();
+const ManageStudies: React.FC = () => {
+  const { studies, mtes, evaluators, addStudy, updateStudy, deleteStudy } = useData();
+  const { selectedProjectId } = useSession();
     
-  const [isProjectModalOpen, setIsProjectModalOpen] = useState(false);
   const [isStudyModalOpen, setIsStudyModalOpen] = useState(false);
-  const [isMemberModalOpen, setIsMemberModalOpen] = useState(false);
-
-  const [editingProject, setEditingProject] = useState<Project | null>(null);
+  const [managingMtesForStudy, setManagingMtesForStudy] = useState<Study | null>(null);
+  const [managingEvaluatorsForStudy, setManagingEvaluatorsForStudy] = useState<Study | null>(null);
   const [editingStudy, setEditingStudy] = useState<Study | null>(null);
-  const [activeProject, setActiveProject] = useState<Project | null>(null);
 
-  const handleSaveProject = (project: Omit<Project, 'id' | 'ownerId' | 'memberIds'> | Project) => {
-    if ('id' in project) {
-      updateProject(project);
-    } else {
-      // For new projects, we need an owner. Let's assume first evaluator is admin/creator.
-      const ownerId = evaluators[0]?.id;
-      if (ownerId) {
-        addProject(project, ownerId);
-      } else {
-        alert("Cannot create a project without at least one evaluator in the system to act as owner.");
-      }
-    }
-    setIsProjectModalOpen(false);
-    setEditingProject(null);
-  };
+  const studiesInProject = useMemo(() => {
+    if (!selectedProjectId) return [];
+    return studies
+        .filter(s => s.projectId === selectedProjectId)
+        .sort((a, b) => b.date - a.date);
+  }, [studies, selectedProjectId]);
 
-  const handleSaveStudy = (study: Omit<Study, 'id' | 'mteIds'> | Study) => {
+  const handleSaveStudy = (study: Omit<Study, 'id' | 'mteIds' | 'evaluatorIds'> | Study) => {
     if ('id' in study) {
       updateStudy(study);
     } else {
@@ -151,87 +192,100 @@ const ManageProjects: React.FC = () => {
     }
     setIsStudyModalOpen(false);
     setEditingStudy(null);
-    setActiveProject(null);
   };
   
+  if (!selectedProjectId) {
+      return (
+        <Card>
+            <div className="text-center py-8 text-nasa-gray-400">
+                <p>Please select a project to view its studies.</p>
+                <p className="text-sm text-nasa-gray-500">If no projects are available, create one in the database.</p>
+            </div>
+        </Card>
+      )
+  }
 
   return (
     <Card>
       <div className="flex justify-between items-center mb-4">
-        <h2 className="text-xl font-bold">Projects</h2>
-        <Button onClick={() => { setEditingProject(null); setIsProjectModalOpen(true); }}>Add New Project</Button>
+        <h2 className="text-xl font-bold">Manage Studies</h2>
+        <Button onClick={() => { setEditingStudy(null); setIsStudyModalOpen(true); }}>Add New Study</Button>
       </div>
       <div className="space-y-6">
-        {projects.map((project) => (
-          <div key={project.id} className="p-4 bg-nasa-gray-900 rounded-lg">
-            <div className="flex justify-between items-start">
-                <div>
-                    <h3 className="text-lg font-semibold text-white">{project.name}</h3>
-                    <p className="text-sm text-nasa-gray-400">{project.description}</p>
-                </div>
-                <div className="flex-shrink-0 flex items-center space-x-2">
-                    <Button size="sm" variant="secondary" onClick={() => { setEditingProject(project); setIsProjectModalOpen(true); }}>Edit</Button>
-                    <Button size="sm" variant="danger" onClick={() => deleteProject(project.id)}>Delete</Button>
-                </div>
+        {studiesInProject.map((study) => {
+          const studyMtes = study.mteIds.map(id => mtes.find(m => m.id === id)).filter((m): m is MTE => !!m);
+          const studyEvaluators = study.evaluatorIds.map(id => evaluators.find(e => e.id === id)).filter((e): e is Evaluator => !!e);
+          return (
+            <div key={study.id} className="p-4 bg-nasa-gray-900 rounded-lg border border-nasa-gray-700">
+              <div className="flex flex-col sm:flex-row justify-between items-start gap-2">
+                  <div>
+                      <h3 className="text-lg font-semibold text-white">{study.name}</h3>
+                      <p className="text-sm text-nasa-gray-300 font-medium">{new Date(study.date).toLocaleDateString()}</p>
+                      <p className="text-sm text-nasa-gray-400 mt-1">{study.description}</p>
+                  </div>
+                  <div className="flex-shrink-0 flex flex-wrap items-center gap-2">
+                      <Button size="sm" variant="secondary" onClick={() => { setEditingStudy(study); setIsStudyModalOpen(true); }}>Edit Info</Button>
+                      <Button size="sm" variant="danger" onClick={() => deleteStudy(study.id)}>Delete</Button>
+                  </div>
+              </div>
+              
+              <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* MTEs in Study */}
+                  <div>
+                      <h4 className="text-md font-medium text-nasa-gray-200 mb-2">MTEs ({studyMtes.length})</h4>
+                      <div className="space-y-2">
+                          {studyMtes.map(mte => (
+                              <div key={mte.id} className="p-2 bg-nasa-gray-800 rounded text-sm text-white">[{mte.refNumber}] {mte.name}</div>
+                          ))}
+                          {studyMtes.length === 0 && <p className="text-xs text-nasa-gray-500">No MTEs assigned.</p>}
+                          <Button size="sm" variant="secondary" className="w-full mt-2" onClick={() => setManagingMtesForStudy(study)}>Manage MTEs</Button>
+                      </div>
+                  </div>
+                  {/* Evaluators in Study */}
+                  <div>
+                      <h4 className="text-md font-medium text-nasa-gray-200 mb-2">Evaluators ({studyEvaluators.length})</h4>
+                      <div className="space-y-2">
+                          {studyEvaluators.map(evaluator => (
+                              <div key={evaluator.id} className="p-2 bg-nasa-gray-800 rounded text-sm text-white">{evaluator.name}</div>
+                          ))}
+                          {studyEvaluators.length === 0 && <p className="text-xs text-nasa-gray-500">No evaluators assigned.</p>}
+                          <Button size="sm" variant="secondary" className="w-full mt-2" onClick={() => setManagingEvaluatorsForStudy(study)}>Manage Evaluators</Button>
+                      </div>
+                  </div>
+              </div>
             </div>
-            
-            <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* Members */}
-                <div>
-                    <h4 className="text-md font-medium text-nasa-gray-200 mb-2">Members</h4>
-                    <ul className="space-y-2">
-                        {project.memberIds.map(memberId => {
-                            const member = evaluators.find(e => e.id === memberId);
-                            if (!member) return null;
-                            return (
-                                <li key={member.id} className="flex justify-between items-center p-2 bg-nasa-gray-800 rounded">
-                                    <span className="text-sm">{member.name}</span>
-                                    <Button size="sm" variant="danger" onClick={() => removeMemberFromProject(project.id, member.id)} disabled={member.id === project.ownerId}>
-                                        {member.id === project.ownerId ? 'Owner' : 'Remove'}
-                                    </Button>
-                                </li>
-                            )
-                        })}
-                    </ul>
-                    <Button size="sm" variant="secondary" className="mt-3" onClick={() => { setActiveProject(project); setIsMemberModalOpen(true);}}>Add Member</Button>
-                </div>
-                {/* Studies */}
-                <div>
-                    <h4 className="text-md font-medium text-nasa-gray-200 mb-2">Studies</h4>
-                    <ul className="space-y-2">
-                        {studies.filter(s => s.projectId === project.id).map(study => (
-                             <li key={study.id} className="flex justify-between items-center p-2 bg-nasa-gray-800 rounded">
-                                <span className="text-sm">{study.name}</span>
-                                <div>
-                                    <Button size="sm" variant="secondary" onClick={() => {setEditingStudy(study); setActiveProject(project); setIsStudyModalOpen(true); }}>Edit</Button>
-                                    <Button size="sm" variant="danger" className="ml-2" onClick={() => deleteStudy(study.id)}>Delete</Button>
-                                </div>
-                            </li>
-                        ))}
-                    </ul>
-                     <Button size="sm" variant="primary" className="mt-3" onClick={() => { setEditingStudy(null); setActiveProject(project); setIsStudyModalOpen(true); }}>Add Study</Button>
-                </div>
+          )
+        })}
+        {studiesInProject.length === 0 && (
+            <div className="text-center py-10 text-nasa-gray-500">
+                <h3 className="text-lg font-semibold">No Studies in this Project</h3>
+                <p>Click "Add New Study" to get started.</p>
             </div>
-          </div>
-        ))}
+        )}
       </div>
 
       {/* Modals */}
-      <Modal isOpen={isProjectModalOpen} onClose={() => setIsProjectModalOpen(false)} title={editingProject ? 'Edit Project' : 'Add New Project'}>
-        <ProjectForm project={editingProject} onSave={handleSaveProject} onCancel={() => setIsProjectModalOpen(false)} />
-      </Modal>
-      
-      {isStudyModalOpen && activeProject && (
-         <Modal isOpen={true} onClose={() => setIsStudyModalOpen(false)} title={editingStudy ? `Edit Study in ${activeProject.name}` : `Add New Study to ${activeProject.name}`}>
-            <StudyForm study={editingStudy} projectId={activeProject.id} onSave={handleSaveStudy} onCancel={() => setIsStudyModalOpen(false)} />
+      {isStudyModalOpen && (
+         <Modal isOpen={true} onClose={() => setIsStudyModalOpen(false)} title={editingStudy ? `Edit Study` : `Add New Study`}>
+            <StudyForm study={editingStudy} projectId={selectedProjectId} onSave={handleSaveStudy} onCancel={() => setIsStudyModalOpen(false)} />
         </Modal>
       )}
 
-      {isMemberModalOpen && activeProject && (
-          <AddMemberModal project={activeProject} onClose={() => setIsMemberModalOpen(false)} />
+      {managingMtesForStudy && (
+        <ManageStudyMTEsModal 
+            study={managingMtesForStudy}
+            onClose={() => setManagingMtesForStudy(null)}
+        />
+      )}
+
+      {managingEvaluatorsForStudy && (
+        <ManageStudyEvaluatorsModal
+            study={managingEvaluatorsForStudy}
+            onClose={() => setManagingEvaluatorsForStudy(null)}
+        />
       )}
     </Card>
   );
 };
 
-export default ManageProjects;
+export default ManageStudies;

@@ -20,8 +20,10 @@ const mockMtes: MTE[] = [
 
 // FIX: Added required `projectId` property to mock Study objects.
 const mockStudies: Study[] = [
-  { id: 'study1', name: 'Alpha Test', description: 'Study 1', mteIds: ['mte1', 'mte3'], projectId: 'proj1' },
-  { id: 'study2', name: 'Bravo Test', description: 'Study 2', mteIds: ['mte2'], projectId: 'proj1' },
+  // FIX: Added missing 'date' and 'evaluatorIds' properties to conform to the Study type.
+  { id: 'study1', name: 'Alpha Test', description: 'Study 1', date: Date.now(), mteIds: ['mte1', 'mte3'], evaluatorIds: ['eval1', 'eval2'], projectId: 'proj1' },
+  // FIX: Added missing 'date' and 'evaluatorIds' properties to conform to the Study type.
+  { id: 'study2', name: 'Bravo Test', description: 'Study 2', date: Date.now(), mteIds: ['mte2'], evaluatorIds: ['eval1'], projectId: 'proj1' },
 ];
 
 const mockRatings: Rating[] = [
@@ -129,6 +131,9 @@ const mockDataSource: IDataSource = {
   deleteMte: vi.fn(),
   addMTEToStudy: vi.fn(),
   removeMTEFromStudy: vi.fn(),
+  // FIX: Added missing 'addEvaluatorToStudy' and 'removeEvaluatorFromStudy' properties to conform to the IDataSource interface.
+  addEvaluatorToStudy: vi.fn(),
+  removeEvaluatorFromStudy: vi.fn(),
   addRating: vi.fn(),
   addPairwiseComparison: vi.fn(),
   hasPreviousRatingInStudy: vi.fn(),

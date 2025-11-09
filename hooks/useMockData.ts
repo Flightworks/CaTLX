@@ -16,7 +16,7 @@ export const INITIAL_PROJECTS: Project[] = [
     name: 'Artemis Program',
     description: 'All studies related to the Artemis missions to the Moon.',
     ownerId: 'eval3',
-    memberIds: ['eval1', 'eval2', 'eval3'],
+    memberIds: ['eval1', 'eval2', 'eval3', 'eval5'],
   },
   {
     id: 'proj2',
@@ -25,13 +25,6 @@ export const INITIAL_PROJECTS: Project[] = [
     ownerId: 'eval2',
     memberIds: ['eval2', 'eval4', 'eval5'],
   },
-  {
-    id: 'proj_eval5_personal',
-    name: "Chris Hadfield's Personal Project",
-    description: "Personal studies and evaluations.",
-    ownerId: 'eval5',
-    memberIds: ['eval5'],
-  }
 ];
 
 export const INITIAL_MTES_CATALOG: MTE[] = [
@@ -50,21 +43,27 @@ export const INITIAL_STUDIES: Study[] = [
     id: 'study1',
     name: 'Artemis II Mission Prep',
     description: 'Preparation tasks for the Artemis II lunar mission.',
+    date: new Date('2024-08-15T09:00:00').getTime(),
     mteIds: ['mte1', 'mte2', 'mte3', 'mte7'],
+    evaluatorIds: ['eval1', 'eval2', 'eval3'],
     projectId: 'proj1',
   },
   {
     id: 'study2',
     name: 'ISS Maintenance Protocols',
     description: 'Evaluating new maintenance protocols aboard the ISS.',
+    date: new Date('2024-09-01T14:30:00').getTime(),
     mteIds: ['mte4', 'mte5'],
+    evaluatorIds: ['eval2', 'eval4', 'eval5'],
     projectId: 'proj2',
   },
   {
     id: 'study3',
     name: 'Lunar Gateway Operations',
     description: 'Tasks related to the assembly and operation of the Lunar Gateway station.',
+    date: new Date('2024-07-20T11:00:00').getTime(),
     mteIds: ['mte6', 'mte8'],
+    evaluatorIds: ['eval1', 'eval5'],
     projectId: 'proj1',
   }
 ];
@@ -241,10 +240,10 @@ const useMockData = (): IDataSource => {
     }));
   };
 
-  const addEvaluator = (evaluator: Omit<Evaluator, 'id'>) => {
+  const addEvaluator = (evaluator: Omit<Evaluator, 'id'>): Evaluator => {
     const newEvaluator = { ...evaluator, id: `eval${Date.now()}` };
     setEvaluators(prev => [...prev, newEvaluator]);
-    addProject({ name: `${newEvaluator.name}'s Personal Project`, description: `Personal studies for ${newEvaluator.name}.`}, newEvaluator.id);
+    return newEvaluator;
   };
   
   const updateEvaluator = (updatedEvaluator: Evaluator) => {
@@ -253,10 +252,20 @@ const useMockData = (): IDataSource => {
   
   const deleteEvaluator = (id: string) => {
     setEvaluators(prev => prev.filter(e => e.id !== id));
+    // Also remove from any project memberships
+    setProjects(prevProjects => prevProjects.map(p => ({
+      ...p,
+      memberIds: p.memberIds.filter(memberId => memberId !== id)
+    })));
+    // Also remove from any study assignments
+    setStudies(prevStudies => prevStudies.map(s => ({
+      ...s,
+      evaluatorIds: s.evaluatorIds.filter(evaluatorId => evaluatorId !== id)
+    })));
   };
 
-  const addStudy = (study: Omit<Study, 'id' | 'mteIds'>) => {
-    setStudies(prev => [...prev, { ...study, id: `study${Date.now()}`, mteIds: [] }]);
+  const addStudy = (study: Omit<Study, 'id' | 'mteIds' | 'evaluatorIds'>) => {
+    setStudies(prev => [...prev, { ...study, id: `study${Date.now()}`, mteIds: [], evaluatorIds: [] }]);
   };
   
   const updateStudy = (updatedStudy: Study) => {
@@ -307,6 +316,24 @@ const useMockData = (): IDataSource => {
     }));
   };
 
+  const addEvaluatorToStudy = (studyId: string, evaluatorId: string) => {
+    setStudies(prev => prev.map(s => {
+      if (s.id === studyId && !s.evaluatorIds.includes(evaluatorId)) {
+        return { ...s, evaluatorIds: [...s.evaluatorIds, evaluatorId] };
+      }
+      return s;
+    }));
+  };
+
+  const removeEvaluatorFromStudy = (studyId: string, evaluatorId: string) => {
+    setStudies(prev => prev.map(s => {
+      if (s.id === studyId) {
+        return { ...s, evaluatorIds: s.evaluatorIds.filter(eId => eId !== evaluatorId) };
+      }
+      return s;
+    }));
+  };
+
   const addRating = async (rating: Omit<Rating, 'id' | 'timestamp'>): Promise<void> => {
     setRatings(prev => [...prev, { ...rating, id: `rating${Date.now()}`, timestamp: Date.now() }]);
   };
@@ -329,7 +356,8 @@ const useMockData = (): IDataSource => {
     projects, evaluators, studies, mtes, ratings, pairwiseComparisons,
     addProject, updateProject, deleteProject, addMemberToProject, removeMemberFromProject,
     addEvaluator, updateEvaluator, deleteEvaluator,
-    addStudy, updateStudy, deleteStudy, addMte, updateMte, deleteMte, addMTEToStudy, removeMTEFromStudy,
+    addStudy, updateStudy, deleteStudy, addMte, updateMte, deleteMte, 
+    addMTEToStudy, removeMTEFromStudy, addEvaluatorToStudy, removeEvaluatorFromStudy,
     addRating, addPairwiseComparison, hasPreviousRatingInStudy
   };
 };
