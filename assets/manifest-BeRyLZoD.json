@@ -1,0 +1,17 @@
+{
+  "name": "CaTLX Workload Assessment",
+  "short_name": "CaTLX",
+  "description": "A web application to conduct NASA Task Load Index (TLX) assessments.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "fullscreen",
+  "background_color": "#1a1f28",
+  "theme_color": "#0B3D91",
+  "icons": [
+    {
+      "src": "/logo.png",
+      "sizes": "100x94",
+      "type": "image/png"
+    }
+  ]
+}
