@@ -1,12 +1,13 @@
-import React, { useMemo, useState } from 'react';
-import { useData } from '../../contexts/AppContext';
-import { ComputedTLXScore, TLXDimension, MTE, Study } from '../../types';
+import React, { useEffect, useMemo, useState } from 'react';
+import { useData, useSession } from '../../contexts/AppContext';
+import { ComputedTLXScore, TLXDimension } from '../../types';
 import { TLX_DIMENSIONS_INFO, DEFAULT_WEIGHTS } from '../../constants';
 import Card from '../../components/ui/Card';
 import Select from '../../components/ui/Select';
 import MteStatsCard from '../../components/admin/MteStatsCard';
 import MteDetailModal from '../../components/admin/MteDetailModal';
 import MteComparisonChart from '../../components/admin/MteComparisonChart';
+import Button from '../../components/ui/Button';
 
 export interface AggregatedMteStats {
   mteId: string;
@@ -21,11 +22,47 @@ export interface AggregatedMteStats {
 
 const ViewStats: React.FC = () => {
   const { ratings, pairwiseComparisons, evaluators, studies, mtes } = useData();
+  const { selectedProjectId } = useSession();
   const [filterStudyId, setFilterStudyId] = useState<string>('');
   const [selectedMte, setSelectedMte] = useState<AggregatedMteStats | null>(null);
+
+  useEffect(() => {
+    setFilterStudyId('');
+  }, [selectedProjectId]);
   
-  const computedScores = useMemo<ComputedTLXScore[]>(() => {
-    return ratings.map(rating => {
+  const availableStudies = useMemo(() => {
+    return selectedProjectId
+      ? studies.filter(study => study.projectId === selectedProjectId)
+      : studies;
+  }, [selectedProjectId, studies]);
+
+  const projectMteIds = useMemo(() => {
+    if (!selectedProjectId) return new Set<string>(mtes.map(m => m.id));
+    const ids = new Set<string>();
+    availableStudies.forEach(study => study.mteIds.forEach(id => ids.add(id)));
+    return ids;
+  }, [availableStudies, mtes, selectedProjectId]);
+
+  type EnrichedComputedScore = ComputedTLXScore & {
+    ratingId: string;
+    timestamp: number;
+    mteRefNumber: string;
+    projectId: string;
+    evaluatorId: string;
+  };
+
+  const filteredRatings = useMemo(() => {
+    return ratings.filter(rating => {
+      const study = studies.find(s => s.id === rating.studyId);
+      if (!study) return false;
+      if (selectedProjectId && study.projectId !== selectedProjectId) return false;
+      if (filterStudyId && rating.studyId !== filterStudyId) return false;
+      return true;
+    });
+  }, [filterStudyId, ratings, selectedProjectId, studies]);
+
+  const computedScores = useMemo<EnrichedComputedScore[]>(() => {
+    return filteredRatings.map(rating => {
       const evaluator = evaluators.find(e => e.id === rating.evaluatorId);
       const study = studies.find(s => s.id === rating.studyId);
       const mte = mtes.find(m => m.id === rating.mteId);
@@ -48,27 +85,35 @@ const ViewStats: React.FC = () => {
         totalWeightedScore += weightedScore;
       }
       
+      const mteDisplayName = (() => {
+        if (!mte) return 'Unknown';
+        return mte.refNumber ? `[${mte.refNumber}] ${mte.name}` : mte.name;
+      })();
+
       return {
+        ratingId: rating.id,
+        timestamp: rating.timestamp,
         evaluatorName: evaluator?.name || 'Unknown',
         studyName: study?.name || 'Unknown',
         studyId: study?.id || '',
         mteId: rating.mteId,
-        mteName: mte ? `[${mte.refNumber}] ${mte.name}` : 'Unknown',
+        mteName: mteDisplayName,
+        mteRefNumber: mte?.refNumber || '',
         rawScores: rating.scores,
         weights,
         weightedScores,
         totalWeightedScore: totalWeight > 0 ? totalWeightedScore / totalWeight : 0,
         isWeighted,
         comments: rating.comments,
+        projectId: study?.projectId || '',
+        evaluatorId: rating.evaluatorId,
       };
     });
-  }, [ratings, pairwiseComparisons, evaluators, studies, mtes]);
+  }, [evaluators, filteredRatings, mtes, pairwiseComparisons, studies]);
 
 
   const aggregatedMteData = useMemo<AggregatedMteStats[]>(() => {
-    const scoresToProcess = filterStudyId
-      ? computedScores.filter(score => score.studyId === filterStudyId)
-      : computedScores;
+    const scoresToProcess = computedScores;
 
     const scoresByMte = scoresToProcess.reduce((acc, score) => {
       if (!acc[score.mteId]) {
@@ -80,7 +125,7 @@ const ViewStats: React.FC = () => {
 
     const mtesToDisplay = filterStudyId 
         ? mtes.filter(mte => studies.find(s => s.id === filterStudyId)?.mteIds.includes(mte.id))
-        : mtes;
+        : mtes.filter(mte => projectMteIds.has(mte.id));
 
     return mtesToDisplay.map(mte => {
         const mteScores = scoresByMte[mte.id] || [];
@@ -126,17 +171,81 @@ const ViewStats: React.FC = () => {
             studyNames
         };
     }).sort((a,b) => a.mteName.localeCompare(b.mteName));
-  }, [computedScores, filterStudyId, mtes, studies]);
+  }, [computedScores, filterStudyId, mtes, projectMteIds, studies]);
+
+  const downloadCsv = () => {
+    if (computedScores.length === 0) {
+      return;
+    }
+
+    const headers = [
+      'Rating ID',
+      'Project ID',
+      'Study',
+      'MTE Ref',
+      'MTE Name',
+      'Evaluator',
+      'Timestamp',
+      'Is Weighted',
+      'Total Weighted Score',
+      ...TLX_DIMENSIONS_INFO.map(dim => `${dim.id} Raw`),
+      ...TLX_DIMENSIONS_INFO.map(dim => `${dim.id} Weight`),
+      'Comments',
+    ];
+
+    const rows = computedScores.map(score => {
+      const timestampIso = new Date(score.timestamp).toISOString();
+      const values = [
+        score.ratingId,
+        score.projectId,
+        score.studyName,
+        score.mteRefNumber,
+        score.mteName,
+        score.evaluatorName,
+        timestampIso,
+        score.isWeighted ? 'Yes' : 'No',
+        score.totalWeightedScore.toFixed(2),
+        ...TLX_DIMENSIONS_INFO.map(dim => score.rawScores[dim.id]),
+        ...TLX_DIMENSIONS_INFO.map(dim => score.weights[dim.id]),
+        score.comments || '',
+      ];
+
+      return values.map(value => {
+        const str = value?.toString() ?? '';
+        if (str.includes(',') || str.includes('"') || str.includes('\n')) {
+          return `"${str.replace(/"/g, '""')}"`;
+        }
+        return str;
+      }).join(',');
+    });
+
+    const csvContent = [headers.join(','), ...rows].join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', `catlx-evaluations${selectedProjectId ? `-${selectedProjectId}` : ''}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
 
   return (
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <h2 className="text-2xl font-bold text-white">MTE Statistics Dashboard</h2>
-        <div className="w-full sm:w-64">
+        <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto sm:items-center">
+          <div className="w-full sm:w-64">
             <Select label="Filter by Study" id="study-filter" value={filterStudyId} onChange={(e) => setFilterStudyId(e.target.value)}>
                 <option value="">All Studies</option>
-                {studies.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                {availableStudies.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
             </Select>
+          </div>
+          <Button onClick={downloadCsv} disabled={computedScores.length === 0}>
+            Export evaluations (CSV)
+          </Button>
         </div>
       </div>
       
