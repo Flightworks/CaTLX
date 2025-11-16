@@ -1,7 +1,12 @@
-import React from 'react';
+
+import React, { useEffect, useState } from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App';
 import { APP_ICON } from './assets';
+import i18n from 'i18next';
+import { initReactI18next } from 'react-i18next';
+import LanguageDetector from 'i18next-browser-languagedetector';
+import Backend from 'i18next-http-backend';
 
 const rootElement = document.getElementById('root');
 if (!rootElement) {
@@ -18,11 +23,41 @@ if (faviconLink) {
   }
 }
 
-
 const root = ReactDOM.createRoot(rootElement);
+
+const I18nextProvider = ({ children }: { children: React.ReactNode }) => {
+  const [isInitialized, setIsInitialized] = useState(false);
+
+  useEffect(() => {
+    i18n
+      .use(Backend)
+      .use(LanguageDetector)
+      .use(initReactI18next)
+      .init({
+        debug: true,
+        fallbackLng: 'en',
+        interpolation: {
+          escapeValue: false,
+        },
+        backend: {
+          loadPath: '/locales/{{lng}}.json',
+        }
+      })
+      .then(() => setIsInitialized(true));
+  }, []);
+
+  if (!isInitialized) {
+    return <div>Loading...</div>;
+  }
+
+  return <>{children}</>;
+};
+
 root.render(
   <React.StrictMode>
-    <App />
+    <I18nextProvider>
+      <App />
+    </I18nextProvider>
   </React.StrictMode>
 );
 
