@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../contexts/AppContext';
 import Button from '../components/ui/Button';
+import LanguageSwitcher from '../components/ui/LanguageSwitcher';
 import { APP_ICON } from '../assets';
 
 const GoogleIcon = () => (
@@ -61,6 +62,9 @@ const LoginPage: React.FC = () => {
                     </div>
                 </Button>
             </div>
+        </div>
+        <div className="mt-6 flex justify-center items-center">
+          <LanguageSwitcher />
         </div>
       </div>
     </div>
