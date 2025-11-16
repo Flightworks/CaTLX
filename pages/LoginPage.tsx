@@ -1,8 +1,10 @@
 
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../contexts/AppContext';
 import Button from '../components/ui/Button';
+import LanguageSwitcher from '../components/ui/LanguageSwitcher';
 import { APP_ICON } from '../assets';
 
 const GoogleIcon = () => (
@@ -18,6 +20,7 @@ const GoogleIcon = () => (
 const LoginPage: React.FC = () => {
   const { login } = useAuth();
   const navigate = useNavigate();
+  const { t } = useTranslation();
 
   const handleLogin = (mode: 'demo' | 'local' | 'api') => {
     login(mode);
@@ -30,35 +33,38 @@ const LoginPage: React.FC = () => {
         <div className="mb-8">
             <div className="flex items-center justify-center">
               <img src={APP_ICON} alt="CaTLX Logo" className="w-12 h-12 rounded-full mr-3" />
-              <h1 className="text-4xl font-bold text-white tracking-wider">CaTLX</h1>
+              <h1 className="text-4xl font-bold text-white tracking-wider">{t('login.title')}</h1>
             </div>
-            <p className="text-nasa-gray-300 mt-2">Workload Assessment Tool</p>
+            <p className="text-nasa-gray-300 mt-2">{t('login.subtitle')}</p>
         </div>
         <div className="bg-nasa-gray-800 p-8 rounded-lg shadow-2xl">
-            <h2 className="text-2xl font-semibold text-white mb-8">Choose Your Mode</h2>
+            <h2 className="text-2xl font-semibold text-white mb-8">{t('login.choose_mode')}</h2>
             <div className="space-y-4">
                 <Button onClick={() => handleLogin('demo')} className="w-full !justify-start !p-4 text-left">
                      <div className="flex flex-col">
-                        <span className="font-bold text-base">Enter Demo Mode</span>
-                        <span className="text-sm font-normal text-nasa-gray-200">Explore with sample data.</span>
+                        <span className="font-bold text-base">{t('login.demo_mode')}</span>
+                        <span className="text-sm font-normal text-nasa-gray-200">{t('login.demo_mode_desc')}</span>
                     </div>
                 </Button>
                 <Button onClick={() => handleLogin('local')} variant="secondary" className="w-full !justify-start !p-4 text-left">
                     <div className="flex flex-col">
-                        <span className="font-bold text-base">Use Local Mode</span>
-                        <span className="text-sm font-normal text-nasa-gray-300">Save data for offline/cached use.</span>
+                        <span className="font-bold text-base">{t('login.local_mode')}</span>
+                        <span className="text-sm font-normal text-nasa-gray-300">{t('login.local_mode_desc')}</span>
                     </div>
                 </Button>
                 <Button onClick={() => handleLogin('api')} variant="secondary" className="w-full !justify-start !p-4 text-left">
                     <div className="flex items-center">
                         <GoogleIcon />
                         <div className="flex flex-col">
-                            <span className="font-bold text-base">Login (Cloud)</span>
-                            <span className="text-sm font-normal text-nasa-gray-300">Connect to the cloud backend.</span>
+                            <span className="font-bold text-base">{t('login.cloud_login')}</span>
+                            <span className="text-sm font-normal text-nasa-gray-300">{t('login.cloud_login_desc')}</span>
                         </div>
                     </div>
                 </Button>
             </div>
+        </div>
+        <div className="mt-6 flex justify-center items-center">
+          <LanguageSwitcher />
         </div>
       </div>
     </div>

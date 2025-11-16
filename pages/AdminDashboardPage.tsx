@@ -1,17 +1,18 @@
 
-
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useAuth, useData, useSession } from '../contexts/AppContext';
 import ManageEvaluators from './admin/ManageEvaluators';
 import ManageStudies from './admin/ManageStudies';
 import ViewStats from './admin/ViewStats';
 import ManageMTEs from './admin/ManageMTEs';
-import Card from '../../components/ui/Card';
-import Select from '../../components/ui/Select';
+import Card from '../components/ui/Card';
+import Select from '../components/ui/Select';
 
 type AdminTab = 'stats' | 'evaluators' | 'studies' | 'mtes';
 
 const ProjectSelector = () => {
+    const { t } = useTranslation();
     const { projects } = useData();
     const { selectedProjectId, setSelectedProjectId } = useSession();
 
@@ -29,7 +30,7 @@ const ProjectSelector = () => {
     return (
         <Card>
             <div className="flex items-center gap-x-4">
-                <label htmlFor="project-selector" className="text-sm font-medium text-nasa-gray-300 whitespace-nowrap">Current Project:</label>
+                <label htmlFor="project-selector" className="text-sm font-medium text-nasa-gray-300 whitespace-nowrap">{t('admin.current_project')}</label>
                 <div className="flex-grow max-w-md">
                      <select id="project-selector" value={selectedProjectId} onChange={e => setSelectedProjectId(e.target.value)}
                        className="block w-full pl-3 pr-10 py-2 text-base bg-nasa-gray-700 border-nasa-gray-600 focus:outline-none focus:ring-nasa-blue focus:border-nasa-blue sm:text-sm rounded-md text-white"
@@ -44,6 +45,7 @@ const ProjectSelector = () => {
 
 
 const AdminDashboardPage: React.FC = () => {
+  const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState<AdminTab>('stats');
   const { mode } = useAuth();
 
@@ -77,11 +79,11 @@ const AdminDashboardPage: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-3xl font-bold text-white">Admin Dashboard</h1>
+      <h1 className="text-3xl font-bold text-white">{t('admin.title')}</h1>
 
       {mode === 'local' && (
         <div className="bg-yellow-900 bg-opacity-50 text-yellow-200 p-4 rounded-lg text-center text-sm">
-            You are in <span className="font-bold">Local Mode</span>. All data is saved on this device only. Use the Logout button to switch modes.
+            {t('admin.local_mode_warning')}
         </div>
       )}
 
@@ -89,10 +91,10 @@ const AdminDashboardPage: React.FC = () => {
 
       <div className="border-b border-nasa-gray-700">
         <nav className="-mb-px flex space-x-4 flex-wrap" aria-label="Tabs">
-          <TabButton tabId="stats">Statistics</TabButton>
-          <TabButton tabId="studies">Manage Studies</TabButton>
-          <TabButton tabId="evaluators">Manage Evaluators</TabButton>
-          <TabButton tabId="mtes">MTE Catalog</TabButton>
+          <TabButton tabId="stats">{t('admin.statistics')}</TabButton>
+          <TabButton tabId="studies">{t('admin.manage_studies')}</TabButton>
+          <TabButton tabId="evaluators">{t('admin.manage_evaluators')}</TabButton>
+          <TabButton tabId="mtes">{t('admin.mte_catalog')}</TabButton>
         </nav>
       </div>
       <div>{renderTabContent()}</div>

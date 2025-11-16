@@ -4,7 +4,7 @@ const CACHE_NAME = 'catlx-cache-v4';
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',
-  '/icon.svg',
+  '/logo.png',
   '/manifest.json',
   '/index.tsx',
   '/App.tsx',

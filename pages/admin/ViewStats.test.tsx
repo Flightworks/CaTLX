@@ -4,7 +4,7 @@ import { render, screen, within, fireEvent } from '@testing-library/react';
 import { describe, it, expect, vi } from 'vitest';
 import ViewStats from './ViewStats';
 import { TLXDimension, Evaluator, Study, MTE, Rating, PairwiseComparison, IDataSource, Project } from '../../types';
-import { DataContext } from '../../contexts/AppContext';
+import { DataContext, SessionContext } from '../../contexts/AppContext';
 
 // Mock data for testing
 const mockEvaluators: Evaluator[] = [
@@ -139,10 +139,21 @@ const mockDataSource: IDataSource = {
   hasPreviousRatingInStudy: vi.fn(),
 };
 
-const renderWithProviders = (ui: React.ReactElement) => {
+const defaultSession = {
+  selectedEvaluatorId: '',
+  setSelectedEvaluatorId: vi.fn(),
+  selectedProjectId: '',
+  setSelectedProjectId: vi.fn(),
+  selectedStudyId: '',
+  setSelectedStudyId: vi.fn(),
+};
+
+const renderWithProviders = (ui: React.ReactElement, dataSource: IDataSource = mockDataSource) => {
   return render(
-    <DataContext.Provider value={mockDataSource}>
-      {ui}
+    <DataContext.Provider value={dataSource}>
+      <SessionContext.Provider value={defaultSession}>
+        {ui}
+      </SessionContext.Provider>
     </DataContext.Provider>
   );
 };
@@ -163,7 +174,9 @@ describe('ViewStats Component Logic and Display', () => {
     // Avg Overall Score: (50 + 100) / 2 = 75.0
     // Avg Raw Scores (for each dim): (50 + 100) / 2 = 75.0
 
-    const mte1Card = await screen.findByText(/Docking Maneuver/i);
+    const mte1HeadingCandidates = await screen.findAllByText(/Docking Maneuver/i);
+    const mte1Card = mte1HeadingCandidates.find(element => element.tagName === 'H3');
+    expect(mte1Card).toBeDefined();
     // Find the parent Card element to scope the queries
     const mte1Container = mte1Card.closest('[class*="bg-nasa-gray-900"]');
     expect(mte1Container).not.toBeNull();
@@ -173,8 +186,10 @@ describe('ViewStats Component Logic and Display', () => {
     expect(within(mte1Container!).queryByText('EVALS')).not.toBeNull();
     
     // Check average overall score. There will be multiple '75.0' texts, we need to find the main one.
-    const avgScoreElement = within(mte1Container!).queryByText('75.0');
-    expect(avgScoreElement).not.toBeNull();
+    const avgScoreElement = within(mte1Container!)
+      .getAllByText('75.0')
+      .find(element => element.className.includes('text-5xl'));
+    expect(avgScoreElement).toBeDefined();
     expect(avgScoreElement!.tagName).toBe('SPAN');
     expect(avgScoreElement!.className).toContain('text-5xl'); // Ensure it's the big score display
     
@@ -189,30 +204,131 @@ describe('ViewStats Component Logic and Display', () => {
     renderWithProviders(<ViewStats />);
 
     // Initially, all MTEs should be visible.
-    expect(screen.queryByText(/Docking Maneuver/i)).not.toBeNull();
-    expect(screen.queryByText(/System Anomaly/i)).not.toBeNull();
-    expect(screen.queryByText(/EVA Simulation/i)).not.toBeNull();
+    const getCardHeading = (pattern: RegExp) =>
+      screen.getAllByText(pattern).find(element => element.tagName === 'H3');
+
+    expect(getCardHeading(/Docking Maneuver/i)).toBeDefined();
+    expect(getCardHeading(/System Anomaly/i)).toBeDefined();
+    expect(getCardHeading(/EVA Simulation/i)).toBeDefined();
 
     // Select 'Alpha Test' (study1) from the dropdown
     const studyFilterDropdown = screen.getByLabelText(/Filter by Study/i);
     fireEvent.change(studyFilterDropdown, { target: { value: 'study1' } });
     
     // After filtering, only MTEs from study1 should be visible
-    expect(screen.queryByText(/Docking Maneuver/i)).not.toBeNull();
-    expect(screen.queryByText(/EVA Simulation/i)).not.toBeNull();
-    expect(screen.queryByText(/System Anomaly/i)).toBeNull(); // mte2 from study2 should be hidden
+    const filteredHeading = (pattern: RegExp) =>
+      screen.getAllByText(pattern).find(element => element.tagName === 'H3');
+
+    expect(filteredHeading(/Docking Maneuver/i)).toBeDefined();
+    expect(filteredHeading(/EVA Simulation/i)).toBeDefined();
+    expect(screen
+      .queryAllByText(/System Anomaly/i)
+      .some(element => element.tagName === 'H3'))
+      .toBe(false); // mte2 from study2 should be hidden
   });
 
   it('should display a "no data" message for MTEs without evaluations', async () => {
     renderWithProviders(<ViewStats />);
     
-    const mte3Card = await screen.findByText(/EVA Simulation/i);
+    const mte3HeadingCandidates = await screen.findAllByText(/EVA Simulation/i);
+    const mte3Card = mte3HeadingCandidates.find(element => element.tagName === 'H3');
+    expect(mte3Card).toBeDefined();
     const mte3Container = mte3Card.closest('[class*="bg-nasa-gray-900"]');
     expect(mte3Container).not.toBeNull();
     
     // Check for 0 evaluations and the specific message
     expect(within(mte3Container!).queryByText('0')).not.toBeNull();
     expect(within(mte3Container!).queryByText(/No evaluation data available/i)).not.toBeNull();
+  });
+
+  it('should compute weighted overall scores and raw means correctly', () => {
+    const weightedDataSource: IDataSource = {
+      ...mockDataSource,
+      projects: [{ id: 'projw', name: 'Weighted Project', description: '', ownerId: 'evalA', memberIds: ['evalA', 'evalB'] }],
+      evaluators: [
+        { id: 'evalA', name: 'Weighted Evaluator A', quality: 'Tester', company: 'X' },
+        { id: 'evalB', name: 'Weighted Evaluator B', quality: 'Tester', company: 'X' },
+      ],
+      studies: [
+        { id: 'studyW', name: 'Weighted Study', description: '', date: Date.now(), mteIds: ['mteW'], evaluatorIds: ['evalA', 'evalB'], projectId: 'projw' },
+      ],
+      mtes: [{ id: 'mteW', name: 'Weighted MTE', description: '', refNumber: 'W01' }],
+      ratings: [
+        {
+          id: 'ratingW1',
+          evaluatorId: 'evalA',
+          studyId: 'studyW',
+          mteId: 'mteW',
+          scores: {
+            [TLXDimension.MENTAL_DEMAND]: 20,
+            [TLXDimension.PHYSICAL_DEMAND]: 80,
+            [TLXDimension.TEMPORAL_DEMAND]: 60,
+            [TLXDimension.PERFORMANCE]: 40,
+            [TLXDimension.EFFORT]: 50,
+            [TLXDimension.FRUSTRATION]: 70,
+          },
+          timestamp: Date.now(),
+        },
+        {
+          id: 'ratingW2',
+          evaluatorId: 'evalB',
+          studyId: 'studyW',
+          mteId: 'mteW',
+          scores: {
+            [TLXDimension.MENTAL_DEMAND]: 60,
+            [TLXDimension.PHYSICAL_DEMAND]: 20,
+            [TLXDimension.TEMPORAL_DEMAND]: 40,
+            [TLXDimension.PERFORMANCE]: 80,
+            [TLXDimension.EFFORT]: 30,
+            [TLXDimension.FRUSTRATION]: 10,
+          },
+          timestamp: Date.now(),
+        },
+      ],
+      pairwiseComparisons: [
+        {
+          evaluatorId: 'evalA',
+          studyId: 'studyW',
+          weights: {
+            [TLXDimension.MENTAL_DEMAND]: 2,
+            [TLXDimension.PHYSICAL_DEMAND]: 1,
+            [TLXDimension.TEMPORAL_DEMAND]: 1,
+            [TLXDimension.PERFORMANCE]: 1,
+            [TLXDimension.EFFORT]: 1,
+            [TLXDimension.FRUSTRATION]: 0,
+          },
+          isWeighted: true,
+        },
+      ],
+    };
+
+    renderWithProviders(<ViewStats />, weightedDataSource);
+
+    const headingCandidates = screen.getAllByText(/Weighted MTE/i);
+    const weightedCard = headingCandidates.find(element => element.tagName === 'H3');
+    expect(weightedCard).toBeDefined();
+
+    const container = weightedCard!.closest('[class*="bg-nasa-gray-900"]');
+    expect(container).not.toBeNull();
+
+    // Weighted workloads for the two ratings: 45 and 40 -> mean 42.5
+    const overallElement = within(container!)
+      .getAllByText('42.5')
+      .find(element => element.className.includes('text-5xl'));
+    expect(overallElement).toBeDefined();
+
+    // Std dev should be 2.5 for (45 and 40) with population variance
+    expect(within(container!).getByText(/±\s?2\.5\sSD/)).toBeInTheDocument();
+
+    // Raw averages should be displayed (e.g., Performance average is 60.0)
+    const performanceRow = within(container!).getByText(/Performance/i).closest('li');
+    expect(performanceRow).not.toBeNull();
+    expect(within(performanceRow!).getByText('60.0')).toBeInTheDocument();
+
+    // Mental Demand average should be 40.0
+    const mentalRow = within(container!).getByText(/Mental Demand/i).closest('li');
+    expect(mentalRow).not.toBeNull();
+    expect(within(mentalRow!).getByText('40.0')).toBeInTheDocument();
   });
 
 });

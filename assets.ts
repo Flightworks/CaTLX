@@ -1,1 +1,3 @@
-export const APP_ICON = '/icon.svg';
+import LogoPng from './logo.png';
+
+export const APP_ICON = LogoPng;
