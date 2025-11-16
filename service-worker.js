@@ -1,41 +1,12 @@
-const CACHE_NAME = 'catlx-cache-v4';
+const CACHE_NAME = 'catlx-cache-v5';
+const BASE_PATH = '/CaTLX';
 
 // Pre-cache the essential parts of the app shell.
 const ASSETS_TO_CACHE = [
-  '/',
-  '/index.html',
-  '/logo.png',
-  '/manifest.json',
-  '/index.tsx',
-  '/App.tsx',
-  '/types.ts',
-  '/constants.ts',
-  '/assets.ts',
-  '/contexts/AppContext.tsx',
-  '/hooks/useMockData.ts',
-  '/hooks/useLocalStorageData.ts',
-  '/hooks/useApiData.ts',
-  '/components/layout/Layout.tsx',
-  '/components/layout/Header.tsx',
-  '/components/ui/Button.tsx',
-  '/components/ui/Card.tsx',
-  '/components/ui/Modal.tsx',
-  '/components/ui/Select.tsx',
-  '/components/ui/TlxSlider.tsx',
-  '/components/ui/PairwiseWeightsDisplay.tsx',
-  '/components/ui/ToggleSwitch.tsx',
-  '/pages/LoginPage.tsx',
-  '/pages/EvaluatorPage.tsx',
-  '/pages/AdminDashboardPage.tsx',
-  '/pages/AboutPage.tsx',
-  '/pages/admin/ManageEvaluators.tsx',
-  '/pages/admin/ManageProjects.tsx',
-  '/pages/admin/ViewStats.tsx',
-  '/pages/admin/ManageMTEs.tsx',
-  '/components/admin/MteStatsCard.tsx',
-  '/components/admin/MteDetailModal.tsx',
-  '/components/admin/MteComparisonChart.tsx',
-  '/components/admin/ScoreDistributionChart.tsx',
+  `${BASE_PATH}/`,
+  `${BASE_PATH}/index.html`,
+  `${BASE_PATH}/logo.png`,
+  `${BASE_PATH}/manifest.json`,
 ];
 
 // Install event: open cache and add app shell files.
@@ -82,13 +53,13 @@ self.addEventListener('fetch', (event) => {
   // the user gets the latest version of the app shell.
   if (event.request.mode === 'navigate') {
     event.respondWith(
-      fetch(event.request).catch(() => caches.match('/index.html'))
+      fetch(event.request).catch(() => caches.match(`${BASE_PATH}/index.html`))
     );
     return;
   }
 
   event.respondWith(
-    caches.match(event.request).then((response) => {
+    caches.match(event.request, { ignoreSearch: true }).then((response) => {
       // If the asset is in the cache, return it.
       if (response) {
         return response;
