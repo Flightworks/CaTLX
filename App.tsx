@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { Suspense } from 'react';
 import { HashRouter, Routes, Route, Navigate } from 'react-router-dom';
 // FIX: AppProvider was used but not imported, causing a 'Cannot find name' error.
 import { AppProvider, useAuth } from './contexts/AppContext';
@@ -38,7 +38,9 @@ function AppRoutes() {
 export default function App() {
   return (
     <AppProvider>
-      <AppRoutes />
+      <Suspense fallback="loading">
+        <AppRoutes />
+      </Suspense>
     </AppProvider>
   );
 }
