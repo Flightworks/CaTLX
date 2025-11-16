@@ -1,7 +1,9 @@
+
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App';
 import { APP_ICON } from './assets';
+import initI18n from './i18n-init';
 
 const rootElement = document.getElementById('root');
 if (!rootElement) {
@@ -18,13 +20,16 @@ if (faviconLink) {
   }
 }
 
-
 const root = ReactDOM.createRoot(rootElement);
-root.render(
-  <React.StrictMode>
-    <App />
-  </React.StrictMode>
-);
+
+(async () => {
+  await initI18n();
+  root.render(
+    <React.StrictMode>
+      <App />
+    </React.StrictMode>
+  );
+})();
 
 // Register the service worker for PWA functionality
 if ('serviceWorker' in navigator) {

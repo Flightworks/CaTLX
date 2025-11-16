@@ -1,4 +1,6 @@
+
 import React, { useState, useEffect, useMemo, useId } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useData, useSession } from '../contexts/AppContext';
 import { TLXDimension, Rating, MTE, ComputedTLXScore } from '../types';
 import { TLX_DIMENSIONS_INFO, PAIRWISE_COMBINATIONS, DEFAULT_WEIGHTS } from '../constants';
@@ -52,6 +54,7 @@ const MTEEditForm: React.FC<{
   onSave: (updatedMte: MTE) => void;
   onCancel: () => void;
 }> = ({ mte, onSave, onCancel }) => {
+  const { t } = useTranslation();
   const [name, setName] = useState(mte.name);
   const [description, setDescription] = useState(mte.description);
   const [refNumber, setRefNumber] = useState(mte.refNumber);
@@ -78,7 +81,7 @@ const MTEEditForm: React.FC<{
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <div>
-        <label htmlFor={nameInputId} className="block text-sm font-medium text-nasa-gray-300">Name</label>
+        <label htmlFor={nameInputId} className="block text-sm font-medium text-nasa-gray-300">{t('evaluator.name')}</label>
         <input
           type="text"
           id={nameInputId}
@@ -89,7 +92,7 @@ const MTEEditForm: React.FC<{
         />
       </div>
       <div>
-        <label htmlFor={refInputId} className="block text-sm font-medium text-nasa-gray-300">Reference Number (optional)</label>
+        <label htmlFor={refInputId} className="block text-sm font-medium text-nasa-gray-300">{t('evaluator.ref_number')}</label>
         <input
           type="text"
           id={refInputId}
@@ -99,7 +102,7 @@ const MTEEditForm: React.FC<{
         />
       </div>
       <div>
-        <label htmlFor={descriptionInputId} className="block text-sm font-medium text-nasa-gray-300">Description</label>
+        <label htmlFor={descriptionInputId} className="block text-sm font-medium text-nasa-gray-300">{t('evaluator.description')}</label>
         <textarea
           id={descriptionInputId}
           value={description}
@@ -110,8 +113,8 @@ const MTEEditForm: React.FC<{
         />
       </div>
       <div className="flex justify-end space-x-2">
-        <Button type="button" variant="secondary" onClick={onCancel}>Cancel</Button>
-        <Button type="submit">Save Changes</Button>
+        <Button type="button" variant="secondary" onClick={onCancel}>{t('evaluator.cancel')}</Button>
+        <Button type="submit">{t('evaluator.save_changes')}</Button>
       </div>
     </form>
   );
@@ -121,6 +124,7 @@ const PairwiseComparisonView: React.FC<{
   onSubmit: (weights: Record<TLXDimension, number>, isWeighted: boolean) => void;
   onComplete: () => void;
 }> = ({ onSubmit, onComplete }) => {
+  const { t } = useTranslation();
   const [currentPairIndex, setCurrentPairIndex] = useState(0);
   const [selections, setSelections] = useState<Record<string, TLXDimension | null>>({});
 
@@ -183,16 +187,16 @@ const PairwiseComparisonView: React.FC<{
   );
 
   return (
-    <Card title="Determine Dimension Weights">
+    <Card title={t('evaluator.determine_weights')}>
       <div className="space-y-6">
         <div>
-            <p className="text-nasa-gray-300 mb-4 text-center">To accurately calculate your workload, we need to determine the importance of each TLX dimension. For each pair below, please select the dimension that you felt contributed <span className="font-bold text-white">more</span> to the workload in this study.</p>
+            <p className="text-nasa-gray-300 mb-4 text-center">{t('evaluator.weights_description')}</p>
         </div>
         
         {/* Progress Bar */}
         <div>
             <div className="flex justify-between mb-1">
-                <span className="text-base font-medium text-nasa-blue">Comparison {currentPairIndex + 1} of {PAIRWISE_COMBINATIONS.length}</span>
+                <span className="text-base font-medium text-nasa-blue">{t('evaluator.comparison', { current: currentPairIndex + 1, total: PAIRWISE_COMBINATIONS.length })}</span>
             </div>
             <div className="w-full bg-nasa-gray-700 rounded-full h-2.5">
                 <div className="bg-nasa-blue h-2.5 rounded-full transition-all duration-300 ease-in-out" style={{ width: `${progress}%` }}></div>
@@ -201,7 +205,7 @@ const PairwiseComparisonView: React.FC<{
 
         {/* Comparison Section */}
         <div className="text-center">
-            <h2 className="text-lg font-semibold text-white mb-4">Which was a more significant source of workload?</h2>
+            <h2 className="text-lg font-semibold text-white mb-4">{t('evaluator.which_workload')}</h2>
             <div className="flex flex-col sm:flex-row items-stretch justify-center gap-4">
                <DimensionCard dimension={dimensionA} onSelect={() => handleSelect(dimensionA.id)} />
                <DimensionCard dimension={dimensionB} onSelect={() => handleSelect(dimensionB.id)} />
@@ -210,13 +214,14 @@ const PairwiseComparisonView: React.FC<{
       </div>
       
       <div className="flex justify-center mt-8 pt-4 border-t border-nasa-gray-700">
-        <Button onClick={handleSkip} variant="secondary" className="w-full sm:w-auto">Skip Weighting Process</Button>
+        <Button onClick={handleSkip} variant="secondary" className="w-full sm:w-auto">{t('evaluator.skip_weighting')}</Button>
       </div>
     </Card>
   );
 };
 
 const AssessmentSummary: React.FC<{ onReturnToTasks: () => void }> = ({ onReturnToTasks }) => {
+    const { t } = useTranslation();
     const { ratings, pairwiseComparisons, evaluators, studies, mtes } = useData();
     const { selectedEvaluatorId, selectedStudyId } = useSession();
 
@@ -269,11 +274,11 @@ const AssessmentSummary: React.FC<{ onReturnToTasks: () => void }> = ({ onReturn
     const currentWeights = currentComparison?.weights || DEFAULT_WEIGHTS;
 
     return (
-        <Card title={`Assessment Summary for: ${selectedStudy.name}`}>
-            <p className="text-nasa-gray-300 mb-6">You have completed all ratings for this study. Below is a summary of your submitted workload scores.</p>
+        <Card title={t('evaluator.assessment_summary', { studyName: selectedStudy.name })}>
+            <p className="text-nasa-gray-300 mb-6">{t('evaluator.summary_description')}</p>
             
             <div className="mb-6">
-                <h3 className="text-lg font-medium text-white mb-2">Dimension Weights Used</h3>
+                <h3 className="text-lg font-medium text-white mb-2">{t('evaluator.weights_used')}</h3>
                 <PairwiseWeightsDisplay weights={currentWeights} isWeighted={isWeighted} />
             </div>
 
@@ -283,14 +288,14 @@ const AssessmentSummary: React.FC<{ onReturnToTasks: () => void }> = ({ onReturn
                         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center">
                             <h4 className="text-lg font-semibold mb-2 sm:mb-0">{score.mteName}</h4>
                             <div className="text-right">
-                                <span className="text-sm text-nasa-gray-400 block">Overall Workload</span>
+                                <span className="text-sm text-nasa-gray-400 block">{t('evaluator.overall_workload')}</span>
                                 <span className="text-2xl font-bold" style={{ color: getScoreColor(score.totalWeightedScore) }}>
                                   {score.totalWeightedScore.toFixed(2)}
                                 </span>
                             </div>
                         </div>
                         <div className="mt-4 pt-4 border-t border-nasa-gray-700">
-                            <h5 className="text-sm font-semibold text-nasa-gray-300 mb-2">Raw Scores Submitted</h5>
+                            <h5 className="text-sm font-semibold text-nasa-gray-300 mb-2">{t('evaluator.raw_scores')}</h5>
                             <div className="grid grid-cols-2 md:grid-cols-3 gap-x-8 gap-y-2">
                                 {TLX_DIMENSIONS_INFO.map(dim => (
                                     <div key={dim.id} className="flex justify-between text-sm">
@@ -302,7 +307,7 @@ const AssessmentSummary: React.FC<{ onReturnToTasks: () => void }> = ({ onReturn
                         </div>
                         {score.comments && (
                             <div className="mt-4 pt-4 border-t border-nasa-gray-700">
-                                <h5 className="text-sm font-semibold text-nasa-gray-300 mb-2">Comments</h5>
+                                <h5 className="text-sm font-semibold text-nasa-gray-300 mb-2">{t('evaluator.comments')}</h5>
                                 <p className="text-sm text-nasa-gray-300 bg-nasa-gray-800 p-3 rounded-md whitespace-pre-wrap">{score.comments}</p>
                             </div>
                         )}
@@ -310,7 +315,7 @@ const AssessmentSummary: React.FC<{ onReturnToTasks: () => void }> = ({ onReturn
                 ))}
             </div>
             <div className="mt-6 pt-4 border-t border-nasa-gray-700 flex justify-center sm:justify-end">
-                <Button onClick={onReturnToTasks}>Return to Task List</Button>
+                <Button onClick={onReturnToTasks}>{t('evaluator.return_to_tasks')}</Button>
             </div>
         </Card>
     );
@@ -318,6 +323,7 @@ const AssessmentSummary: React.FC<{ onReturnToTasks: () => void }> = ({ onReturn
 
 
 const AssessmentRunner: React.FC = () => {
+    const { t } = useTranslation();
     const { studies, mtes, ratings, addRating, addPairwiseComparison, pairwiseComparisons, updateMte } = useData();
     const { selectedEvaluatorId, selectedStudyId } = useSession();
     
@@ -429,7 +435,7 @@ const AssessmentRunner: React.FC = () => {
         } catch (error) {
             console.error("Rating submission failed:", error);
             const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred.';
-            setSubmissionError(`Failed to submit rating. ${errorMessage} Please try again.`);
+            setSubmissionError(t('evaluator.error_submitting_desc', { error: errorMessage }));
             // Do NOT reset form state, so user can retry
         } finally {
             setIsSubmitting(false);
@@ -468,7 +474,7 @@ const AssessmentRunner: React.FC = () => {
     };
 
     if (view === 'loading' || !selectedStudy) {
-        return <Card><p className="text-center text-nasa-gray-400">Loading session...</p></Card>
+        return <Card><p className="text-center text-nasa-gray-400">{t('evaluator.loading')}</p></Card>
     }
 
     if (view === 'pairwise') {
@@ -484,14 +490,14 @@ const AssessmentRunner: React.FC = () => {
             <Card>
                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
                     <div>
-                        <h3 className="text-lg leading-6 font-medium text-white">{`Rating for: ${formatMteDisplayName(selectedMte)}`}</h3>
+                        <h3 className="text-lg leading-6 font-medium text-white">{t('evaluator.rating_for', { mteName: formatMteDisplayName(selectedMte) })}</h3>
                         <p className="mt-1 text-sm text-nasa-gray-400">{selectedMte.description}</p>
                     </div>
                     <ToggleSwitch
-                        label="Rating Mode:"
+                        label={t('evaluator.rating_mode')}
                         options={[
-                            { value: 'express', label: 'Express' },
-                            { value: 'step-by-step', label: 'Step-by-Step' },
+                            { value: 'express', label: t('evaluator.express') },
+                            { value: 'step-by-step', label: t('evaluator.step_by_step') },
                         ]}
                         selectedValue={ratingMode}
                         onChange={handleRatingModeChange}
@@ -500,7 +506,7 @@ const AssessmentRunner: React.FC = () => {
                 <form onSubmit={handleSubmitRating}>
                     {submissionError && (
                       <div className="mb-4 p-3 rounded-md bg-red-900 bg-opacity-50 text-red-300 text-sm border border-red-700" role="alert">
-                        <p className="font-bold">Error Submitting Rating</p>
+                        <p className="font-bold">{t('evaluator.error_submitting')}</p>
                         <p>{submissionError}</p>
                       </div>
                     )}
@@ -522,7 +528,7 @@ const AssessmentRunner: React.FC = () => {
                             </div>
                             <div className="mt-6">
                                 <label htmlFor="comments" className="block text-sm font-medium text-nasa-gray-300">
-                                    Optional Comments
+                                    {t('evaluator.optional_comments')}
                                 </label>
                                 <textarea
                                     id="comments"
@@ -530,7 +536,7 @@ const AssessmentRunner: React.FC = () => {
                                     className="mt-1 block w-full bg-nasa-gray-900 border-nasa-gray-600 rounded-md shadow-sm focus:ring-nasa-blue focus:border-nasa-blue text-white"
                                     value={comments}
                                     onChange={(e) => setComments(e.target.value)}
-                                    placeholder="Add any additional notes about the workload for this task..."
+                                    placeholder={t('evaluator.comments_placeholder')}
                                 />
                             </div>
                         </>
@@ -553,7 +559,7 @@ const AssessmentRunner: React.FC = () => {
                                 } else {
                                     return (
                                         <div className="p-4 bg-nasa-gray-900 rounded-lg">
-                                            <h3 className="text-lg font-semibold text-white">Optional Comments</h3>
+                                            <h3 className="text-lg font-semibold text-white">{t('evaluator.optional_comments')}</h3>
                                             <p className="text-sm text-nasa-gray-400 my-2">Provide any additional qualitative feedback about your experience performing this task. This can include sources of frustration, moments of high demand, or anything else you feel is relevant.</p>
                                             <textarea
                                                 id="comments"
@@ -561,7 +567,7 @@ const AssessmentRunner: React.FC = () => {
                                                 className="mt-1 block w-full bg-nasa-gray-700 border-nasa-gray-600 rounded-md shadow-sm focus:ring-nasa-blue focus:border-nasa-blue text-white"
                                                 value={comments}
                                                 onChange={(e) => setComments(e.target.value)}
-                                                placeholder="Add any additional notes about the workload for this task..."
+                                                placeholder={t('evaluator.comments_placeholder')}
                                                 autoFocus
                                             />
                                         </div>
@@ -572,24 +578,24 @@ const AssessmentRunner: React.FC = () => {
                     )}
                     
                     <div className="flex flex-col-reverse sm:flex-row justify-between items-center gap-4 mt-6">
-                         <Button type="button" variant="secondary" onClick={() => { setSelectedMte(null); setCurrentStep(0); setComments(''); setSubmissionError(null); }} className="w-full sm:w-auto">Back to Tasks</Button>
+                         <Button type="button" variant="secondary" onClick={() => { setSelectedMte(null); setCurrentStep(0); setComments(''); setSubmissionError(null); }} className="w-full sm:w-auto">{t('evaluator.back_to_tasks')}</Button>
                         
                         {ratingMode === 'express' ? (
                             <Button type="submit" className="w-full sm:w-auto" disabled={isSubmitting}>
-                                {isSubmitting ? 'Submitting...' : 'Submit Rating'}
+                                {isSubmitting ? t('evaluator.submitting') : t('evaluator.submit_rating')}
                             </Button>
                         ) : (
                             <div className="flex items-center gap-2 w-full sm:w-auto">
                                 <Button type="button" onClick={() => setCurrentStep(prev => prev - 1)} disabled={currentStep === 0 || isSubmitting} className="w-1/2 sm:w-auto">
-                                    Previous
+                                    {t('evaluator.previous')}
                                 </Button>
                                 {currentStep < TLX_DIMENSIONS_INFO.length ? (
                                     <Button type="button" onClick={() => setCurrentStep(prev => prev + 1)} disabled={isSubmitting} className="w-1/2 sm:w-auto">
-                                        Next ({currentStep + 1}/{TLX_DIMENSIONS_INFO.length + 1})
+                                        {t('evaluator.next', { current: currentStep + 1, total: TLX_DIMENSIONS_INFO.length + 1 })}
                                     </Button>
                                 ) : (
                                     <Button type="submit" className="w-1/2 sm:w-auto" disabled={isSubmitting}>
-                                        {isSubmitting ? 'Submitting...' : 'Submit Rating'}
+                                        {isSubmitting ? t('evaluator.submitting') : t('evaluator.submit_rating')}
                                     </Button>
                                 )}
                             </div>
@@ -609,7 +615,7 @@ const AssessmentRunner: React.FC = () => {
                 <Modal
                     isOpen={isMteModalOpen}
                     onClose={handleCloseMteModal}
-                    title={`Edit Mission Task Element – ${formatMteDisplayName(editingMte)}`}
+                    title={t('evaluator.edit_mte', { mteName: formatMteDisplayName(editingMte) })}
                 >
                     <MTEEditForm
                         mte={editingMte}
@@ -619,23 +625,23 @@ const AssessmentRunner: React.FC = () => {
                 </Modal>
             )}
             <div className="mb-6">
-                <Card title="Current Study Dimension Weights">
+                <Card title={t('evaluator.current_weights')}>
                     <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
                         <div className="flex-grow pr-4">
                             <PairwiseWeightsDisplay weights={currentWeights} isWeighted={isWeighted} />
                         </div>
                          <div className="flex flex-col sm:flex-row items-stretch sm:items-center space-y-2 sm:space-y-0 sm:space-x-2 w-full sm:w-auto">
                             <Button onClick={handleResetWeights} variant="secondary" size="sm" disabled={!isWeighted} className="w-full sm:w-auto">
-                                Reset Weights
+                                {t('evaluator.reset_weights')}
                             </Button>
                             <Button onClick={() => setView('pairwise')} variant="secondary" size="sm" className="w-full sm:w-auto">
-                                Redo Comparison
+                                {t('evaluator.redo_comparison')}
                             </Button>
                         </div>
                     </div>
                 </Card>
             </div>
-            <Card title={`Mission Task Elements for: ${selectedStudy.name}`}>
+            <Card title={t('evaluator.mte_for', { studyName: selectedStudy.name })}>
                  {notification && <div className="mb-4 p-3 rounded-md bg-green-500 bg-opacity-20 text-green-300 text-sm">{notification}</div>}
                  <p className="text-nasa-gray-300 mb-4">Select a task to begin rating. Click a task card to edit its details.</p>
                 <div className="space-y-3">
@@ -690,7 +696,7 @@ const AssessmentRunner: React.FC = () => {
                                         </div>
                                     </div>
                                     <div className="pt-4 border-t border-nasa-gray-700">
-                                        <h5 className="text-sm font-semibold text-nasa-gray-300 mb-2">Raw Scores Submitted</h5>
+                                        <h5 className="text-sm font-semibold text-nasa-gray-300 mb-2">{t('evaluator.raw_scores')}</h5>
                                         <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-8 gap-y-2">
                                             {TLX_DIMENSIONS_INFO.map(dim => (
                                                 <div key={dim.id} className="flex justify-between text-sm">
@@ -702,7 +708,7 @@ const AssessmentRunner: React.FC = () => {
                                     </div>
                                     {rating.comments && (
                                         <div className="mt-4 pt-4 border-t border-nasa-gray-700">
-                                            <h5 className="text-sm font-semibold text-nasa-gray-300 mb-2">Comments</h5>
+                                            <h5 className="text-sm font-semibold text-nasa-gray-300 mb-2">{t('evaluator.comments')}</h5>
                                             <p className="text-sm text-nasa-gray-300 bg-nasa-gray-800 p-3 rounded-md whitespace-pre-wrap">{rating.comments}</p>
                                         </div>
                                     )}
@@ -743,14 +749,14 @@ const AssessmentRunner: React.FC = () => {
                                             size="sm"
                                             className="w-full sm:w-auto"
                                         >
-                                            Rate Task
+                                            {t('evaluator.rate_task')}
                                         </Button>
                                     </div>
                                 </div>
                             );
                         }
                     })}
-                    {mtesInStudy.length === 0 && <p className="text-sm text-nasa-gray-500 text-center py-4">No MTEs have been added to this study yet.</p>}
+                    {mtesInStudy.length === 0 && <p className="text-sm text-nasa-gray-500 text-center py-4">{t('evaluator.no_mtes')}</p>}
                 </div>
             </Card>
         </>
@@ -758,6 +764,7 @@ const AssessmentRunner: React.FC = () => {
 };
 
 const SessionSelector = () => {
+  const { t } = useTranslation();
   const { evaluators, studies, projects } = useData();
   const { 
     selectedEvaluatorId, setSelectedEvaluatorId, 
@@ -781,30 +788,30 @@ const SessionSelector = () => {
     <Card>
       <div className="flex flex-col sm:flex-row items-center gap-x-6 gap-y-4">
         <div className="flex-shrink-0">
-          <h2 className="text-lg font-semibold text-white">Assessment Session</h2>
-          <p className="text-sm text-nasa-gray-400">Select an evaluator and study.</p>
+          <h2 className="text-lg font-semibold text-white">{t('evaluator.assessment_session')}</h2>
+          <p className="text-sm text-nasa-gray-400">{t('evaluator.session_description')}</p>
         </div>
         <div className="w-full flex-grow grid grid-cols-1 sm:grid-cols-2 gap-4">
           <Select
-            label="Evaluator"
+            label={t('evaluator.evaluator_label')}
             id="evaluator-select"
             value={selectedEvaluatorId}
             onChange={(e) => setSelectedEvaluatorId(e.target.value)}
             aria-label="Select Evaluator"
             disabled={!selectedProjectId}
           >
-            <option value="">-- Choose Evaluator --</option>
+            <option value="">{t('evaluator.choose_evaluator')}</option>
             {availableEvaluators.map(e => <option key={e.id} value={e.id}>{e.name}</option>)}
           </Select>
           <Select
-            label="Study"
+            label={t('evaluator.study_label')}
             id="study-select"
             value={selectedStudyId}
             onChange={(e) => setSelectedStudyId(e.target.value)}
             disabled={!selectedProjectId}
             aria-label="Select Study"
           >
-            <option value="">-- Choose Study --</option>
+            <option value="">{t('evaluator.choose_study')}</option>
             {availableStudies.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
           </Select>
         </div>
@@ -815,6 +822,7 @@ const SessionSelector = () => {
 
 
 const EvaluatorPage: React.FC = () => {
+    const { t } = useTranslation();
     const { selectedStudyId } = useSession();
 
     const renderContent = () => {
@@ -822,11 +830,11 @@ const EvaluatorPage: React.FC = () => {
             return (
                 <Card>
                     <div className="text-center py-8">
-                        <h2 className="text-xl font-semibold mb-2">Welcome to the Evaluations Dashboard</h2>
+                        <h2 className="text-xl font-semibold mb-2">{t('evaluator.welcome')}</h2>
                         <p className="text-lg text-nasa-gray-300">
-                           Please select an evaluator and study from the panel above to begin an assessment.
+                           {t('evaluator.welcome_desc')}
                         </p>
-                         <p className="text-sm text-nasa-gray-400 mt-4">If no evaluators are available, please go to the Admin Dashboard to create one.</p>
+                         <p className="text-sm text-nasa-gray-400 mt-4">{t('evaluator.no_evaluators')}</p>
                     </div>
                 </Card>
             );
