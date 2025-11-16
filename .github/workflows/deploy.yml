@@ -25,6 +25,9 @@ jobs:
 
       - run: npm run build
 
+      - name: Add SPA fallback page
+        run: cp dist/index.html dist/404.html
+
       - uses: peaceiris/actions-gh-pages@v4
         with:
           publish_branch: gh-pages
