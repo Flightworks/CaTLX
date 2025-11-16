@@ -135,4 +135,98 @@ describe('useMockData hook', () => {
     const study1 = result.current.studies.find(s => s.id === 'study1');
     expect(study1?.mteIds).not.toContain(mteIdToDelete);
   });
+
+  it('should avoid duplicating project members when the same evaluator is added twice', () => {
+    const { result } = renderHook(() => useMockData());
+    const projectId = 'proj1';
+
+    act(() => {
+      result.current.addMemberToProject(projectId, 'eval4');
+    });
+
+    const afterFirstAdd = result.current.projects.find(p => p.id === projectId)?.memberIds ?? [];
+    expect(afterFirstAdd).toContain('eval4');
+
+    act(() => {
+      result.current.addMemberToProject(projectId, 'eval4');
+    });
+
+    const afterSecondAdd = result.current.projects.find(p => p.id === projectId)?.memberIds ?? [];
+    expect(afterSecondAdd.filter(id => id === 'eval4').length).toBe(1);
+  });
+
+  it('should remove project and associated studies when deleting a project', () => {
+    const { result } = renderHook(() => useMockData());
+
+    act(() => {
+      result.current.deleteProject('proj1');
+    });
+
+    expect(result.current.projects.find(p => p.id === 'proj1')).toBeUndefined();
+    expect(result.current.studies.every(s => s.projectId !== 'proj1')).toBe(true);
+    // Only the project2 study should remain
+    expect(result.current.studies.length).toBe(1);
+    expect(result.current.studies[0].id).toBe('study2');
+  });
+
+  it('should purge evaluator memberships and study assignments when deleting an evaluator', () => {
+    const { result } = renderHook(() => useMockData());
+
+    act(() => {
+      result.current.deleteEvaluator('eval1');
+    });
+
+    expect(result.current.evaluators.find(e => e.id === 'eval1')).toBeUndefined();
+    expect(result.current.projects.every(p => !p.memberIds.includes('eval1'))).toBe(true);
+    expect(result.current.studies.every(s => !s.evaluatorIds.includes('eval1'))).toBe(true);
+  });
+
+  it('should add a new MTE to a study only once', () => {
+    const { result } = renderHook(() => useMockData());
+    const studyId = 'study1';
+    const mteId = 'mte4';
+
+    act(() => {
+      result.current.addMTEToStudy(studyId, mteId);
+    });
+
+    const afterFirstAdd = result.current.studies.find(s => s.id === studyId)?.mteIds ?? [];
+    expect(afterFirstAdd).toContain(mteId);
+
+    act(() => {
+      result.current.addMTEToStudy(studyId, mteId);
+    });
+
+    const afterSecondAdd = result.current.studies.find(s => s.id === studyId)?.mteIds ?? [];
+    expect(afterSecondAdd.filter(id => id === mteId).length).toBe(1);
+  });
+
+  it('should replace an existing pairwise comparison instead of duplicating it', () => {
+    const { result } = renderHook(() => useMockData());
+    const comparison = {
+      evaluatorId: 'eval1',
+      studyId: 'study1',
+      weights: {
+        [TLXDimension.MENTAL_DEMAND]: 0,
+        [TLXDimension.PHYSICAL_DEMAND]: 0,
+        [TLXDimension.TEMPORAL_DEMAND]: 0,
+        [TLXDimension.PERFORMANCE]: 0,
+        [TLXDimension.EFFORT]: 0,
+        [TLXDimension.FRUSTRATION]: 0,
+      },
+      isWeighted: false,
+    };
+
+    act(() => {
+      result.current.addPairwiseComparison(comparison);
+    });
+
+    const matches = result.current.pairwiseComparisons.filter(
+      pc => pc.evaluatorId === 'eval1' && pc.studyId === 'study1'
+    );
+
+    expect(matches.length).toBe(1);
+    expect(matches[0].isWeighted).toBe(false);
+    expect(matches[0].weights[TLXDimension.MENTAL_DEMAND]).toBe(0);
+  });
 });
