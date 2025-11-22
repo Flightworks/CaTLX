@@ -31,37 +31,37 @@ const LoginPage: React.FC = () => {
     <div className="flex items-center justify-center min-h-screen bg-nasa-gray-900">
       <div className="text-center p-8 max-w-md w-full">
         <div className="mb-8">
-            <div className="flex items-center justify-center">
-              <img src={APP_ICON} alt="CaTLX Logo" className="w-12 h-12 rounded-full mr-3" />
-              <h1 className="text-4xl font-bold text-white tracking-wider">{t('login.title')}</h1>
-            </div>
-            <p className="text-nasa-gray-300 mt-2">{t('login.subtitle')}</p>
+          <div className="flex items-center justify-center">
+            <img src={APP_ICON} alt="CaTLX Logo" className="w-12 h-12 rounded-full mr-3" />
+            <h1 className="text-4xl font-bold text-white tracking-wider">{t('login.title')}</h1>
+          </div>
+          <p className="text-nasa-gray-300 mt-2">{t('login.subtitle')}</p>
         </div>
         <div className="bg-nasa-gray-800 p-8 rounded-lg shadow-2xl">
-            <h2 className="text-2xl font-semibold text-white mb-8">{t('login.choose_mode')}</h2>
-            <div className="space-y-4">
-                <Button onClick={() => handleLogin('demo')} className="w-full !justify-start !p-4 text-left">
-                     <div className="flex flex-col">
-                        <span className="font-bold text-base">{t('login.demo_mode')}</span>
-                        <span className="text-sm font-normal text-nasa-gray-200">{t('login.demo_mode_desc')}</span>
-                    </div>
-                </Button>
-                <Button onClick={() => handleLogin('local')} variant="secondary" className="w-full !justify-start !p-4 text-left">
-                    <div className="flex flex-col">
-                        <span className="font-bold text-base">{t('login.local_mode')}</span>
-                        <span className="text-sm font-normal text-nasa-gray-300">{t('login.local_mode_desc')}</span>
-                    </div>
-                </Button>
-                <Button onClick={() => handleLogin('api')} variant="secondary" className="w-full !justify-start !p-4 text-left">
-                    <div className="flex items-center">
-                        <GoogleIcon />
-                        <div className="flex flex-col">
-                            <span className="font-bold text-base">{t('login.cloud_login')}</span>
-                            <span className="text-sm font-normal text-nasa-gray-300">{t('login.cloud_login_desc')}</span>
-                        </div>
-                    </div>
-                </Button>
-            </div>
+          <h2 className="text-2xl font-semibold text-white mb-8">{t('login.choose_mode')}</h2>
+          <div className="space-y-4">
+            <Button onClick={() => handleLogin('demo')} className="w-full !justify-start !p-4 text-left">
+              <div className="flex flex-col">
+                <span className="font-bold text-base">{t('login.demo_mode')}</span>
+                <span className="text-sm font-normal text-nasa-gray-200">{t('login.demo_mode_desc')}</span>
+              </div>
+            </Button>
+            <Button onClick={() => handleLogin('local')} variant="secondary" className="w-full !justify-start !p-4 text-left">
+              <div className="flex flex-col">
+                <span className="font-bold text-base">{t('login.local_mode')}</span>
+                <span className="text-sm font-normal text-nasa-gray-300">{t('login.local_mode_desc')}</span>
+              </div>
+            </Button>
+            <Button disabled variant="secondary" className="w-full !justify-start !p-4 text-left">
+              <div className="flex items-center">
+                <GoogleIcon />
+                <div className="flex flex-col">
+                  <span className="font-bold text-base">{t('login.cloud_login')}</span>
+                  <span className="text-sm font-normal text-nasa-gray-300">{t('login.cloud_login_desc')}</span>
+                </div>
+              </div>
+            </Button>
+          </div>
         </div>
         <div className="mt-6 flex justify-center items-center">
           <LanguageSwitcher />
