@@ -30,7 +30,6 @@ jobs:
 
       - name: Add static assets for GitHub Pages
         run: |
-          cp service-worker.js dist/service-worker.js
           cp dist/index.html dist/404.html
 
       - name: Upload Pages artifact
