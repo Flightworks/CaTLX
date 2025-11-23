@@ -768,9 +768,15 @@ const SessionSelector = () => {
     const { evaluators, studies, projects } = useData();
     const {
         selectedEvaluatorId, setSelectedEvaluatorId,
-        selectedProjectId,
+        selectedProjectId, setSelectedProjectId,
         selectedStudyId, setSelectedStudyId
     } = useSession();
+
+    useEffect(() => {
+        if (!selectedProjectId && projects.length > 0) {
+            setSelectedProjectId(projects[0].id);
+        }
+    }, [projects, selectedProjectId, setSelectedProjectId]);
 
     const availableEvaluators = useMemo(() => {
         if (!selectedProjectId) return [];
