@@ -20,17 +20,15 @@ const Header: React.FC = () => {
   };
 
   const navLinkClass = ({ isActive }: { isActive: boolean }) =>
-    `px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-      isActive
-        ? 'bg-nasa-light-blue text-white'
-        : 'text-nasa-gray-300 hover:bg-nasa-gray-700 hover:text-white'
+    `px-3 py-2 rounded-md text-sm font-medium transition-colors ${isActive
+      ? 'bg-nasa-light-blue text-white'
+      : 'text-nasa-gray-300 hover:bg-nasa-gray-700 hover:text-white'
     }`;
 
   const mobileNavLinkClass = ({ isActive }: { isActive: boolean }) =>
-    `block px-3 py-2 rounded-md text-base font-medium transition-colors ${
-      isActive
-        ? 'bg-nasa-light-blue text-white'
-        : 'text-nasa-gray-300 hover:bg-nasa-gray-700 hover:text-white'
+    `block px-3 py-2 rounded-md text-base font-medium transition-colors ${isActive
+      ? 'bg-nasa-light-blue text-white'
+      : 'text-nasa-gray-300 hover:bg-nasa-gray-700 hover:text-white'
     }`;
 
   return (
@@ -54,6 +52,9 @@ const Header: React.FC = () => {
                 <NavLink to="/evaluator" className={navLinkClass}>
                   {t('header.evaluations')}
                 </NavLink>
+                <NavLink to="/quick-rating" className={navLinkClass}>
+                  {t('header.quick_rating', 'Quick Rating')}
+                </NavLink>
                 <NavLink to="/admin" className={navLinkClass}>
                   {t('header.admin_dashboard')}
                 </NavLink>
@@ -70,7 +71,7 @@ const Header: React.FC = () => {
             </Button>
           </div>
           <div className="md:hidden flex items-center">
-             <button onClick={() => setIsMenuOpen(!isMenuOpen)} className="inline-flex items-center justify-center p-2 rounded-md text-nasa-gray-400 hover:text-white hover:bg-nasa-gray-700 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-white" aria-controls="mobile-menu" aria-expanded={isMenuOpen}>
+            <button onClick={() => setIsMenuOpen(!isMenuOpen)} className="inline-flex items-center justify-center p-2 rounded-md text-nasa-gray-400 hover:text-white hover:bg-nasa-gray-700 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-white" aria-controls="mobile-menu" aria-expanded={isMenuOpen}>
               <span className="sr-only">Open main menu</span>
               {isMenuOpen ? (
                 <svg className="block h-6 w-6" xmlns="http://www.w.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
@@ -86,21 +87,22 @@ const Header: React.FC = () => {
         </div>
       </div>
 
-       {isMenuOpen && (
+      {isMenuOpen && (
         <div className="md:hidden" id="mobile-menu">
           <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3">
             <NavLink to="/evaluator" className={mobileNavLinkClass} onClick={() => setIsMenuOpen(false)}>{t('header.evaluations')}</NavLink>
+            <NavLink to="/quick-rating" className={mobileNavLinkClass} onClick={() => setIsMenuOpen(false)}>{t('header.quick_rating', 'Quick Rating')}</NavLink>
             <NavLink to="/admin" className={mobileNavLinkClass} onClick={() => setIsMenuOpen(false)}>{t('header.admin_dashboard')}</NavLink>
             <NavLink to="/about" className={mobileNavLinkClass} onClick={() => setIsMenuOpen(false)}>{t('header.about')}</NavLink>
           </div>
           <div className="pt-4 pb-3 border-t border-nasa-gray-700">
-             <div className="mt-3 px-4">
-                <LanguageSwitcher />
+            <div className="mt-3 px-4">
+              <LanguageSwitcher />
             </div>
             <div className="mt-3 px-4">
-                <Button onClick={handleLogout} variant="danger" size="md" className="w-full">
-                  {t('header.logout')}
-                </Button>
+              <Button onClick={handleLogout} variant="danger" size="md" className="w-full">
+                {t('header.logout')}
+              </Button>
             </div>
           </div>
         </div>

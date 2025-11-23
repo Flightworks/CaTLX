@@ -71,7 +71,13 @@
     "choose_study": "-- Choose Study --",
     "welcome": "Welcome to the Evaluations Dashboard",
     "welcome_desc": "Please select an evaluator and study from the panel above to begin an assessment.",
-    "no_evaluators": "If no evaluators are available, please go to the Admin Dashboard to create one."
+    "no_evaluators": "If no evaluators are available, please go to the Admin Dashboard to create one.",
+    "weights": "Weights",
+    "weighted": "Weighted",
+    "unweighted": "Unweighted",
+    "summary": "Summary",
+    "total_score": "Total Score",
+    "skipped_comparison": "Pairwise comparison was skipped. Ratings will be unweighted, using equal importance for all dimensions."
   },
   "admin": {
     "title": "Admin Dashboard",
@@ -99,5 +105,88 @@
     "install_safari": "Safari (iOS/iPadOS): Tap the \"Share\" button, then scroll down and select \"Add to Home Screen\".",
     "install_android": "Android (Chrome/Firefox): Tap the browser's menu button (three dots) and select \"Install app\" or \"Add to Home screen\".",
     "install_desc": "Once installed, you can launch CaTLX directly from your home screen or app drawer, just like a native application."
+  },
+  "stats": {
+    "title": "MTE Statistics Dashboard",
+    "filter_study": "Filter by Study",
+    "all_studies": "All Studies",
+    "export_csv": "Export evaluations (CSV)",
+    "breakdown_title": "Individual MTE Breakdown",
+    "no_data_title": "No Matching Data Found",
+    "no_data_desc": "There are no ratings for the selected criteria.",
+    "csv_headers": {
+      "rating_id": "Rating ID",
+      "project_id": "Project ID",
+      "study": "Study",
+      "mte_ref": "MTE Ref",
+      "mte_name": "MTE Name",
+      "evaluator": "Evaluator",
+      "timestamp": "Timestamp",
+      "is_weighted": "Is Weighted",
+      "total_weighted_score": "Total Weighted Score",
+      "raw_suffix": " Raw",
+      "weight_suffix": " Weight",
+      "comments": "Comments"
+    },
+    "csv_values": {
+      "yes": "Yes",
+      "no": "No"
+    },
+    "included_in": "Included in:",
+    "evals_label": "EVALS",
+    "avg_workload": "Avg. Overall Workload",
+    "workload_drivers": "Workload Drivers (Avg. Raw Scores)",
+    "no_eval_data": "No evaluation data available",
+    "not_rated_yet": "This MTE has not been rated yet.",
+    "detailed_scores_for": "Detailed Scores for",
+    "score": "Score",
+    "weights": "Weights",
+    "no_individual_scores": "No individual scores to display for this MTE.",
+    "comparison_title": "Overall Workload Comparison"
+  },
+  "tlx_dimensions": {
+    "mental_demand": {
+      "title": "Mental Demand",
+      "description": "How much mental and perceptual activity was required? Was the task easy or demanding, simple or complex?",
+      "low_anchor": "Very Low",
+      "high_anchor": "Very High"
+    },
+    "physical_demand": {
+      "title": "Physical Demand",
+      "description": "How much physical activity was required? Was the task easy or demanding, slow or brisk?",
+      "low_anchor": "Very Low",
+      "high_anchor": "Very High"
+    },
+    "temporal_demand": {
+      "title": "Temporal Demand",
+      "description": "How much time pressure did you feel due to the rate or pace at which the tasks or task elements occurred?",
+      "low_anchor": "Very Low",
+      "high_anchor": "Very High"
+    },
+    "performance": {
+      "title": "Performance",
+      "description": "How successful do you think you were in accomplishing the goals of the task or mission? How satisfied were you with your performance?",
+      "low_anchor": "Good",
+      "high_anchor": "Poor"
+    },
+    "effort": {
+      "title": "Effort",
+      "description": "How hard did you have to work (mentally and physically) to accomplish your level of performance?",
+      "low_anchor": "Very Low",
+      "high_anchor": "Very High"
+    },
+    "frustration": {
+      "title": "Frustration",
+      "description": "How insecure, discouraged, irritated, stressed and annoyed versus secure, gratified, content, relaxed and complacent did you feel during the task?",
+      "low_anchor": "Very Low",
+      "high_anchor": "Very High"
+    }
+  },
+  "quick_rating": {
+    "title": "Quick Rating",
+    "description": "Calculate TLX scores without saving data."
+  },
+  "common": {
+    "close": "Close"
   }
 }

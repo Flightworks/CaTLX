@@ -71,7 +71,13 @@
     "choose_study": "-- Choisissez une étude --",
     "welcome": "Bienvenue au tableau de bord des évaluations",
     "welcome_desc": "Veuillez sélectionner un évaluateur et une étude dans le panneau ci-dessus pour commencer une évaluation.",
-    "no_evaluators": "Si aucun évaluateur n'est disponible, veuillez vous rendre au tableau de bord d'administration pour en créer un."
+    "no_evaluators": "Si aucun évaluateur n'est disponible, veuillez vous rendre au tableau de bord d'administration pour en créer un.",
+    "weights": "Poids",
+    "weighted": "Pondéré",
+    "unweighted": "Non pondéré",
+    "summary": "Résumé",
+    "total_score": "Score total",
+    "skipped_comparison": "La comparaison par paires a été ignorée. Les évaluations seront non pondérées, utilisant une importance égale pour toutes les dimensions."
   },
   "admin": {
     "title": "Tableau de bord administrateur",
@@ -99,5 +105,88 @@
     "install_safari": "Safari (iOS/iPadOS) : appuyez sur le bouton \"Partager\", puis faites défiler vers le bas et sélectionnez \"Ajouter à l'écran d'accueil\".",
     "install_android": "Android (Chrome/Firefox) : appuyez sur le bouton de menu du navigateur (trois points) et sélectionnez \"Installer l'application\" ou \"Ajouter à l'écran d'accueil\".",
     "install_desc": "Une fois installé, vous pouvez lancer CaTLX directement depuis votre écran d'accueil ou votre tiroir d'applications, comme une application native."
+  },
+  "stats": {
+    "title": "Tableau de bord des statistiques MTE",
+    "filter_study": "Filtrer par étude",
+    "all_studies": "Toutes les études",
+    "export_csv": "Exporter les évaluations (CSV)",
+    "breakdown_title": "Répartition individuelle des MTE",
+    "no_data_title": "Aucune donnée correspondante trouvée",
+    "no_data_desc": "Il n'y a aucune évaluation pour les critères sélectionnés.",
+    "csv_headers": {
+      "rating_id": "ID Évaluation",
+      "project_id": "ID Projet",
+      "study": "Étude",
+      "mte_ref": "Réf MTE",
+      "mte_name": "Nom MTE",
+      "evaluator": "Évaluateur",
+      "timestamp": "Horodatage",
+      "is_weighted": "Est pondéré",
+      "total_weighted_score": "Score pondéré total",
+      "raw_suffix": " Brut",
+      "weight_suffix": " Poids",
+      "comments": "Commentaires"
+    },
+    "csv_values": {
+      "yes": "Oui",
+      "no": "Non"
+    },
+    "included_in": "Inclus dans :",
+    "evals_label": "EVALS",
+    "avg_workload": "Charge de travail globale moy.",
+    "workload_drivers": "Facteurs de charge de travail (Scores bruts moy.)",
+    "no_eval_data": "Aucune donnée d'évaluation disponible",
+    "not_rated_yet": "Ce MTE n'a pas encore été évalué.",
+    "detailed_scores_for": "Scores détaillés pour",
+    "score": "Score",
+    "weights": "Poids",
+    "no_individual_scores": "Aucun score individuel à afficher pour ce MTE.",
+    "comparison_title": "Comparaison de la charge de travail globale"
+  },
+  "tlx_dimensions": {
+    "mental_demand": {
+      "title": "Exigence mentale",
+      "description": "Quelle activité mentale et perceptuelle a été requise ? La tâche était-elle facile ou exigeante, simple ou complexe ?",
+      "low_anchor": "Très faible",
+      "high_anchor": "Très élevée"
+    },
+    "physical_demand": {
+      "title": "Exigence physique",
+      "description": "Quelle activité physique a été requise ? La tâche était-elle facile ou exigeante, lente ou rapide ?",
+      "low_anchor": "Très faible",
+      "high_anchor": "Très élevée"
+    },
+    "temporal_demand": {
+      "title": "Exigence temporelle",
+      "description": "Quelle pression temporelle avez-vous ressentie en raison du rythme ou de la cadence des tâches ou des éléments de tâche ?",
+      "low_anchor": "Très faible",
+      "high_anchor": "Très élevée"
+    },
+    "performance": {
+      "title": "Performance",
+      "description": "Dans quelle mesure pensez-vous avoir réussi à atteindre les objectifs de la tâche ou de la mission ? Êtes-vous satisfait de votre performance ?",
+      "low_anchor": "Bonne",
+      "high_anchor": "Mauvaise"
+    },
+    "effort": {
+      "title": "Effort",
+      "description": "Quelle difficulté avez-vous eue à travailler (mentalement et physiquement) pour atteindre votre niveau de performance ?",
+      "low_anchor": "Très faible",
+      "high_anchor": "Très élevé"
+    },
+    "frustration": {
+      "title": "Frustration",
+      "description": "Dans quelle mesure vous êtes-vous senti insécurisé, découragé, irrité, stressé et agacé par rapport à sécurisé, gratifié, content, détendu et complaisant pendant la tâche ?",
+      "low_anchor": "Très faible",
+      "high_anchor": "Très élevée"
+    }
+  },
+  "quick_rating": {
+    "title": "Évaluation rapide",
+    "description": "Calculez les scores TLX sans enregistrer les données."
+  },
+  "common": {
+    "close": "Fermer"
   }
 }

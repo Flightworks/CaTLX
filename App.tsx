@@ -5,6 +5,7 @@ import { HashRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AppProvider, useAuth } from './contexts/AppContext';
 import LoginPage from './pages/LoginPage';
 import EvaluatorPage from './pages/EvaluatorPage';
+import QuickRatingPage from './pages/QuickRatingPage';
 import AdminDashboardPage from './pages/AdminDashboardPage';
 import Layout from './components/layout/Layout';
 import AboutPage from './pages/AboutPage';
@@ -19,12 +20,13 @@ function AppRoutes() {
         <Route path="/*" element={
           isLoggedIn ? (
             <Layout>
-                <Routes>
-                    <Route path="/evaluator" element={<EvaluatorPage />} />
-                    <Route path="/admin" element={<AdminDashboardPage />} />
-                    <Route path="/about" element={<AboutPage />} />
-                    <Route path="/" element={<Navigate to="/evaluator" />} />
-                </Routes>
+              <Routes>
+                <Route path="/evaluator" element={<EvaluatorPage />} />
+                <Route path="/quick-rating" element={<QuickRatingPage />} />
+                <Route path="/admin" element={<AdminDashboardPage />} />
+                <Route path="/about" element={<AboutPage />} />
+                <Route path="/" element={<Navigate to="/evaluator" />} />
+              </Routes>
             </Layout>
           ) : (
             <Navigate to="/login" />

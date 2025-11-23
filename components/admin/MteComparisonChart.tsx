@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { AggregatedMteStats } from '../../pages/admin/ViewStats';
 import Card from '../ui/Card';
 
@@ -25,16 +26,17 @@ const getScoreColor = (score: number): string => {
 };
 
 const MteComparisonChart: React.FC<{ data: AggregatedMteStats[] }> = ({ data }) => {
+  const { t } = useTranslation();
   const sortedData = [...data]
     .filter(d => d.numberOfEvals > 0)
     .sort((a, b) => b.avgOverallScore - a.avgOverallScore);
 
   if (sortedData.length === 0) {
-    return null; 
+    return null;
   }
 
   return (
-    <Card title="Overall Workload Comparison">
+    <Card title={t('stats.comparison_title')}>
       <div className="space-y-4">
         {sortedData.map(mte => (
           <div key={mte.mteId} className="grid grid-cols-12 gap-x-2 sm:gap-x-4 items-center text-sm">
@@ -52,9 +54,9 @@ const MteComparisonChart: React.FC<{ data: AggregatedMteStats[] }> = ({ data }) 
                   }}
                 >
                 </div>
-                 <span className="absolute inset-0 flex items-center justify-center text-white text-xs font-bold drop-shadow-[0_1px_1px_rgba(0,0,0,0.7)] pointer-events-none">
-                   {mte.avgOverallScore.toFixed(1)}
-                 </span>
+                <span className="absolute inset-0 flex items-center justify-center text-white text-xs font-bold drop-shadow-[0_1px_1px_rgba(0,0,0,0.7)] pointer-events-none">
+                  {mte.avgOverallScore.toFixed(1)}
+                </span>
               </div>
             </div>
             <div className="col-span-2 sm:col-span-1 text-right text-nasa-gray-300 font-mono text-xs">

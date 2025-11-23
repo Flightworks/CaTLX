@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useData, useSession } from '../../contexts/AppContext';
 import { ComputedTLXScore, TLXDimension } from '../../types';
 import { TLX_DIMENSIONS_INFO, DEFAULT_WEIGHTS } from '../../constants';
@@ -21,6 +22,7 @@ export interface AggregatedMteStats {
 }
 
 const ViewStats: React.FC = () => {
+  const { t } = useTranslation();
   const { ratings, pairwiseComparisons, evaluators, studies, mtes } = useData();
   const { selectedProjectId } = useSession();
   const [filterStudyId, setFilterStudyId] = useState<string>('');
@@ -179,18 +181,18 @@ const ViewStats: React.FC = () => {
     }
 
     const headers = [
-      'Rating ID',
-      'Project ID',
-      'Study',
-      'MTE Ref',
-      'MTE Name',
-      'Evaluator',
-      'Timestamp',
-      'Is Weighted',
-      'Total Weighted Score',
-      ...TLX_DIMENSIONS_INFO.map(dim => `${dim.id} Raw`),
-      ...TLX_DIMENSIONS_INFO.map(dim => `${dim.id} Weight`),
-      'Comments',
+      t('stats.csv_headers.rating_id'),
+      t('stats.csv_headers.project_id'),
+      t('stats.csv_headers.study'),
+      t('stats.csv_headers.mte_ref'),
+      t('stats.csv_headers.mte_name'),
+      t('stats.csv_headers.evaluator'),
+      t('stats.csv_headers.timestamp'),
+      t('stats.csv_headers.is_weighted'),
+      t('stats.csv_headers.total_weighted_score'),
+      ...TLX_DIMENSIONS_INFO.map(dim => `${dim.id}${t('stats.csv_headers.raw_suffix')}`),
+      ...TLX_DIMENSIONS_INFO.map(dim => `${dim.id}${t('stats.csv_headers.weight_suffix')}`),
+      t('stats.csv_headers.comments'),
     ];
 
     const rows = computedScores.map(score => {
@@ -203,7 +205,7 @@ const ViewStats: React.FC = () => {
         score.mteName,
         score.evaluatorName,
         timestampIso,
-        score.isWeighted ? 'Yes' : 'No',
+        score.isWeighted ? t('stats.csv_values.yes') : t('stats.csv_values.no'),
         score.totalWeightedScore.toFixed(2),
         ...TLX_DIMENSIONS_INFO.map(dim => score.rawScores[dim.id]),
         ...TLX_DIMENSIONS_INFO.map(dim => score.weights[dim.id]),
@@ -235,23 +237,23 @@ const ViewStats: React.FC = () => {
   return (
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-        <h2 className="text-2xl font-bold text-white">MTE Statistics Dashboard</h2>
+        <h2 className="text-2xl font-bold text-white">{t('stats.title')}</h2>
         <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto sm:items-center">
           <div className="w-full sm:w-64">
-            <Select label="Filter by Study" id="study-filter" value={filterStudyId} onChange={(e) => setFilterStudyId(e.target.value)}>
-                <option value="">All Studies</option>
+            <Select label={t('stats.filter_study')} id="study-filter" value={filterStudyId} onChange={(e) => setFilterStudyId(e.target.value)}>
+                <option value="">{t('stats.all_studies')}</option>
                 {availableStudies.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
             </Select>
           </div>
           <Button onClick={downloadCsv} disabled={computedScores.length === 0}>
-            Export evaluations (CSV)
+            {t('stats.export_csv')}
           </Button>
         </div>
       </div>
       
       <MteComparisonChart data={aggregatedMteData} />
 
-      <Card title="Individual MTE Breakdown">
+      <Card title={t('stats.breakdown_title')}>
         {aggregatedMteData.length > 0 ? (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {aggregatedMteData.map(stats => (
@@ -264,8 +266,8 @@ const ViewStats: React.FC = () => {
           </div>
         ) : (
            <div className="text-center py-16 text-nasa-gray-500">
-              <h3 className="text-lg font-semibold">No Matching Data Found</h3>
-              <p>There are no ratings for the selected criteria.</p>
+              <h3 className="text-lg font-semibold">{t('stats.no_data_title')}</h3>
+              <p>{t('stats.no_data_desc')}</p>
           </div>
         )}
       </Card>
