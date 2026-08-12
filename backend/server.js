@@ -10,6 +10,7 @@ const fs = require('fs');
 // --- Configuration ---
 const PORT = process.env.PORT || 8080;
 const JWT_SECRET = process.env.JWT_SECRET || 'catlx-dev-secret-change-in-production';
+const BOOTSTRAP_ADMIN_KEY = process.env.BOOTSTRAP_ADMIN_KEY || '';
 const DB_PATH = process.env.DB_PATH || path.join(__dirname, 'data.sqlite');
 
 // Ensure data directory exists
@@ -231,6 +232,11 @@ app.get('/api/health', (req, res) => {
 app.post('/api/auth/register', (req, res) => {
   const { email, password, name } = req.body;
   if (!email || !password) return res.status(400).json({ error: 'Email and password required' });
+
+  const userCount = db.prepare('SELECT COUNT(*) as count FROM users').get().count;
+  if (userCount > 0 && (!BOOTSTRAP_ADMIN_KEY || req.headers['x-bootstrap-key'] !== BOOTSTRAP_ADMIN_KEY)) {
+    return res.status(403).json({ error: 'Registration is disabled after initial bootstrap' });
+  }
 
   const existing = db.prepare('SELECT id FROM users WHERE email = ?').get(email);
   if (existing) return res.status(409).json({ error: 'User already exists' });
