@@ -281,7 +281,7 @@ app.post('/api/projects', authenticateToken, (req, res) => {
   const { name, description, ownerId } = req.body;
   if (!name) return res.status(400).json({ error: 'Name required' });
 
-  const id = generateId();
+  const id = req.body.id || generateId();
   const ts = now();
   db.prepare('INSERT INTO projects (id, name, description, owner_id, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)')
     .run(id, name, description || null, ownerId || req.user.id, ts, ts);
@@ -348,7 +348,7 @@ app.post('/api/evaluators', authenticateToken, (req, res) => {
   const { name, quality, company } = req.body;
   if (!name) return res.status(400).json({ error: 'Name required' });
 
-  const id = generateId();
+  const id = req.body.id || generateId();
   const ts = now();
   db.prepare('INSERT INTO evaluators (id, name, quality, company, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)')
     .run(id, name, quality || null, company || null, ts, ts);
@@ -387,7 +387,7 @@ app.post('/api/studies', authenticateToken, (req, res) => {
   const { name, description, date, projectId, mteIds, evaluatorIds } = req.body;
   if (!name) return res.status(400).json({ error: 'Name required' });
 
-  const id = generateId();
+  const id = req.body.id || generateId();
   const ts = now();
   db.prepare('INSERT INTO studies (id, name, description, date, project_id, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)')
     .run(id, name, description || null, date || ts, projectId || null, ts, ts);
@@ -474,7 +474,7 @@ app.post('/api/mtes', authenticateToken, (req, res) => {
   const { name, description, refNumber } = req.body;
   if (!name) return res.status(400).json({ error: 'Name required' });
 
-  const id = generateId();
+  const id = req.body.id || generateId();
   const ts = now();
   const finalRef = refNumber || `MTE-${Date.now()}`;
   db.prepare('INSERT INTO mtes (id, name, description, ref_number, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)')

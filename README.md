@@ -44,12 +44,18 @@ npm install
 npm run dev   # ou: node server.js
 ```
 
-Le backend démarre sur `http://localhost:8080`.
+Le backend démarre sur `http://localhost:8099` pour éviter le port 8080 occupé sur la machine de développement. Pour utiliser un autre port : `PORT=8099 node server.js`.
 
 2. **Frontend** (dans un autre terminal) :
 
 ```bash
 npm run dev
+```
+
+Pour connecter le frontend au backend local, créer `.env.local` :
+
+```dotenv
+VITE_API_BASE_URL=http://localhost:8099/api
 ```
 
 ### Build production
@@ -81,7 +87,7 @@ L'application propose trois modes au login :
 |------|-------------|-------------|
 | **Demo** | Données d'exemple en mémoire, idéal pour découvrir l'outil. | Aucune (reset à chaque refresh) |
 | **Local** | Données sauvegardées dans le navigateur (localStorage). | Local à l'appareil |
-| **API** (Cloud) | Connecté au backend Express + SQLite. | Serveur, partagé entre utilisateurs |
+| **API** (auto-hébergé) | Connecté au backend Express + SQLite avec JWT. | Serveur, partagé entre utilisateurs |
 
 ## Structure du projet
 
@@ -91,7 +97,7 @@ catlx/
 ├── pages/
 │   ├── AdminDashboardPage.tsx # Dashboard admin (onglets: stats, études, évaluateurs, MTEs)
 │   ├── EvaluatorPage.tsx      # Interface évaluateur (rating, pairwise comparison)
-│   ├── LoginPage.tsx          # Sélection du mode (demo/local/api)
+│   ├── LoginPage.tsx          # Sélection du mode + connexion API
 │   └── QuickRatingPage.tsx    # Calcul TLX rapide sans sauvegarde
 ├── pages/admin/
 │   ├── ViewStats.tsx          # Statistiques agrégées par MTE
@@ -121,14 +127,14 @@ Le backend expose une API REST sur `/api` :
 - `GET/POST/PUT/DELETE /api/studies` — Études
 - `GET/POST/PUT/DELETE /api/mtes` — Catalogue MTE
 - `POST /api/ratings` — Soumettre un rating
-- `POST /api/pairwise` — Soumettre une comparaison paire-à-paire
+- `POST /api/pairwise-comparisons` — Soumettre une comparaison paire-à-paire
 
 La base SQLite est initialisée automatiquement au premier démarrage.
 
 ## Déploiement
 
 - **Frontend** : `npm run build` puis servir `dist/` (GitHub Pages, Netlify, etc.)
-- **Backend** : `docker build -t catlx-backend ./backend` puis exécuter le conteneur
+- **Backend + frontend** : `docker compose up -d --build` (frontend sur `http://localhost:3000`, backend sur `http://localhost:8080`)
 
 ## Licence
 

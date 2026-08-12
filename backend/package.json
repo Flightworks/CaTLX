@@ -4,7 +4,8 @@
   "description": "Backend API for the CaTLX application (self-hosted, SQLite).",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js"
+    "start": "node server.js",
+    "dev": "node server.js"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",
