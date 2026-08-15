@@ -9,9 +9,12 @@ const fs = require('fs');
 
 // --- Configuration ---
 const PORT = process.env.PORT || 8080;
-const JWT_SECRET = process.env.JWT_SECRET || 'catlx-dev-secret-change-in-production';
-const BOOTSTRAP_ADMIN_KEY = process.env.BOOTSTRAP_ADMIN_KEY || '';
+const JWT_SECRET = process.env.JWT_SECRET;
 const DB_PATH = process.env.DB_PATH || path.join(__dirname, 'data.sqlite');
+
+if (!JWT_SECRET) {
+  throw new Error('JWT_SECRET must be set before starting CaTLX');
+}
 
 // Ensure data directory exists
 const dbDir = path.dirname(DB_PATH);
@@ -152,7 +155,7 @@ function rowToRating(row) {
     mteId: row.mte_id,
     scores: parseJsonField(row.scores),
     comments: row.comments,
-    timestamp: row.timestamp
+    timestamp: row.timestamp * 1000
   };
 }
 
@@ -234,7 +237,7 @@ app.post('/api/auth/register', (req, res) => {
   if (!email || !password) return res.status(400).json({ error: 'Email and password required' });
 
   const userCount = db.prepare('SELECT COUNT(*) as count FROM users').get().count;
-  if (userCount > 0 && (!BOOTSTRAP_ADMIN_KEY || req.headers['x-bootstrap-key'] !== BOOTSTRAP_ADMIN_KEY)) {
+  if (userCount > 0) {
     return res.status(403).json({ error: 'Registration is disabled after initial bootstrap' });
   }
 
@@ -243,7 +246,7 @@ app.post('/api/auth/register', (req, res) => {
 
   const id = generateId();
   const hash = bcrypt.hashSync(password, 10);
-  const role = db.prepare('SELECT COUNT(*) as c FROM users').get().c === 0 ? 'admin' : 'admin';
+  const role = 'admin';
 
   db.prepare('INSERT INTO users (id, email, password_hash, name, role) VALUES (?, ?, ?, ?, ?)')
     .run(id, email, hash, name || null, role);
@@ -533,7 +536,7 @@ app.post('/api/ratings', authenticateToken, (req, res) => {
   const ts = now();
   db.prepare('INSERT INTO ratings (id, evaluator_id, study_id, mte_id, scores, comments, timestamp) VALUES (?, ?, ?, ?, ?, ?, ?)')
     .run(id, evaluatorId, studyId, mteId, JSON.stringify(scores), comments || null, ts);
-  res.status(201).json({ id, evaluatorId, studyId, mteId, scores, comments, timestamp: ts });
+  res.status(201).json({ id, evaluatorId, studyId, mteId, scores, comments, timestamp: ts * 1000 });
 });
 
 app.put('/api/ratings/:id', authenticateToken, (req, res) => {
@@ -671,7 +674,7 @@ app.post('/api/evaluator-access/:token/ratings', (req, res) => {
   // Mark token as used
   db.prepare('UPDATE evaluator_tokens SET used_at = ? WHERE id = ?').run(ts, tokenRow.id);
 
-  res.status(201).json({ id, evaluatorId: tokenRow.evaluator_id, studyId: tokenRow.study_id, mteId, scores, comments, timestamp: ts });
+  res.status(201).json({ id, evaluatorId: tokenRow.evaluator_id, studyId: tokenRow.study_id, mteId, scores, comments, timestamp: ts * 1000 });
 });
 
 // Submit pairwise comparison with evaluator token (public)

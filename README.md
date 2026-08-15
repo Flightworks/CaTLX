@@ -122,7 +122,7 @@ catlx/
 Le backend expose une API REST sur `/api` :
 
 - `POST /api/auth/login` — Authentification (JWT)
-- `POST /api/auth/register` — Bootstrap du premier administrateur (ensuite désactivé, sauf avec `x-bootstrap-key`)
+- `POST /api/auth/register` — Bootstrap du premier administrateur ; désactivé ensuite.
 - `GET/POST/PUT/DELETE /api/projects` — Projets
 - `GET/POST/PUT/DELETE /api/evaluators` — Évaluateurs
 - `GET/POST/PUT/DELETE /api/studies` — Études
@@ -137,7 +137,7 @@ La base SQLite est initialisée automatiquement au premier démarrage.
 - **Frontend** : `npm run build` puis servir `dist/` (GitHub Pages, Netlify, etc.)
 - **Backend + frontend** : `docker compose up -d --build` (frontend sur `http://localhost:3000`, backend sur `http://localhost:8080`)
 
-En production, définir au minimum `JWT_SECRET` et, si nécessaire, `BOOTSTRAP_ADMIN_KEY` dans un fichier `.env` avant le premier démarrage.
+En production, définir un `JWT_SECRET` long et aléatoire dans un fichier `.env` avant le premier démarrage. Le backend refuse de démarrer sans ce secret.
 
 ## Licence
 
