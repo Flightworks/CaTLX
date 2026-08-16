@@ -1,7 +1,10 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Evaluator, Study, MTE, Rating, PairwiseComparison, IDataSource, Project } from '../types';
 
-export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8099/api';
+const defaultApiBaseUrl = typeof window === 'undefined'
+  ? 'http://localhost:8099/api'
+  : `${window.location.protocol}//${window.location.hostname}:8099/api`;
+export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || defaultApiBaseUrl;
 export const API_TOKEN_KEY = 'catlx_api_token';
 
 const id = () => crypto.randomUUID();

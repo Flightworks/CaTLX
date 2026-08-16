@@ -13,7 +13,7 @@ describe('API data transport', () => {
 
     await apiRequest('/projects');
 
-    expect(API_BASE_URL).toBe('http://localhost:8099/api');
+    expect(API_BASE_URL).toBe(`${window.location.protocol}//${window.location.hostname}:8099/api`);
     const [, options] = vi.mocked(fetch).mock.calls[0];
     expect((options?.headers as Headers).get('Authorization')).toBe('Bearer jwt-token');
   });
