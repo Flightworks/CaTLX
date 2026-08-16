@@ -1,14 +1,17 @@
 {
   "name": "catlx-backend",
   "version": "1.0.0",
-  "description": "Backend API for the CaTLX application.",
+  "description": "Backend API for the CaTLX application (self-hosted, SQLite).",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js"
+    "start": "node server.js",
+    "dev": "node server.js"
   },
   "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "better-sqlite3": "^11.3.0",
     "cors": "^2.8.5",
     "express": "^4.19.2",
-    "firebase-admin": "^12.1.0"
+    "jsonwebtoken": "^9.0.2"
   }
 }

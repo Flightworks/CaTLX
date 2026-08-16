@@ -1,247 +1,85 @@
-import { useState, useEffect } from 'react';
-import { Evaluator, Study, MTE, Rating, PairwiseComparison, IDataSource, TLXDimension, Project } from '../types';
-import {
-  INITIAL_EVALUATORS,
-  INITIAL_PROJECTS,
-  INITIAL_MTES_CATALOG,
-  INITIAL_STUDIES,
-  INITIAL_RATINGS,
-  INITIAL_PAIRWISE_COMPARISONS
-} from './useMockData';
+import { useCallback, useEffect, useState } from 'react';
+import { Evaluator, Study, MTE, Rating, PairwiseComparison, IDataSource, Project } from '../types';
 
-// The base URL for your backend API.
-// When running locally, both frontend and backend might be on localhost.
-// When deployed, this will be your Cloud Run service URL.
-const API_BASE_URL = 'http://localhost:8080/api';
+const defaultApiBaseUrl = typeof window === 'undefined'
+  ? 'http://localhost:8099/api'
+  : `${window.location.protocol}//${window.location.hostname}:8099/api`;
+export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || defaultApiBaseUrl;
+export const API_TOKEN_KEY = 'catlx_api_token';
 
+const id = () => crypto.randomUUID();
+const token = () => (typeof localStorage === 'undefined' ? null : localStorage.getItem(API_TOKEN_KEY));
+
+export async function apiRequest<T = unknown>(path: string, options: RequestInit = {}): Promise<T> {
+  const headers = new Headers(options.headers);
+  headers.set('Content-Type', 'application/json');
+  const jwt = token();
+  if (jwt) headers.set('Authorization', `Bearer ${jwt}`);
+  const response = await fetch(`${API_BASE_URL}${path}`, { ...options, headers });
+  if (!response.ok) {
+    let message = `HTTP ${response.status}`;
+    try { message = (await response.json()).error || message; } catch { /* empty response */ }
+    throw new Error(message);
+  }
+  if (response.status === 204) return undefined as T;
+  return response.json() as Promise<T>;
+}
+
+const normalizeProject = (p: any): Project => ({ id: p.id, name: p.name, description: p.description || '', ownerId: p.ownerId ?? p.owner_id, memberIds: p.memberIds || [] });
+const normalizeEvaluator = (e: any): Evaluator => ({ id: e.id, name: e.name, quality: e.quality || '', company: e.company || '' });
+const normalizeMte = (m: any): MTE => ({ id: m.id, name: m.name, description: m.description || '', refNumber: m.refNumber ?? m.ref_number ?? '' });
+const normalizeStudy = (s: any): Study => ({ id: s.id, name: s.name, description: s.description || '', date: Number(s.date), mteIds: s.mteIds || s.mte_ids || [], evaluatorIds: s.evaluatorIds || s.evaluator_ids || [], projectId: s.projectId ?? s.project_id });
+const normalizeRating = (r: any): Rating => { const timestamp = Number(r.timestamp); return { id: r.id, evaluatorId: r.evaluatorId ?? r.evaluator_id, studyId: r.studyId ?? r.study_id, mteId: r.mteId ?? r.mte_id, scores: typeof r.scores === 'string' ? JSON.parse(r.scores) : r.scores, timestamp: timestamp < 1_000_000_000_000 ? timestamp * 1000 : timestamp, comments: r.comments || undefined }; };
+const normalizePairwise = (p: any): PairwiseComparison => ({ evaluatorId: p.evaluatorId ?? p.evaluator_id, studyId: p.studyId ?? p.study_id, weights: typeof p.weights === 'string' ? JSON.parse(p.weights) : p.weights, isWeighted: Boolean(p.isWeighted ?? p.is_weighted) });
+const body = (value: unknown): RequestInit => ({ method: 'POST', body: JSON.stringify(value) });
+const put = (value: unknown): RequestInit => ({ method: 'PUT', body: JSON.stringify(value) });
+const remove = (): RequestInit => ({ method: 'DELETE' });
 
 const useApiData = (): IDataSource => {
-  // For development, we'll start with mock data to make the UI functional
-  // even without a fully implemented backend.
-  const [projects, setProjects] = useState<Project[]>(INITIAL_PROJECTS);
-  const [evaluators, setEvaluators] = useState<Evaluator[]>(INITIAL_EVALUATORS);
-  const [studies, setStudies] = useState<Study[]>(INITIAL_STUDIES);
-  const [mtes, setMtes] = useState<MTE[]>(INITIAL_MTES_CATALOG);
-  const [ratings, setRatings] = useState<Rating[]>(INITIAL_RATINGS);
-  const [pairwiseComparisons, setPairwiseComparisons] = useState<PairwiseComparison[]>(INITIAL_PAIRWISE_COMPARISONS);
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [evaluators, setEvaluators] = useState<Evaluator[]>([]);
+  const [studies, setStudies] = useState<Study[]>([]);
+  const [mtes, setMtes] = useState<MTE[]>([]);
+  const [ratings, setRatings] = useState<Rating[]>([]);
+  const [pairwiseComparisons, setPairwiseComparisons] = useState<PairwiseComparison[]>([]);
 
-  // Fetch initial data when the hook is used
-  useEffect(() => {
-    // Attempt to fetch studies from the backend, overwriting the mock data if successful.
-    const fetchStudies = async () => {
-      try {
-        const response = await fetch(`${API_BASE_URL}/studies`);
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        const data: Study[] = await response.json();
-        setStudies(data);
-        console.log('Successfully fetched studies from API.', data);
-// FIX: Added curly braces to the catch block to fix a syntax error and subsequent scope issues.
-      } catch (error) {
-        console.error("Failed to fetch studies from API, falling back to mock data:", error);
-        // If fetch fails, we keep the initial mock data.
-      }
-    };
-
-    fetchStudies();
-    
-    // TODO: In a real app, you would also fetch projects, evaluators, MTEs, etc. here.
-    
+  const reload = useCallback(async () => {
+    if (!token()) return;
+    const [p, e, s, m, r, pc] = await Promise.all([
+      apiRequest<any[]>('/projects'), apiRequest<any[]>('/evaluators'), apiRequest<any[]>('/studies'),
+      apiRequest<any[]>('/mtes'), apiRequest<any[]>('/ratings'), apiRequest<any[]>('/pairwise-comparisons'),
+    ]);
+    setProjects(p.map(normalizeProject)); setEvaluators(e.map(normalizeEvaluator)); setStudies(s.map(normalizeStudy));
+    setMtes(m.map(normalizeMte)); setRatings(r.map(normalizeRating)); setPairwiseComparisons(pc.map(normalizePairwise));
   }, []);
+  useEffect(() => {
+    reload().catch(console.error);
+    const handleTokenChange = () => { reload().catch(console.error); };
+    window.addEventListener('catlx-auth-changed', handleTokenChange);
+    return () => window.removeEventListener('catlx-auth-changed', handleTokenChange);
+  }, [reload]);
 
-  // --- Placeholder Mutating Functions (local state manipulation) ---
-  // These functions make the UI interactive. They should be replaced with API calls
-  // to POST, PUT, DELETE data from your backend.
-  
-  const addProject = (project: Omit<Project, 'id' | 'ownerId' | 'memberIds'>, ownerId: string) => {
-    const newProject: Project = {
-      ...project,
-      id: `proj${Date.now()}`,
-      ownerId: ownerId,
-      memberIds: [ownerId]
-    };
-    setProjects(prev => [...prev, newProject]);
-  };
-
-  const updateProject = (updatedProject: Project) => {
-    setProjects(prev => prev.map(p => p.id === updatedProject.id ? updatedProject : p));
-  };
-  
-  const deleteProject = (id: string) => {
-    setProjects(prev => prev.filter(p => p.id !== id));
-    setStudies(prev => prev.filter(s => s.projectId !== id));
-  };
-
-  const addMemberToProject = (projectId: string, evaluatorId: string) => {
-    setProjects(prev => prev.map(p => {
-      if (p.id === projectId && !p.memberIds.includes(evaluatorId)) {
-        return { ...p, memberIds: [...p.memberIds, evaluatorId] };
-      }
-      return p;
-    }));
-  };
-
-  const removeMemberFromProject = (projectId: string, evaluatorId: string) => {
-    setProjects(prev => prev.map(p => {
-      if (p.id === projectId) {
-        return { ...p, memberIds: p.memberIds.filter(id => id !== evaluatorId) };
-      }
-      return p;
-    }));
-  };
-
-  const addEvaluator = (evaluator: Omit<Evaluator, 'id'>): Evaluator => {
-    const newEvaluator = { ...evaluator, id: `eval${Date.now()}` };
-    setEvaluators(prev => [...prev, newEvaluator]);
-    return newEvaluator;
-  };
-  
-  const updateEvaluator = (updatedEvaluator: Evaluator) => {
-    setEvaluators(prev => prev.map(e => e.id === updatedEvaluator.id ? updatedEvaluator : e));
-  };
-  
-  const deleteEvaluator = (id: string) => {
-    setEvaluators(prev => prev.filter(e => e.id !== id));
-    // Also remove from any project memberships
-    setProjects(prevProjects => prevProjects.map(p => ({
-      ...p,
-      memberIds: p.memberIds.filter(memberId => memberId !== id)
-    })));
-    // Also remove from any study assignments
-    setStudies(prevStudies => prevStudies.map(s => ({
-      ...s,
-      evaluatorIds: s.evaluatorIds.filter(evaluatorId => evaluatorId !== id)
-    })));
-  };
-
-  const addStudy = (study: Omit<Study, 'id' | 'mteIds' | 'evaluatorIds'>) => {
-    setStudies(prev => [...prev, { ...study, id: `study${Date.now()}`, mteIds: [], evaluatorIds: [] }]);
-  };
-  
-  const updateStudy = (updatedStudy: Study) => {
-    setStudies(prev => prev.map(s => s.id === updatedStudy.id ? updatedStudy : s));
-  };
-
-  const deleteStudy = (id: string) => {
-    setStudies(prev => prev.filter(s => s.id !== id));
-  };
-
-  const addMte = (mte: Omit<MTE, 'id' | 'refNumber'> & { refNumber?: string }): MTE => {
-    const newMte = {
-      ...mte,
-      id: `mte${Date.now()}`,
-      refNumber: mte.refNumber || '',
-    };
-    setMtes(prev => [...prev, newMte]);
-    return newMte;
-  };
-
-  const updateMte = (updatedMte: MTE) => {
-    setMtes(prev => prev.map(m => m.id === updatedMte.id ? updatedMte : m));
-  };
-
-  const deleteMte = (id: string) => {
-    setMtes(prev => prev.filter(m => m.id !== id));
-    setStudies(prevStudies => prevStudies.map(study => ({
-      ...study,
-      mteIds: study.mteIds.filter(mteId => mteId !== id)
-    })));
-  };
-
-  const addMTEToStudy = (studyId: string, mteId: string) => {
-    setStudies(prev => prev.map(s => {
-      if (s.id === studyId && !s.mteIds.includes(mteId)) {
-        return { ...s, mteIds: [...s.mteIds, mteId] };
-      }
-      return s;
-    }));
-  };
-  
-  const removeMTEFromStudy = (studyId: string, mteId: string) => {
-    setStudies(prev => prev.map(s => {
-      if (s.id === studyId) {
-        return { ...s, mteIds: s.mteIds.filter(mId => mId !== mteId) };
-      }
-      return s;
-    }));
-  };
-  
-  const addEvaluatorToStudy = (studyId: string, evaluatorId: string) => {
-    setStudies(prev => prev.map(s => {
-      if (s.id === studyId && !s.evaluatorIds.includes(evaluatorId)) {
-        return { ...s, evaluatorIds: [...s.evaluatorIds, evaluatorId] };
-      }
-      return s;
-    }));
-  };
-
-  const removeEvaluatorFromStudy = (studyId: string, evaluatorId: string) => {
-    setStudies(prev => prev.map(s => {
-      if (s.id === studyId) {
-        return { ...s, evaluatorIds: s.evaluatorIds.filter(eId => eId !== evaluatorId) };
-      }
-      return s;
-    }));
-  };
-
-  const addRating = (rating: Omit<Rating, 'id' | 'timestamp'>): Promise<void> => {
-    return new Promise((resolve, reject) => {
-        console.log("Simulating API call to submit rating:", rating);
-
-        // Simulate network delay
-        setTimeout(() => {
-            // Simulate a server error for testing purposes if Frustration is high
-            if (rating.scores[TLXDimension.FRUSTRATION] > 90) {
-                console.error("Simulated API Error: High frustration detected.");
-                reject(new Error("Server is too frustrated to process this rating."));
-                return;
-            }
-
-            // Simulate a generic network failure
-            if (Math.random() < 0.1) { // 10% chance of failure
-                console.error("Simulated API Error: Network connection failed.");
-                reject(new Error("Could not connect to the server."));
-                return;
-            }
-
-            // On success:
-            console.log("Simulated API call successful.");
-            const newRatingWithId: Rating = {
-                ...rating,
-                id: `rating${Date.now()}`,
-                timestamp: Date.now(),
-            };
-            setRatings(prev => [...prev, newRatingWithId]);
-            resolve();
-
-        }, 1000); // 1 second delay
-    });
-  };
-  
-  const addPairwiseComparison = (comparison: PairwiseComparison) => {
-    setPairwiseComparisons(prev => {
-        const existing = prev.find(pc => pc.evaluatorId === comparison.evaluatorId && pc.studyId === comparison.studyId);
-        if (existing) {
-            return prev.map(pc => pc.evaluatorId === comparison.evaluatorId && pc.studyId === comparison.studyId ? comparison : pc);
-        }
-        return [...prev, comparison];
-    });
-  };
-
-  const hasPreviousRatingInStudy = (evaluatorId: string, studyId: string): boolean => {
-    return ratings.some(r => r.evaluatorId === evaluatorId && r.studyId === studyId);
-  };
-  
-// FIX: Added missing return statement to make the hook conform to the IDataSource interface.
-  return { 
-    projects, evaluators, studies, mtes, ratings, pairwiseComparisons,
-    addProject, updateProject, deleteProject, addMemberToProject, removeMemberFromProject,
-    addEvaluator, updateEvaluator, deleteEvaluator,
-    addStudy, updateStudy, deleteStudy, addMte, updateMte, deleteMte, 
-    addMTEToStudy, removeMTEFromStudy, addEvaluatorToStudy, removeEvaluatorFromStudy,
-    addRating, addPairwiseComparison, hasPreviousRatingInStudy
-  };
+  const addProject = (project: Omit<Project, 'id' | 'ownerId' | 'memberIds'>, _ownerId: string) => { void apiRequest<any>('/projects', body(project)).then(p => setProjects(x => [...x, normalizeProject(p)])).catch(console.error); };
+  const updateProject = (p: Project) => { void apiRequest<any>(`/projects/${p.id}`, put({ ...p, ownerId: p.ownerId, memberIds: p.memberIds })).then(x => setProjects(v => v.map(y => y.id === p.id ? normalizeProject(x) : y))); };
+  const deleteProject = (projectId: string) => { void apiRequest(`/projects/${projectId}`, remove()).then(() => setProjects(v => v.filter(x => x.id !== projectId))); };
+  const addMemberToProject = (projectId: string, evaluatorId: string) => { void apiRequest(`/projects/${projectId}/members`, body({ evaluatorId })).then(() => setProjects(v => v.map(p => p.id === projectId && !p.memberIds.includes(evaluatorId) ? { ...p, memberIds: [...p.memberIds, evaluatorId] } : p))); };
+  const removeMemberFromProject = (projectId: string, evaluatorId: string) => { void apiRequest(`/projects/${projectId}/members/${evaluatorId}`, remove()).then(() => setProjects(v => v.map(p => p.id === projectId ? { ...p, memberIds: p.memberIds.filter(x => x !== evaluatorId) } : p))); };
+  const addEvaluator = (evaluator: Omit<Evaluator, 'id'>): Evaluator => { const optimistic = { ...evaluator, id: id() }; void apiRequest<any>('/evaluators', body(optimistic)).then(x => setEvaluators(v => [...v, normalizeEvaluator(x)])).catch(console.error); return optimistic; };
+  const updateEvaluator = (e: Evaluator) => { void apiRequest<any>(`/evaluators/${e.id}`, put(e)).then(x => setEvaluators(v => v.map(y => y.id === e.id ? normalizeEvaluator(x) : y))); };
+  const deleteEvaluator = (eid: string) => { void apiRequest(`/evaluators/${eid}`, remove()).then(() => setEvaluators(v => v.filter(x => x.id !== eid))); };
+  const addStudy = (s: Omit<Study, 'id' | 'mteIds' | 'evaluatorIds'>) => { void apiRequest<any>('/studies', body({ ...s, mteIds: [], evaluatorIds: [] })).then(x => setStudies(v => [...v, normalizeStudy(x)])); };
+  const updateStudy = (s: Study) => { void apiRequest<any>(`/studies/${s.id}`, put(s)).then(x => setStudies(v => v.map(y => y.id === s.id ? normalizeStudy(x) : y))); };
+  const deleteStudy = (sid: string) => { void apiRequest(`/studies/${sid}`, remove()).then(() => setStudies(v => v.filter(x => x.id !== sid))); };
+  const addMte = (m: Omit<MTE, 'id' | 'refNumber'> & { refNumber?: string }): MTE => { const optimistic = { ...m, id: id(), refNumber: m.refNumber || '' }; void apiRequest<any>('/mtes', body(m)).then(x => setMtes(v => [...v, normalizeMte(x)])); return optimistic; };
+  const updateMte = (m: MTE) => { void apiRequest<any>(`/mtes/${m.id}`, put(m)).then(x => setMtes(v => v.map(y => y.id === m.id ? normalizeMte(x) : y))); };
+  const deleteMte = (mid: string) => { void apiRequest(`/mtes/${mid}`, remove()).then(() => setMtes(v => v.filter(x => x.id !== mid))); };
+  const addMTEToStudy = (sid: string, mid: string) => { void apiRequest(`/studies/${sid}/mtes`, body({ mteId: mid })).then(() => setStudies(v => v.map(s => s.id === sid && !s.mteIds.includes(mid) ? { ...s, mteIds: [...s.mteIds, mid] } : s))); };
+  const removeMTEFromStudy = (sid: string, mid: string) => { void apiRequest(`/studies/${sid}/mtes/${mid}`, remove()).then(() => setStudies(v => v.map(s => s.id === sid ? { ...s, mteIds: s.mteIds.filter(x => x !== mid) } : s))); };
+  const addEvaluatorToStudy = (sid: string, eid: string) => { void apiRequest(`/studies/${sid}/evaluators`, body({ evaluatorId: eid })).then(() => setStudies(v => v.map(s => s.id === sid && !s.evaluatorIds.includes(eid) ? { ...s, evaluatorIds: [...s.evaluatorIds, eid] } : s))); };
+  const removeEvaluatorFromStudy = (sid: string, eid: string) => { void apiRequest(`/studies/${sid}/evaluators/${eid}`, remove()).then(() => setStudies(v => v.map(s => s.id === sid ? { ...s, evaluatorIds: s.evaluatorIds.filter(x => x !== eid) } : s))); };
+  const addRating = async (r: Omit<Rating, 'id' | 'timestamp'>) => { const x = normalizeRating(await apiRequest<any>('/ratings', body(r))); setRatings(v => [...v, x]); };
+  const addPairwiseComparison = (p: PairwiseComparison) => { void apiRequest<any>('/pairwise-comparisons', body(p)).then(x => { const n = normalizePairwise(x); setPairwiseComparisons(v => v.some(y => y.evaluatorId === n.evaluatorId && y.studyId === n.studyId) ? v.map(y => y.evaluatorId === n.evaluatorId && y.studyId === n.studyId ? n : y) : [...v, n]); }); };
+  const hasPreviousRatingInStudy = (evaluatorId: string, studyId: string) => ratings.some(r => r.evaluatorId === evaluatorId && r.studyId === studyId);
+  return { projects, evaluators, studies, mtes, ratings, pairwiseComparisons, addProject, updateProject, deleteProject, addMemberToProject, removeMemberFromProject, addEvaluator, updateEvaluator, deleteEvaluator, addStudy, updateStudy, deleteStudy, addMte, updateMte, deleteMte, addMTEToStudy, removeMTEFromStudy, addEvaluatorToStudy, removeEvaluatorFromStudy, addRating, addPairwiseComparison, hasPreviousRatingInStudy };
 };
-
 export default useApiData;

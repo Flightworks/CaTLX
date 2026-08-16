@@ -178,7 +178,7 @@ describe('ViewStats Component Logic and Display', () => {
     const mte1Card = mte1HeadingCandidates.find(element => element.tagName === 'H3');
     expect(mte1Card).toBeDefined();
     // Find the parent Card element to scope the queries
-    const mte1Container = mte1Card.closest('[class*="bg-nasa-gray-900"]');
+    const mte1Container = mte1Card.closest('[class*="bg-nasa-gray-900"]') as HTMLElement | null;
     expect(mte1Container).not.toBeNull();
 
     // Check number of evaluations
@@ -233,7 +233,7 @@ describe('ViewStats Component Logic and Display', () => {
     const mte3HeadingCandidates = await screen.findAllByText(/EVA Simulation/i);
     const mte3Card = mte3HeadingCandidates.find(element => element.tagName === 'H3');
     expect(mte3Card).toBeDefined();
-    const mte3Container = mte3Card.closest('[class*="bg-nasa-gray-900"]');
+    const mte3Container = mte3Card.closest('[class*="bg-nasa-gray-900"]') as HTMLElement | null;
     expect(mte3Container).not.toBeNull();
     
     // Check for 0 evaluations and the specific message
@@ -308,7 +308,7 @@ describe('ViewStats Component Logic and Display', () => {
     const weightedCard = headingCandidates.find(element => element.tagName === 'H3');
     expect(weightedCard).toBeDefined();
 
-    const container = weightedCard!.closest('[class*="bg-nasa-gray-900"]');
+    const container = weightedCard!.closest('[class*="bg-nasa-gray-900"]') as HTMLElement | null;
     expect(container).not.toBeNull();
 
     // Weighted workloads for the two ratings: 45 and 40 -> mean 42.5
