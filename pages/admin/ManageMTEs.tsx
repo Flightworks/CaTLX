@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { useData } from '../../contexts/AppContext';
+import { useAuth, useData } from '../../contexts/AppContext';
 import { MTE } from '../../types';
 import Card from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
@@ -63,10 +63,12 @@ const MTEForm: React.FC<{
 
 
 const ManageMTEs: React.FC = () => {
+  const { mode } = useAuth();
   const { mtes, addMte, updateMte, deleteMte } = useData();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingMte, setEditingMte] = useState<MTE | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [formError, setFormError] = useState<string | null>(null);
 
   const filteredMtes = useMemo(() => {
     if (!searchQuery) {
@@ -80,21 +82,38 @@ const ManageMTEs: React.FC = () => {
   }, [mtes, searchQuery]);
 
   const handleSave = (mte: (Omit<MTE, 'id' | 'refNumber'> & { refNumber?: string }) | MTE) => {
-    if ('id' in mte) {
-      updateMte(mte);
+    const normalized = {
+      ...mte,
+      name: mte.name.trim(),
+      description: mte.description.trim(),
+      refNumber: (mte.refNumber || '').trim(),
+    };
+    if (!normalized.name || !normalized.description) {
+      setFormError('Name and description are required.');
+      return;
+    }
+    if (normalized.refNumber && mtes.some((item) => item.refNumber === normalized.refNumber && item.id !== ('id' in normalized ? normalized.id : undefined))) {
+      setFormError('Reference number must be unique.');
+      return;
+    }
+    setFormError(null);
+    if ('id' in normalized) {
+      updateMte(normalized);
     } else {
-      addMte(mte);
+      addMte(normalized);
     }
     setIsModalOpen(false);
     setEditingMte(null);
   };
 
   const handleAddNew = () => {
+    setFormError(null);
     setEditingMte(null);
     setIsModalOpen(true);
   };
 
   const handleEdit = (mte: MTE) => {
+    setFormError(null);
     setEditingMte(mte);
     setIsModalOpen(true);
   };
@@ -105,6 +124,8 @@ const ManageMTEs: React.FC = () => {
         <h2 className="text-xl font-bold">Mission Task Element (MTE) Catalog</h2>
         <Button onClick={handleAddNew} className="w-full sm:w-auto">Add New MTE</Button>
       </div>
+
+      {formError && <p role="alert" className="mb-4 text-red-300">{formError}</p>}
 
       <div className="mb-4">
         <label htmlFor="mte-search" className="sr-only">Search MTEs</label>
@@ -136,7 +157,7 @@ const ManageMTEs: React.FC = () => {
                 <td className="px-6 py-4 text-sm text-nasa-gray-300">{mte.description}</td>
                 <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-2">
                   <Button size="sm" variant="secondary" onClick={() => handleEdit(mte)}>Edit</Button>
-                  <Button size="sm" variant="danger" onClick={() => deleteMte(mte.id)}>Delete</Button>
+                  <Button size="sm" variant="danger" onClick={() => deleteMte(mte.id)}>{mode === 'firebase' ? 'Archive' : 'Delete'}</Button>
                 </td>
               </tr>
             ))}

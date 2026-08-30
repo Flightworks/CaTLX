@@ -8,10 +8,11 @@ import LanguageSwitcher from '../ui/LanguageSwitcher';
 import { APP_ICON } from '../../assets';
 
 const Header: React.FC = () => {
-  const { logout, mode } = useAuth();
+  const { logout, mode, user } = useAuth();
   const navigate = useNavigate();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const { t } = useTranslation();
+  const canAccessAdmin = mode !== 'firebase' || ['admin', 'catalog_manager', 'study_manager', 'analyst'].includes(user?.role || '');
 
   const handleLogout = () => {
     logout();
@@ -57,9 +58,9 @@ const Header: React.FC = () => {
                 <NavLink to="/quick-rating" className={navLinkClass}>
                   {t('header.quick_rating', 'Quick Rating')}
                 </NavLink>
-                <NavLink to="/admin" className={navLinkClass}>
+                {canAccessAdmin && <NavLink to="/admin" className={navLinkClass}>
                   {t('header.admin_dashboard')}
-                </NavLink>
+                </NavLink>}
                 <NavLink to="/about" className={navLinkClass}>
                   {t('header.about')}
                 </NavLink>
@@ -94,7 +95,7 @@ const Header: React.FC = () => {
           <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3">
             <NavLink to="/evaluator" className={mobileNavLinkClass} onClick={() => setIsMenuOpen(false)}>{t('header.evaluations')}</NavLink>
             <NavLink to="/quick-rating" className={mobileNavLinkClass} onClick={() => setIsMenuOpen(false)}>{t('header.quick_rating', 'Quick Rating')}</NavLink>
-            <NavLink to="/admin" className={mobileNavLinkClass} onClick={() => setIsMenuOpen(false)}>{t('header.admin_dashboard')}</NavLink>
+            {canAccessAdmin && <NavLink to="/admin" className={mobileNavLinkClass} onClick={() => setIsMenuOpen(false)}>{t('header.admin_dashboard')}</NavLink>}
             <NavLink to="/about" className={mobileNavLinkClass} onClick={() => setIsMenuOpen(false)}>{t('header.about')}</NavLink>
           </div>
           <div className="pt-4 pb-3 border-t border-nasa-gray-700">

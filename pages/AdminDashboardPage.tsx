@@ -6,13 +6,14 @@ import ManageEvaluators from './admin/ManageEvaluators';
 import ManageStudies from './admin/ManageStudies';
 import ViewStats from './admin/ViewStats';
 import ManageMTEs from './admin/ManageMTEs';
+import ManageUsers from './admin/ManageUsers';
 import Card from '../components/ui/Card';
 import Select from '../components/ui/Select';
 import Button from '../components/ui/Button';
 import Modal from '../components/ui/Modal';
 import { Project } from '../types';
 
-type AdminTab = 'stats' | 'evaluators' | 'studies' | 'mtes';
+type AdminTab = 'stats' | 'evaluators' | 'studies' | 'mtes' | 'users';
 
 const ProjectForm: React.FC<{
   onSave: (project: Omit<Project, 'id' | 'ownerId' | 'memberIds'>) => void;
@@ -99,13 +100,15 @@ const ProjectSelector: React.FC<{ onCreateNew: () => void }> = ({ onCreateNew })
 const AdminDashboardPage: React.FC = () => {
   const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState<AdminTab>('stats');
-  const { mode } = useAuth();
+  const { mode, user } = useAuth();
   const { addProject, projects } = useData();
   const { setSelectedProjectId } = useSession();
   const [isProjectModalOpen, setIsProjectModalOpen] = useState(false);
 
   const renderTabContent = () => {
     switch (activeTab) {
+      case 'users':
+        return <ManageUsers />;
       case 'stats':
         return <ViewStats />;
       case 'evaluators':
@@ -157,10 +160,11 @@ const AdminDashboardPage: React.FC = () => {
 
       <div className="border-b border-nasa-gray-700">
         <nav className="-mb-px flex space-x-4 flex-wrap" aria-label="Tabs">
+          {mode === 'firebase' && user?.role === 'admin' && <TabButton tabId="users">{t('admin.manage_users', 'Manage users')}</TabButton>}
           <TabButton tabId="stats">{t('admin.statistics')}</TabButton>
-          <TabButton tabId="studies">{t('admin.manage_studies')}</TabButton>
-          <TabButton tabId="evaluators">{t('admin.manage_evaluators')}</TabButton>
-          <TabButton tabId="mtes">{t('admin.mte_catalog')}</TabButton>
+          {(mode !== 'firebase' || user?.role === 'admin' || user?.role === 'study_manager') && <TabButton tabId="studies">{t('admin.manage_studies')}</TabButton>}
+          {(mode !== 'firebase' || user?.role === 'admin') && <TabButton tabId="evaluators">{t('admin.manage_evaluators')}</TabButton>}
+          {(mode !== 'firebase' || user?.role === 'admin' || user?.role === 'catalog_manager') && <TabButton tabId="mtes">{t('admin.mte_catalog')}</TabButton>}
         </nav>
       </div>
       <div>{renderTabContent()}</div>

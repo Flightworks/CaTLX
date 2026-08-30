@@ -10,6 +10,15 @@ import AdminDashboardPage from './pages/AdminDashboardPage';
 import Layout from './components/layout/Layout';
 import AboutPage from './pages/AboutPage';
 
+function AdminRoute() {
+  const { mode, user } = useAuth();
+  const allowedFirebaseRoles = ['admin', 'catalog_manager', 'study_manager', 'analyst'];
+  if (mode === 'firebase' && (!user || !allowedFirebaseRoles.includes(user.role))) {
+    return <Navigate to="/evaluator" replace />;
+  }
+  return <AdminDashboardPage />;
+}
+
 function AppRoutes() {
   const { isLoggedIn } = useAuth();
 
@@ -23,7 +32,7 @@ function AppRoutes() {
               <Routes>
                 <Route path="/evaluator" element={<EvaluatorPage />} />
                 <Route path="/quick-rating" element={<QuickRatingPage />} />
-                <Route path="/admin" element={<AdminDashboardPage />} />
+                <Route path="/admin" element={<AdminRoute />} />
                 <Route path="/about" element={<AboutPage />} />
                 <Route path="/" element={<Navigate to="/evaluator" />} />
               </Routes>
