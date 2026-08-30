@@ -10,8 +10,9 @@ CaTLX est une application web moderne pour conduire des évaluations de charge d
 | Routing | react-router-dom v7 |
 | i18n | i18next + react-i18next (EN/FR) |
 | PWA | vite-plugin-pwa (offline, installable) |
-| Backend | Node.js, Express, better-sqlite3 (SQLite) |
-| Auth | JWT + bcryptjs |
+| Backend actuel | Node.js, Express, better-sqlite3 (SQLite) |
+| Auth actuelle | JWT + bcryptjs |
+| Cible en ligne | Firebase Hosting, Firebase Authentication, Cloud Firestore, Security Rules |
 | Tests | Vitest, Testing Library, jsdom |
 
 ## Lancement en local
@@ -89,6 +90,8 @@ L'application propose trois modes au login :
 | **Local** | Données sauvegardées dans le navigateur (localStorage). | Local à l'appareil |
 | **API** (auto-hébergé) | Connecté au backend Express + SQLite avec JWT. | Serveur, partagé entre utilisateurs |
 
+Le mode en ligne Firebase sera ajouté séparément après validation avec l'émulateur Firebase. Il utilisera Firebase Authentication et Cloud Firestore avec des règles d'accès par rôle et par étude. Le catalogue MTE global ne sera jamais accessible à un évaluateur : celui-ci recevra uniquement les snapshots MTE des études qui lui sont affectées.
+
 ## Structure du projet
 
 ```
@@ -113,6 +116,7 @@ catlx/
 ├── backend/
 │   ├── server.js              # API Express (JWT, SQLite)
 │   └── Dockerfile             # Image backend (Node 20 Alpine)
+├── docs/                      # ADR et matrice d'accès Firebase
 ├── public/locales/            # Traductions EN/FR
 └── vite.config.ts             # Configuration Vite + PWA
 ```
@@ -136,6 +140,15 @@ La base SQLite est initialisée automatiquement au premier démarrage.
 
 - **Frontend** : `npm run build` puis servir `dist/` (GitHub Pages, Netlify, etc.)
 - **Backend + frontend** : `docker compose up -d --build` (frontend sur `http://localhost:3000`, backend sur `http://localhost:8080`)
+
+### Cible Firebase Spark
+
+La cible en ligne sera déployée progressivement avec Firebase Hosting, Firebase Authentication et Cloud Firestore. Le développement et les tests de règles se font d'abord avec Firebase Local Emulator Suite. Le premier projet doit rester sur le plan Spark, sans moyen de paiement, sans Blaze et avec un projet de staging séparé du projet de production.
+
+Voir :
+
+- `docs/architecture/ADR-003-firebase-spark.md` — décision d'architecture ;
+- `docs/security/access-control-matrix.md` — rôles et permissions.
 
 En production, définir un `JWT_SECRET` long et aléatoire dans un fichier `.env` avant le premier démarrage. Le backend refuse de démarrer sans ce secret.
 
