@@ -43,8 +43,10 @@ const Header: React.FC = () => {
                 <span className="text-xs font-semibold bg-green-500 text-green-900 px-2 py-0.5 rounded-full">{t('header.demo')}</span>
               ) : mode === 'local' ? (
                 <span className="text-xs font-semibold bg-yellow-500 text-yellow-900 px-2 py-0.5 rounded-full">{t('header.local')}</span>
+              ) : mode === 'api' ? (
+                <span className="text-xs font-semibold bg-blue-500 text-blue-900 px-2 py-0.5 rounded-full">{t('header.api', 'API')}</span>
               ) : (
-                <span className="text-xs font-semibold bg-blue-500 text-blue-900 px-2 py-0.5 rounded-full">{t('header.cloud')}</span>
+                <span className="text-xs font-semibold bg-purple-400 text-purple-950 px-2 py-0.5 rounded-full">{t('header.firebase', 'Firebase')}</span>
               )}
             </div>
             <nav className="hidden md:block ml-10">
