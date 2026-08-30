@@ -65,7 +65,7 @@ VITE_API_BASE_URL=http://localhost:8099/api
 npm run build
 ```
 
-Le build est généré dans `dist/` avec le base path `/CaTLX/` (configuré pour GitHub Pages).
+Le build est généré dans `dist/`. Le mode normal utilise la racine `/`; le workflow historique GitHub Pages utilise explicitement le mode `github-pages` avec le base path `/CaTLX/`.
 
 ### Tests
 
@@ -152,7 +152,8 @@ La cible en ligne sera déployée progressivement avec Firebase Hosting, Firebas
 Voir :
 
 - `docs/architecture/ADR-003-firebase-spark.md` — décision d'architecture ;
-- `docs/security/access-control-matrix.md` — rôles et permissions.
+- `docs/security/access-control-matrix.md` — rôles et permissions ;
+- `docs/operations/firebase-spark-deployment.md` — staging et garde-fous de déploiement.
 
 En production, définir un `JWT_SECRET` long et aléatoire dans un fichier `.env` avant le premier démarrage. Le backend refuse de démarrer sans ce secret.
 

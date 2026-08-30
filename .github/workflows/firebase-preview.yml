@@ -1,0 +1,73 @@
+name: Firebase Spark staging
+
+on:
+  workflow_dispatch:
+    inputs:
+      project_id:
+        description: 'Allowlisted Firebase staging project ID'
+        required: true
+        default: 'catlx-staging'
+        type: string
+      confirm_spark:
+        description: 'I verified that the project is on Spark and has no billing account'
+        required: true
+        default: false
+        type: boolean
+
+permissions:
+  contents: read
+
+concurrency:
+  group: firebase-staging
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    name: Deploy guarded staging
+    runs-on: ubuntu-latest
+    environment:
+      name: firebase-staging
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run application tests
+        run: npm test
+
+      - name: Run Firestore rules tests
+        run: npm run test:rules
+
+      - name: Enforce staging and Spark gates
+        env:
+          PROJECT_ID: ${{ inputs.project_id }}
+          CONFIRM_SPARK: ${{ inputs.confirm_spark }}
+          SPARK_CONFIRMED: ${{ secrets.FIREBASE_SPARK_CONFIRMED }}
+        run: |
+          set -euo pipefail
+          test "$PROJECT_ID" = "catlx-staging" || { echo 'Only catlx-staging is allowlisted.'; exit 1; }
+          test "$CONFIRM_SPARK" = "true" || { echo 'Spark confirmation is required.'; exit 1; }
+          test "$SPARK_CONFIRMED" = "true" || { echo 'FIREBASE_SPARK_CONFIRMED environment secret is required.'; exit 1; }
+
+      - name: Build Firebase bundle
+        env:
+          VITE_FIREBASE_API_KEY: ${{ secrets.VITE_FIREBASE_API_KEY }}
+          VITE_FIREBASE_AUTH_DOMAIN: ${{ secrets.VITE_FIREBASE_AUTH_DOMAIN }}
+          VITE_FIREBASE_PROJECT_ID: ${{ secrets.VITE_FIREBASE_PROJECT_ID }}
+          VITE_FIREBASE_APP_ID: ${{ secrets.VITE_FIREBASE_APP_ID }}
+          VITE_USE_FIREBASE_EMULATORS: 'false'
+        run: npm run build -- --mode firebase
+
+      - name: Deploy Hosting and rules
+        env:
+          FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
+          PROJECT_ID: ${{ inputs.project_id }}
+        run: npx firebase deploy --project "$PROJECT_ID" --only hosting,firestore:rules,firestore:indexes --non-interactive
