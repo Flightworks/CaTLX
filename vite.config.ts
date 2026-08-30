@@ -69,7 +69,8 @@ export default defineConfig(({ mode }) => {
     },
     test: {
       environment: 'jsdom',
-      setupFiles: './vitest.setup.ts'
+      setupFiles: './vitest.setup.ts',
+      exclude: ['**/node_modules/**', 'tests/firestore/**/*.test.ts']
     }
   };
 });

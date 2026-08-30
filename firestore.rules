@@ -2,9 +2,225 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-    // K1 intentionally starts fail-closed. K2 adds the tested role-scoped rules.
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function userRef(uid) {
+      return /databases/$(database)/documents/users/$(uid);
+    }
+
+    function currentUserExists() {
+      return signedIn() && exists(userRef(request.auth.uid));
+    }
+
+    function activeUser() {
+      return currentUserExists()
+        && get(userRef(request.auth.uid)).data.status == 'active';
+    }
+
+    function isAdmin() {
+      return activeUser()
+        && get(userRef(request.auth.uid)).data.role == 'admin';
+    }
+
+    function isCatalogManager() {
+      return activeUser()
+        && get(userRef(request.auth.uid)).data.role == 'catalog_manager';
+    }
+
+    function isStudyManager() {
+      return activeUser()
+        && get(userRef(request.auth.uid)).data.role == 'study_manager';
+    }
+
+    function isAnalyst() {
+      return activeUser()
+        && get(userRef(request.auth.uid)).data.role == 'analyst';
+    }
+
+    function isEvaluator() {
+      return activeUser()
+        && get(userRef(request.auth.uid)).data.role == 'evaluator';
+    }
+
+    function studyRef(studyId) {
+      return /databases/$(database)/documents/studies/$(studyId);
+    }
+
+    function participantRef(studyId, uid) {
+      return /databases/$(database)/documents/studies/$(studyId)/participants/$(uid);
+    }
+
+    function activeParticipant(studyId, uid) {
+      return exists(participantRef(studyId, uid))
+        && get(participantRef(studyId, uid)).data.active == true
+        && get(participantRef(studyId, uid)).data.role == 'evaluator';
+    }
+
+    function studyManagerFor(studyId) {
+      return activeUser()
+        && (isAdmin()
+          || (isStudyManager()
+            && request.auth.uid in get(studyRef(studyId)).data.managerUids));
+    }
+
+    function analystFor(studyId) {
+      return activeUser()
+        && isAnalyst()
+        && request.auth.uid in get(studyRef(studyId)).data.analystUids;
+    }
+
+    function canReadStudy(studyId) {
+      return studyManagerFor(studyId)
+        || analystFor(studyId)
+        || (isEvaluator() && activeParticipant(studyId, request.auth.uid));
+    }
+
+    function validMte(data) {
+      return data.keys().hasAll(['name', 'description', 'refNumber', 'revision', 'active'])
+        && data.name is string
+        && data.description is string
+        && data.refNumber is string
+        && data.revision is number
+        && data.revision >= 1
+        && data.active is bool;
+    }
+
+    function validScores(scores) {
+      return scores.keys().hasAll([
+          'Mental Demand', 'Physical Demand', 'Temporal Demand',
+          'Performance', 'Effort', 'Frustration'
+        ])
+        && scores.keys().hasOnly([
+          'Mental Demand', 'Physical Demand', 'Temporal Demand',
+          'Performance', 'Effort', 'Frustration'
+        ]);
+    }
+
+    // K1's global deny remains the final fallback for every unlisted document.
     match /{document=**} {
       allow read, write: if false;
+    }
+
+    match /users/{uid} {
+      allow create: if signedIn()
+        && request.auth.uid == uid
+        && request.resource.data.role == 'pending'
+        && request.resource.data.status == 'pending'
+        && request.resource.data.email == request.auth.token.email;
+
+      allow read: if request.auth.uid == uid || isAdmin();
+
+      allow update: if isAdmin()
+        || (request.auth.uid == uid
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['displayName']));
+
+      allow delete: if isAdmin();
+    }
+
+    match /projects/{projectId} {
+      allow read: if isAdmin()
+        || (activeUser()
+          && (resource.data.ownerUid == request.auth.uid
+            || request.auth.uid in resource.data.memberUids));
+
+      allow create: if isAdmin()
+        || (isStudyManager()
+          && request.resource.data.ownerUid == request.auth.uid);
+
+      allow update, delete: if isAdmin()
+        || (isStudyManager()
+          && (resource.data.ownerUid == request.auth.uid
+            || request.auth.uid in resource.data.memberUids));
+    }
+
+    match /mteCatalog/{mteId} {
+      allow read: if isAdmin() || isCatalogManager();
+      allow create: if (isAdmin() || isCatalogManager())
+        && validMte(request.resource.data);
+      allow update: if (isAdmin() || isCatalogManager())
+        && validMte(request.resource.data)
+        && request.resource.data.revision > resource.data.revision;
+      // Existing MTEs are archived with active=false; they are not physically deleted.
+      allow delete: if false;
+    }
+
+    match /studies/{studyId} {
+      allow read: if isAdmin()
+        || (activeUser()
+          && ((isStudyManager() && request.auth.uid in resource.data.managerUids)
+            || (isAnalyst() && request.auth.uid in resource.data.analystUids)
+            || (isEvaluator() && activeParticipant(studyId, request.auth.uid))));
+
+      allow create: if isAdmin()
+        || (isStudyManager()
+          && request.auth.uid in request.resource.data.managerUids);
+
+      allow update, delete: if studyManagerFor(studyId)
+        && (isAdmin() || request.auth.uid in request.resource.data.managerUids);
+    }
+
+    match /studies/{studyId}/participants/{uid} {
+      allow read: if studyManagerFor(studyId)
+        || (request.auth.uid == uid && activeUser() && resource.data.active == true);
+      allow create, update, delete: if studyManagerFor(studyId);
+    }
+
+    match /studies/{studyId}/mtes/{mteId} {
+      allow read: if studyManagerFor(studyId)
+        || (isEvaluator() && activeParticipant(studyId, request.auth.uid));
+      allow create, update: if studyManagerFor(studyId);
+      allow delete: if false;
+    }
+
+    match /studies/{studyId}/ratings/{ratingId} {
+      allow read: if studyManagerFor(studyId)
+        || analystFor(studyId)
+        || (isEvaluator()
+          && activeParticipant(studyId, request.auth.uid)
+          && resource.data.evaluatorUid == request.auth.uid);
+
+      allow create: if isEvaluator()
+        && activeParticipant(studyId, request.auth.uid)
+        && request.resource.data.evaluatorUid == request.auth.uid
+        && request.resource.data.mteId is string
+        && exists(/databases/$(database)/documents/studies/$(studyId)/mtes/$(request.resource.data.mteId))
+        && validScores(request.resource.data.scores);
+
+      allow update: if isEvaluator()
+        && activeParticipant(studyId, request.auth.uid)
+        && resource.data.evaluatorUid == request.auth.uid
+        && request.resource.data.evaluatorUid == request.auth.uid
+        && request.resource.data.mteId == resource.data.mteId
+        && validScores(request.resource.data.scores);
+
+      allow delete: if isAdmin();
+    }
+
+    match /studies/{studyId}/pairwise/{uid} {
+      allow read: if studyManagerFor(studyId)
+        || analystFor(studyId)
+        || (isEvaluator()
+          && activeParticipant(studyId, request.auth.uid)
+          && uid == request.auth.uid);
+
+      allow create, update: if isEvaluator()
+        && activeParticipant(studyId, request.auth.uid)
+        && uid == request.auth.uid
+        && request.resource.data.evaluatorUid == request.auth.uid;
+
+      allow delete: if isAdmin();
+    }
+
+    match /auditEvents/{eventId} {
+      allow read: if isAdmin();
+      allow create: if activeUser()
+        && request.resource.data.actorUid == request.auth.uid
+        && request.resource.data.keys().hasOnly([
+          'actorUid', 'action', 'entityType', 'entityId', 'studyId', 'timestamp', 'summary'
+        ]);
+      allow update, delete: if false;
     }
   }
 }
