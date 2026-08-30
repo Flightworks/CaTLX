@@ -92,6 +92,8 @@ L'application propose trois modes au login :
 
 Le mode en ligne Firebase sera ajouté séparément après validation avec l'émulateur Firebase. Il utilisera Firebase Authentication et Cloud Firestore avec des règles d'accès par rôle et par étude. Le catalogue MTE global ne sera jamais accessible à un évaluateur : celui-ci recevra uniquement les snapshots MTE des études qui lui sont affectées.
 
+Les émulateurs locaux utilisent le projet virtuel `demo-catlx`, Firebase Auth sur `9099` et Firestore sur `8081` (le port `8080` est déjà utilisé localement par qBittorrent).
+
 ## Structure du projet
 
 ```
