@@ -1,7 +1,7 @@
 
-import React, { useState, useEffect, useMemo, useId } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useData, useSession } from '../contexts/AppContext';
+import { useAuth, useData, useSession } from '../contexts/AppContext';
 import { TLXDimension, Rating, MTE, ComputedTLXScore } from '../types';
 import { TLX_DIMENSIONS_INFO, PAIRWISE_COMBINATIONS, DEFAULT_WEIGHTS } from '../constants';
 import TlxSlider from '../components/ui/TlxSlider';
@@ -10,7 +10,6 @@ import Card from '../components/ui/Card';
 import PairwiseWeightsDisplay from '../components/ui/PairwiseWeightsDisplay';
 import ToggleSwitch from '../components/ui/ToggleSwitch';
 import Select from '../components/ui/Select';
-import Modal from '../components/ui/Modal';
 
 const initialScores = TLX_DIMENSIONS_INFO.reduce((acc, dim) => {
     acc[dim.id] = 50;
@@ -47,77 +46,6 @@ const formatMteDisplayName = (mte: MTE | null | undefined) => {
     return mte.refNumber?.trim()
         ? `[${mte.refNumber.trim()}] ${mte.name}`
         : mte.name;
-};
-
-const MTEEditForm: React.FC<{
-    mte: MTE;
-    onSave: (updatedMte: MTE) => void;
-    onCancel: () => void;
-}> = ({ mte, onSave, onCancel }) => {
-    const { t } = useTranslation();
-    const [name, setName] = useState(mte.name);
-    const [description, setDescription] = useState(mte.description);
-    const [refNumber, setRefNumber] = useState(mte.refNumber);
-    const nameInputId = useId();
-    const refInputId = useId();
-    const descriptionInputId = useId();
-
-    useEffect(() => {
-        setName(mte.name);
-        setDescription(mte.description);
-        setRefNumber(mte.refNumber);
-    }, [mte]);
-
-    const handleSubmit = (e: React.FormEvent) => {
-        e.preventDefault();
-        onSave({
-            ...mte,
-            name: name.trim(),
-            description: description.trim(),
-            refNumber: refNumber.trim(),
-        });
-    };
-
-    return (
-        <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-                <label htmlFor={nameInputId} className="block text-sm font-medium text-nasa-gray-300">{t('evaluator.name')}</label>
-                <input
-                    type="text"
-                    id={nameInputId}
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    className="mt-1 block w-full bg-nasa-gray-700 border-nasa-gray-600 rounded-md shadow-sm focus:ring-nasa-blue focus:border-nasa-blue text-white"
-                    required
-                />
-            </div>
-            <div>
-                <label htmlFor={refInputId} className="block text-sm font-medium text-nasa-gray-300">{t('evaluator.ref_number')}</label>
-                <input
-                    type="text"
-                    id={refInputId}
-                    value={refNumber}
-                    onChange={(e) => setRefNumber(e.target.value)}
-                    className="mt-1 block w-full bg-nasa-gray-700 border-nasa-gray-600 rounded-md shadow-sm focus:ring-nasa-blue focus:border-nasa-blue text-white"
-                />
-            </div>
-            <div>
-                <label htmlFor={descriptionInputId} className="block text-sm font-medium text-nasa-gray-300">{t('evaluator.description')}</label>
-                <textarea
-                    id={descriptionInputId}
-                    value={description}
-                    onChange={(e) => setDescription(e.target.value)}
-                    className="mt-1 block w-full bg-nasa-gray-700 border-nasa-gray-600 rounded-md shadow-sm focus:ring-nasa-blue focus:border-nasa-blue text-white"
-                    required
-                    rows={4}
-                />
-            </div>
-            <div className="flex justify-end space-x-2">
-                <Button type="button" variant="secondary" onClick={onCancel}>{t('evaluator.cancel')}</Button>
-                <Button type="submit">{t('evaluator.save_changes')}</Button>
-            </div>
-        </form>
-    );
 };
 
 const PairwiseComparisonView: React.FC<{
@@ -324,7 +252,7 @@ const AssessmentSummary: React.FC<{ onReturnToTasks: () => void }> = ({ onReturn
 
 const AssessmentRunner: React.FC = () => {
     const { t } = useTranslation();
-    const { studies, mtes, ratings, addRating, addPairwiseComparison, pairwiseComparisons, updateMte } = useData();
+    const { studies, mtes, ratings, addRating, addPairwiseComparison, pairwiseComparisons } = useData();
     const { selectedEvaluatorId, selectedStudyId } = useSession();
 
     const storageKey = useMemo(() => `ratingMode_${selectedEvaluatorId}`, [selectedEvaluatorId]);
@@ -341,8 +269,7 @@ const AssessmentRunner: React.FC = () => {
     const [currentStep, setCurrentStep] = useState(0);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [submissionError, setSubmissionError] = useState<string | null>(null);
-    const [isMteModalOpen, setIsMteModalOpen] = useState(false);
-    const [editingMte, setEditingMte] = useState<MTE | null>(null);
+
 
     const selectedStudy = useMemo(() => studies.find(s => s.id === selectedStudyId), [studies, selectedStudyId]);
 
@@ -442,25 +369,6 @@ const AssessmentRunner: React.FC = () => {
         }
     };
 
-    const handleOpenMteModal = (mte: MTE) => {
-        setEditingMte(mte);
-        setIsMteModalOpen(true);
-    };
-
-    const handleCloseMteModal = () => {
-        setIsMteModalOpen(false);
-        setEditingMte(null);
-    };
-
-    const handleSaveMte = (updatedMte: MTE) => {
-        updateMte(updatedMte);
-        setNotification(`MTE "${updatedMte.name}" updated successfully.`);
-        if (selectedMte && selectedMte.id === updatedMte.id) {
-            setSelectedMte(updatedMte);
-        }
-        handleCloseMteModal();
-        setTimeout(() => setNotification(''), 3000);
-    };
 
     const handleResetWeights = () => {
         if (selectedEvaluatorId && selectedStudyId) {
@@ -611,19 +519,6 @@ const AssessmentRunner: React.FC = () => {
 
     return (
         <>
-            {editingMte && (
-                <Modal
-                    isOpen={isMteModalOpen}
-                    onClose={handleCloseMteModal}
-                    title={t('evaluator.edit_mte', { mteName: formatMteDisplayName(editingMte) })}
-                >
-                    <MTEEditForm
-                        mte={editingMte}
-                        onSave={handleSaveMte}
-                        onCancel={handleCloseMteModal}
-                    />
-                </Modal>
-            )}
             <div className="mb-6">
                 <Card title={t('evaluator.current_weights')}>
                     <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
@@ -643,7 +538,7 @@ const AssessmentRunner: React.FC = () => {
             </div>
             <Card title={t('evaluator.mte_for', { studyName: selectedStudy.name })}>
                 {notification && <div className="mb-4 p-3 rounded-md bg-green-500 bg-opacity-20 text-green-300 text-sm">{notification}</div>}
-                <p className="text-nasa-gray-300 mb-4">Select a task to begin rating. Click a task card to edit its details.</p>
+                <p className="text-nasa-gray-300 mb-4">Select a task to begin rating.</p>
                 <div className="space-y-3">
                     {mtesInStudy.map(mte => {
                         const isRated = ratedMteIds.has(mte.id);
@@ -664,17 +559,7 @@ const AssessmentRunner: React.FC = () => {
                             return (
                                 <div
                                     key={mte.id}
-                                    className="p-4 bg-nasa-gray-900 rounded-md cursor-pointer hover:bg-nasa-gray-800 focus:outline-none focus:ring-2 focus:ring-nasa-blue transition-colors"
-                                    role="button"
-                                    tabIndex={0}
-                                    aria-label={`Edit ${mte.name} task details`}
-                                    onClick={() => handleOpenMteModal(mte)}
-                                    onKeyDown={(e) => {
-                                        if (e.key === 'Enter' || e.key === ' ') {
-                                            e.preventDefault();
-                                            handleOpenMteModal(mte);
-                                        }
-                                    }}
+                                    className="p-4 bg-nasa-gray-900 rounded-md"
                                 >
                                     <div className="flex flex-col sm:flex-row justify-between sm:items-start gap-4 mb-4">
                                         <div className="w-full">
@@ -718,17 +603,7 @@ const AssessmentRunner: React.FC = () => {
                             return (
                                 <div
                                     key={mte.id}
-                                    className="flex flex-col sm:flex-row justify-between items-start sm:items-center p-4 bg-nasa-gray-900 rounded-md gap-4 cursor-pointer hover:bg-nasa-gray-800 focus:outline-none focus:ring-2 focus:ring-nasa-blue transition-colors"
-                                    role="button"
-                                    tabIndex={0}
-                                    aria-label={`Edit ${mte.name} task details`}
-                                    onClick={() => handleOpenMteModal(mte)}
-                                    onKeyDown={(e) => {
-                                        if (e.key === 'Enter' || e.key === ' ') {
-                                            e.preventDefault();
-                                            handleOpenMteModal(mte);
-                                        }
-                                    }}
+                                    className="flex flex-col sm:flex-row justify-between items-start sm:items-center p-4 bg-nasa-gray-900 rounded-md gap-4"
                                 >
                                     <div className="w-full">
                                         <h4 className="font-semibold text-white">
@@ -765,37 +640,46 @@ const AssessmentRunner: React.FC = () => {
 
 const SessionSelector = () => {
     const { t } = useTranslation();
+    const { mode, user } = useAuth();
     const { evaluators, studies, projects } = useData();
     const {
         selectedEvaluatorId, setSelectedEvaluatorId,
         selectedProjectId, setSelectedProjectId,
         selectedStudyId, setSelectedStudyId
     } = useSession();
+    const firebaseEvaluator = mode === 'firebase' && user?.role === 'evaluator';
 
     useEffect(() => {
+        if (firebaseEvaluator && user) {
+            if (selectedEvaluatorId !== user.uid) setSelectedEvaluatorId(user.uid);
+            if (!selectedStudyId && studies.length > 0) setSelectedStudyId(studies[0].id);
+            return;
+        }
         if (!selectedProjectId && projects.length > 0) {
             setSelectedProjectId(projects[0].id);
         }
-    }, [projects, selectedProjectId, setSelectedProjectId]);
+    }, [firebaseEvaluator, user, studies, selectedEvaluatorId, selectedStudyId, setSelectedEvaluatorId, setSelectedStudyId, projects, selectedProjectId, setSelectedProjectId]);
 
     const availableEvaluators = useMemo(() => {
+        if (firebaseEvaluator && user) return evaluators.filter(e => e.id === user.uid);
         if (!selectedProjectId) return [];
         const project = projects.find(p => p.id === selectedProjectId);
         if (!project) return [];
         return evaluators.filter(e => project.memberIds.includes(e.id));
-    }, [evaluators, projects, selectedProjectId]);
+    }, [evaluators, projects, selectedProjectId, firebaseEvaluator, user]);
 
     const availableStudies = useMemo(() => {
+        if (firebaseEvaluator) return studies;
         if (!selectedProjectId) return [];
         return studies.filter(s => s.projectId === selectedProjectId);
-    }, [studies, selectedProjectId]);
+    }, [studies, selectedProjectId, firebaseEvaluator]);
 
     return (
         <Card>
             <div className="flex flex-col sm:flex-row items-center gap-x-6 gap-y-4">
                 <div className="flex-shrink-0">
                     <h2 className="text-lg font-semibold text-white">{t('evaluator.assessment_session')}</h2>
-                    <p className="text-sm text-nasa-gray-400">{t('evaluator.session_description')}</p>
+                    <p className="text-sm text-nasa-gray-400">{firebaseEvaluator ? 'Your assigned evaluation sessions.' : t('evaluator.session_description')}</p>
                 </div>
                 <div className="w-full flex-grow grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <Select
@@ -804,7 +688,7 @@ const SessionSelector = () => {
                         value={selectedEvaluatorId}
                         onChange={(e) => setSelectedEvaluatorId(e.target.value)}
                         aria-label="Select Evaluator"
-                        disabled={!selectedProjectId}
+                        disabled={firebaseEvaluator || !selectedProjectId}
                     >
                         <option value="">{t('evaluator.choose_evaluator')}</option>
                         {availableEvaluators.map(e => <option key={e.id} value={e.id}>{e.name}</option>)}
@@ -814,7 +698,7 @@ const SessionSelector = () => {
                         id="study-select"
                         value={selectedStudyId}
                         onChange={(e) => setSelectedStudyId(e.target.value)}
-                        disabled={!selectedProjectId}
+                        disabled={firebaseEvaluator ? availableStudies.length === 0 : !selectedProjectId}
                         aria-label="Select Study"
                     >
                         <option value="">{t('evaluator.choose_study')}</option>
