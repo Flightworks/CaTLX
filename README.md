@@ -94,6 +94,8 @@ Le mode en ligne Firebase sera ajouté séparément après validation avec l'ém
 
 Les émulateurs locaux utilisent le projet virtuel `demo-catlx`, Firebase Auth sur `9099` et Firestore sur `8081` (le port `8080` est déjà utilisé localement par qBittorrent).
 
+Commandes disponibles : `npm run emulators`, `npm run test:rules`, `npm run seed:firebase`, `npm run export:sqlite`, `npm run validate:export <export.json>`. L'import Firebase est volontairement limité à l'émulateur et nécessite `FIRESTORE_EMULATOR_HOST` ; aucune commande du dépôt n'importe vers un projet Google réel.
+
 ## Structure du projet
 
 ```

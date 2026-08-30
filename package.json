@@ -9,7 +9,11 @@
     "preview": "vite preview",
     "test": "vitest run",
     "emulators": "firebase emulators:start --project demo-catlx --only auth,firestore,hosting",
-    "test:rules": "firebase emulators:exec --project demo-catlx --only auth,firestore \"vitest run --config vite.rules.config.ts tests/firestore --no-file-parallelism\""
+    "test:rules": "firebase emulators:exec --project demo-catlx --only auth,firestore \"vitest run --config vite.rules.config.ts tests/firestore --no-file-parallelism\"",
+    "seed:firebase": "firebase emulators:exec --project demo-catlx --only auth,firestore \"node scripts/seed-firebase-emulator.mjs\"",
+    "export:sqlite": "node scripts/export-sqlite.mjs",
+    "validate:export": "node scripts/validate-import.mjs",
+    "import:firebase": "firebase emulators:exec --project demo-catlx --only firestore \"node scripts/import-firestore.mjs\""
   },
   "dependencies": {
     "@testing-library/react": "^16.3.0",
