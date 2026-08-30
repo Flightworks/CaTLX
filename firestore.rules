@@ -71,6 +71,12 @@ service cloud.firestore {
         && request.auth.uid in get(studyRef(studyId)).data.analystUids;
     }
 
+    function evaluatorAssignedTo(studyId, uid) {
+      return activeUser()
+        && isEvaluator()
+        && uid in get(studyRef(studyId)).data.evaluatorUids;
+    }
+
     function canReadStudy(studyId) {
       return studyManagerFor(studyId)
         || analystFor(studyId)
@@ -146,12 +152,18 @@ service cloud.firestore {
       allow delete: if false;
     }
 
+    match /evaluators/{evaluatorId} {
+      allow read, create, update, delete: if isAdmin();
+    }
+
     match /studies/{studyId} {
       allow read: if isAdmin()
         || (activeUser()
           && ((isStudyManager() && request.auth.uid in resource.data.managerUids)
             || (isAnalyst() && request.auth.uid in resource.data.analystUids)
-            || (isEvaluator() && activeParticipant(studyId, request.auth.uid))));
+            || (isEvaluator()
+              && (activeParticipant(studyId, request.auth.uid)
+                || evaluatorAssignedTo(studyId, request.auth.uid)))));
 
       allow create: if isAdmin()
         || (isStudyManager()

@@ -2,6 +2,7 @@ import React, { createContext, useContext, useEffect, useState, ReactNode } from
 import useMockData from '../hooks/useMockData';
 import useLocalStorageData from '../hooks/useLocalStorageData';
 import useApiData, { API_BASE_URL, API_TOKEN_KEY, apiRequest } from '../hooks/useApiData';
+import useFirestoreData from '../hooks/useFirestoreData';
 import { isFirebaseConfigured } from '../src/firebase/config';
 import {
   registerWithFirebase,
@@ -51,9 +52,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const mockDataHook = useMockData();
   const localStorageDataHook = useLocalStorageData();
   const apiDataHook = useApiData();
-  // K4 replaces this transitional hook with the role-scoped Firestore source.
-  const dataHook = mode === 'api' || mode === 'firebase'
+  const firestoreDataHook = useFirestoreData(user);
+  const dataHook = mode === 'api'
     ? apiDataHook
+    : mode === 'firebase' ? firestoreDataHook
     : mode === 'local' ? localStorageDataHook : mockDataHook;
   const [selectedEvaluatorId, setSelectedEvaluatorId] = useState('');
   const [selectedProjectId, setSelectedProjectId] = useState('');
