@@ -158,9 +158,9 @@ const useFirestoreData = (user: AppUser | null): FirestoreDataSource => {
         ? [{ id: user.uid, name: user.displayName || user.email, quality: '', company: '' }]
         : mapDocuments(evaluatorDocuments, evaluatorFromDocument));
       setMtes([
-        ...mapDocuments(catalogDocuments, mteFromDocument),
+        ...mapDocuments(catalogDocuments.filter(({ data }) => data.active !== false), mteFromDocument),
         ...mapDocuments(snapshotDocuments, mteFromDocument).filter((snapshot) =>
-          !catalogDocuments.some((catalog) => catalog.id === snapshot.id)),
+          !catalogDocuments.some((catalog) => catalog.data.active !== false && catalog.id === snapshot.id)),
       ]);
       setRatings(ratingsDocuments.map(({ id, data }) => {
         const studyId = studyList.find((study) =>
