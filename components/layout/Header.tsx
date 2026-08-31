@@ -12,7 +12,8 @@ const Header: React.FC = () => {
   const navigate = useNavigate();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const { t } = useTranslation();
-  const canAccessAdmin = mode !== 'firebase' || ['admin', 'catalog_manager', 'study_manager', 'analyst'].includes(user?.role || '');
+  const canAccessAdmin = mode !== 'firebase'
+    || (user?.status === 'active' && ['admin', 'catalog_manager', 'study_manager', 'analyst'].includes(user.role));
 
   const handleLogout = () => {
     logout();

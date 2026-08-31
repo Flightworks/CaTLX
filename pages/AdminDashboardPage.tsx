@@ -104,6 +104,7 @@ const AdminDashboardPage: React.FC = () => {
   const { addProject, projects } = useData();
   const { setSelectedProjectId } = useSession();
   const [isProjectModalOpen, setIsProjectModalOpen] = useState(false);
+  const [projectError, setProjectError] = useState<string | null>(null);
 
   const renderTabContent = () => {
     switch (activeTab) {
@@ -134,16 +135,16 @@ const AdminDashboardPage: React.FC = () => {
     </button>
   );
 
-  const handleCreateProject = (projectData: Omit<Project, 'id' | 'ownerId' | 'memberIds'>) => {
-    // In local mode, ownerId doesn't matter much, but we need to pass something.
-    // We can use a placeholder or generate one if auth is mocked.
-    addProject(projectData, 'local-admin');
-    setIsProjectModalOpen(false);
-    // The new project will be selected automatically by the effect in ProjectSelector
-    // but we can also force it if we had the ID. Since addProject is void in the interface (sync in local), 
-    // we rely on the effect or we could update the hook to return the ID.
-    // For now, reliance on the effect is fine as it selects the first one if none selected, 
-    // or we can manually select the last one added if we want to be precise, but let's stick to simple for now.
+  const handleCreateProject = async (projectData: Omit<Project, 'id' | 'ownerId' | 'memberIds'>) => {
+    const ownerId = mode === 'firebase' ? user?.uid : 'local-admin';
+    if (!ownerId) return;
+    setProjectError(null);
+    try {
+      await addProject(projectData, ownerId);
+      setIsProjectModalOpen(false);
+    } catch (error) {
+      setProjectError(error instanceof Error ? error.message : 'Unable to create project');
+    }
   };
 
   return (
@@ -169,7 +170,8 @@ const AdminDashboardPage: React.FC = () => {
       </div>
       <div>{renderTabContent()}</div>
 
-      <Modal isOpen={isProjectModalOpen} onClose={() => setIsProjectModalOpen(false)} title="Create New Project">
+      <Modal isOpen={isProjectModalOpen} onClose={() => { setProjectError(null); setIsProjectModalOpen(false); }} title="Create New Project">
+        {projectError && <p role="alert" className="mb-4 text-red-300">{projectError}</p>}
         <ProjectForm onSave={handleCreateProject} onCancel={() => setIsProjectModalOpen(false)} />
       </Modal>
     </div>

@@ -14,9 +14,9 @@ RUN mkdir -p /app/data
 
 # Environment
 ENV NODE_ENV=production
-ENV PORT=8080
+ENV PORT=8099
 ENV DB_PATH=/app/data/data.sqlite
 
-EXPOSE 8080
+EXPOSE 8099
 
 CMD ["node", "server.js"]

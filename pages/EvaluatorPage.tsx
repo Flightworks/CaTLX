@@ -49,14 +49,15 @@ const formatMteDisplayName = (mte: MTE | null | undefined) => {
 };
 
 const PairwiseComparisonView: React.FC<{
-    onSubmit: (weights: Record<TLXDimension, number>, isWeighted: boolean) => void;
+    onSubmit: (weights: Record<TLXDimension, number>, isWeighted: boolean) => void | Promise<void>;
     onComplete: () => void;
 }> = ({ onSubmit, onComplete }) => {
     const { t } = useTranslation();
     const [currentPairIndex, setCurrentPairIndex] = useState(0);
     const [selections, setSelections] = useState<Record<string, TLXDimension | null>>({});
+    const [submissionError, setSubmissionError] = useState<string | null>(null);
 
-    const handleSubmit = (finalSelections: Record<string, TLXDimension | null>) => {
+    const handleSubmit = async (finalSelections: Record<string, TLXDimension | null>) => {
         const weights = TLX_DIMENSIONS_INFO.reduce((acc, dim) => {
             acc[dim.id] = 0;
             return acc;
@@ -67,8 +68,13 @@ const PairwiseComparisonView: React.FC<{
                 weights[dim]++;
             }
         });
-        onSubmit(weights, true);
-        onComplete();
+        try {
+            setSubmissionError(null);
+            await onSubmit(weights, true);
+            onComplete();
+        } catch {
+            setSubmissionError(t('evaluator.error_submitting', 'Unable to save the comparison. Please try again.'));
+        }
     };
 
     const handleSelect = (dimension: TLXDimension) => {
@@ -79,13 +85,18 @@ const PairwiseComparisonView: React.FC<{
             setCurrentPairIndex(prev => prev + 1);
         } else {
             // Last selection made, submit automatically
-            handleSubmit(newSelections);
+            void handleSubmit(newSelections);
         }
     };
 
-    const handleSkip = () => {
-        onSubmit(DEFAULT_WEIGHTS, false);
-        onComplete();
+    const handleSkip = async () => {
+        try {
+            setSubmissionError(null);
+            await onSubmit(DEFAULT_WEIGHTS, false);
+            onComplete();
+        } catch {
+            setSubmissionError(t('evaluator.error_submitting', 'Unable to save the comparison. Please try again.'));
+        }
     }
 
     const currentPair = PAIRWISE_COMBINATIONS[currentPairIndex];
@@ -119,6 +130,7 @@ const PairwiseComparisonView: React.FC<{
             <div className="space-y-6">
                 <div>
                     <p className="text-nasa-gray-300 mb-4 text-center">{t('evaluator.weights_description')}</p>
+                    {submissionError && <p role="alert" className="text-red-300 text-center">{submissionError}</p>}
                 </div>
 
                 {/* Progress Bar */}
@@ -142,7 +154,7 @@ const PairwiseComparisonView: React.FC<{
             </div>
 
             <div className="flex justify-center mt-8 pt-4 border-t border-nasa-gray-700">
-                <Button onClick={handleSkip} variant="secondary" className="w-full sm:w-auto">{t('evaluator.skip_weighting')}</Button>
+                <Button onClick={() => void handleSkip()} variant="secondary" className="w-full sm:w-auto">{t('evaluator.skip_weighting')}</Button>
             </div>
         </Card>
     );
@@ -308,9 +320,9 @@ const AssessmentRunner: React.FC = () => {
         setScores(prev => ({ ...prev, [dimension]: value }));
     };
 
-    const handlePairwiseSubmit = (weights: Record<TLXDimension, number>, isWeighted: boolean) => {
+    const handlePairwiseSubmit = async (weights: Record<TLXDimension, number>, isWeighted: boolean) => {
         if (selectedEvaluatorId && selectedStudyId) {
-            addPairwiseComparison({ evaluatorId: selectedEvaluatorId, studyId: selectedStudyId, weights, isWeighted });
+            await addPairwiseComparison({ evaluatorId: selectedEvaluatorId, studyId: selectedStudyId, weights, isWeighted });
         }
     };
 

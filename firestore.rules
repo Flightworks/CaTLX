@@ -16,7 +16,9 @@ service cloud.firestore {
 
     function activeUser() {
       return currentUserExists()
-        && get(userRef(request.auth.uid)).data.status == 'active';
+        && get(userRef(request.auth.uid)).data.status == 'active'
+        && get(userRef(request.auth.uid)).data.role != 'pending'
+        && get(userRef(request.auth.uid)).data.role != 'disabled';
     }
 
     function isAdmin() {
@@ -48,6 +50,10 @@ service cloud.firestore {
       return /databases/$(database)/documents/studies/$(studyId);
     }
 
+    function projectRef(projectId) {
+      return /databases/$(database)/documents/projects/$(projectId);
+    }
+
     function participantRef(studyId, uid) {
       return /databases/$(database)/documents/studies/$(studyId)/participants/$(uid);
     }
@@ -62,25 +68,22 @@ service cloud.firestore {
       return activeUser()
         && (isAdmin()
           || (isStudyManager()
-            && request.auth.uid in get(studyRef(studyId)).data.managerUids));
+            && (request.auth.uid in get(studyRef(studyId)).data.managerUids
+              || request.auth.uid in get(projectRef(get(studyRef(studyId)).data.projectId)).data.memberUids)));
+    }
+
+    function canManageProject(projectId) {
+      return activeUser()
+        && (isAdmin()
+          || (isStudyManager()
+            && (request.auth.uid == get(projectRef(projectId)).data.ownerUid
+              || request.auth.uid in get(projectRef(projectId)).data.memberUids)));
     }
 
     function analystFor(studyId) {
       return activeUser()
         && isAnalyst()
         && request.auth.uid in get(studyRef(studyId)).data.analystUids;
-    }
-
-    function evaluatorAssignedTo(studyId, uid) {
-      return activeUser()
-        && isEvaluator()
-        && uid in get(studyRef(studyId)).data.evaluatorUids;
-    }
-
-    function canReadStudy(studyId) {
-      return studyManagerFor(studyId)
-        || analystFor(studyId)
-        || (isEvaluator() && activeParticipant(studyId, request.auth.uid));
     }
 
     function validMte(data) {
@@ -93,6 +96,29 @@ service cloud.firestore {
         && data.active is bool;
     }
 
+    function validUserProfile(data) {
+      return data.keys().hasAll(['email', 'displayName', 'role', 'status'])
+        && data.email is string
+        && data.displayName is string
+        && data.role is string
+        && data.status is string
+        && (data.role == 'admin'
+          || data.role == 'catalog_manager'
+          || data.role == 'study_manager'
+          || data.role == 'analyst'
+          || data.role == 'evaluator'
+          || data.role == 'pending'
+          || data.role == 'disabled')
+        && (data.status == 'active' || data.status == 'pending' || data.status == 'disabled')
+        && (data.status != 'active' || (data.role != 'pending' && data.role != 'disabled'));
+    }
+
+    function scoreInRange(scores, dimension) {
+      return scores[dimension] is number
+        && scores[dimension] >= 0
+        && scores[dimension] <= 100;
+    }
+
     function validScores(scores) {
       return scores.keys().hasAll([
           'Mental Demand', 'Physical Demand', 'Temporal Demand',
@@ -101,7 +127,86 @@ service cloud.firestore {
         && scores.keys().hasOnly([
           'Mental Demand', 'Physical Demand', 'Temporal Demand',
           'Performance', 'Effort', 'Frustration'
-        ]);
+        ])
+        && scoreInRange(scores, 'Mental Demand')
+        && scoreInRange(scores, 'Physical Demand')
+        && scoreInRange(scores, 'Temporal Demand')
+        && scoreInRange(scores, 'Performance')
+        && scoreInRange(scores, 'Effort')
+        && scoreInRange(scores, 'Frustration');
+    }
+
+    function validRating(data) {
+      return data.keys().hasAll(['evaluatorUid', 'mteId', 'scores', 'submittedAt'])
+        && data.evaluatorUid is string
+        && data.mteId is string
+        && data.scores is map
+        && data.submittedAt is number
+        && validScores(data.scores)
+        && (!data.keys().hasAny(['comments']) || data.comments is string);
+    }
+
+    function validWeights(weights) {
+      return weights is map
+        && weights.keys().hasAll([
+          'Mental Demand', 'Physical Demand', 'Temporal Demand',
+          'Performance', 'Effort', 'Frustration'
+        ])
+        && weights.keys().hasOnly([
+          'Mental Demand', 'Physical Demand', 'Temporal Demand',
+          'Performance', 'Effort', 'Frustration'
+        ])
+        && weights['Mental Demand'] is number && weights['Mental Demand'] >= 0 && weights['Mental Demand'] <= 15
+        && weights['Physical Demand'] is number && weights['Physical Demand'] >= 0 && weights['Physical Demand'] <= 15
+        && weights['Temporal Demand'] is number && weights['Temporal Demand'] >= 0 && weights['Temporal Demand'] <= 15
+        && weights['Performance'] is number && weights['Performance'] >= 0 && weights['Performance'] <= 15
+        && weights['Effort'] is number && weights['Effort'] >= 0 && weights['Effort'] <= 15
+        && weights['Frustration'] is number && weights['Frustration'] >= 0 && weights['Frustration'] <= 15;
+    }
+
+    function validPairwise(data) {
+      return data.keys().hasAll(['evaluatorUid', 'weights', 'isWeighted', 'submittedAt'])
+        && data.evaluatorUid is string
+        && data.isWeighted is bool
+        && data.submittedAt is number
+        && validWeights(data.weights);
+    }
+
+    function validAuditEvent(data) {
+      return data.keys().hasAll(['actorUid', 'action', 'entityType', 'entityId', 'timestamp', 'summary'])
+        && data.actorUid is string
+        && data.action is string
+        && data.entityType is string
+        && data.entityId is string
+        && data.timestamp is number
+        && data.summary is string
+        && data.action in [
+          'create', 'update', 'delete', 'add-member', 'remove-member',
+          'archive', 'assign-mte', 'unassign-mte',
+          'assign-evaluator', 'unassign-evaluator',
+          'submit-rating', 'submit-pairwise', 'update-account'
+        ]
+        && data.entityType in ['project', 'evaluator', 'study', 'mte', 'rating', 'pairwise', 'user']
+        && (!data.keys().hasAny(['studyId']) || data.studyId is string);
+    }
+
+    function validParticipant(data) {
+      return data.keys().hasAll(['uid', 'role', 'active', 'assignedAt'])
+        && data.uid is string
+        && data.role == 'evaluator'
+        && data.active is bool
+        && (data.assignedAt is number || data.assignedAt is timestamp);
+    }
+
+    function validStudyMte(data) {
+      return data.keys().hasAll(['sourceMteId', 'sourceRevision', 'refNumber', 'name', 'description'])
+        && data.keys().hasOnly(['sourceMteId', 'sourceRevision', 'refNumber', 'name', 'description'])
+        && data.sourceMteId is string
+        && data.sourceRevision is number
+        && data.sourceRevision >= 1
+        && data.refNumber is string
+        && data.name is string
+        && data.description is string;
     }
 
     // K1's global deny remains the final fallback for every unlisted document.
@@ -112,14 +217,19 @@ service cloud.firestore {
     match /users/{uid} {
       allow create: if signedIn()
         && request.auth.uid == uid
+        && validUserProfile(request.resource.data)
         && request.resource.data.role == 'pending'
         && request.resource.data.status == 'pending'
         && request.resource.data.email == request.auth.token.email;
 
       allow read: if request.auth.uid == uid || isAdmin();
 
-      allow update: if isAdmin()
+      allow update: if (isAdmin()
+          && request.auth.uid != uid
+          && validUserProfile(request.resource.data)
+          && request.resource.data.email == resource.data.email)
         || (request.auth.uid == uid
+          && request.resource.data.displayName is string
           && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['displayName']));
 
       allow delete: if isAdmin();
@@ -135,14 +245,21 @@ service cloud.firestore {
         || (isStudyManager()
           && request.resource.data.ownerUid == request.auth.uid);
 
-      allow update, delete: if isAdmin()
+      allow update: if isAdmin()
         || (isStudyManager()
           && (resource.data.ownerUid == request.auth.uid
-            || request.auth.uid in resource.data.memberUids));
+            || request.auth.uid in resource.data.memberUids)
+          && request.resource.data.ownerUid == resource.data.ownerUid
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+            'name', 'description', 'memberUids', 'updatedAt'
+          ]));
+      allow delete: if isAdmin()
+        || (isStudyManager() && resource.data.ownerUid == request.auth.uid);
     }
 
     match /mteCatalog/{mteId} {
-      allow read: if isAdmin() || isCatalogManager();
+      allow read: if isAdmin() || isCatalogManager()
+        || (isStudyManager() && resource.data.active == true);
       allow create: if (isAdmin() || isCatalogManager())
         && validMte(request.resource.data);
       allow update: if (isAdmin() || isCatalogManager())
@@ -153,36 +270,63 @@ service cloud.firestore {
     }
 
     match /evaluators/{evaluatorId} {
-      allow read, create, update, delete: if isAdmin();
+      allow read: if isAdmin() || isStudyManager();
+      allow create, update, delete: if isAdmin();
     }
 
     match /studies/{studyId} {
       allow read: if isAdmin()
-        || (activeUser()
-          && ((isStudyManager() && request.auth.uid in resource.data.managerUids)
-            || (isAnalyst() && request.auth.uid in resource.data.analystUids)
-            || (isEvaluator()
-              && (activeParticipant(studyId, request.auth.uid)
-                || evaluatorAssignedTo(studyId, request.auth.uid)))));
+        || (isStudyManager()
+          && (request.auth.uid in resource.data.managerUids
+            || request.auth.uid in get(projectRef(resource.data.projectId)).data.memberUids))
+        || (isAnalyst() && request.auth.uid in resource.data.analystUids)
+        || (isEvaluator() && activeParticipant(studyId, request.auth.uid));
 
       allow create: if isAdmin()
         || (isStudyManager()
-          && request.auth.uid in request.resource.data.managerUids);
+          && canManageProject(request.resource.data.projectId)
+          && request.auth.uid in request.resource.data.managerUids
+          && request.resource.data.get('mteIds', []) == []
+          && request.resource.data.get('evaluatorIds', []) == []
+          && request.resource.data.get('evaluatorUids', []) == []);
 
-      allow update, delete: if studyManagerFor(studyId)
-        && (isAdmin() || request.auth.uid in request.resource.data.managerUids);
+      allow update: if studyManagerFor(studyId)
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          'name', 'description', 'date', 'projectId', 'updatedAt'
+        ])
+        && (request.resource.data.projectId == resource.data.projectId
+          || canManageProject(request.resource.data.projectId));
+      allow delete: if studyManagerFor(studyId);
     }
 
     match /studies/{studyId}/participants/{uid} {
       allow read: if studyManagerFor(studyId)
         || (request.auth.uid == uid && activeUser() && resource.data.active == true);
-      allow create, update, delete: if studyManagerFor(studyId);
+      allow create, update: if studyManagerFor(studyId)
+        && uid == request.resource.data.uid
+        && validParticipant(request.resource.data);
+      allow delete: if studyManagerFor(studyId);
+    }
+
+    // Firestore requires this recursive matcher for collection-group queries.
+    // The field checks below keep the query limited to active evaluator records;
+    // no other collection is granted access by the application data model.
+    match /{path=**}/participants/{uid} {
+      allow read: if isEvaluator()
+        && resource.data.get('uid', '') == request.auth.uid
+        && resource.data.get('role', '') == 'evaluator'
+        && resource.data.get('active', false) == true;
     }
 
     match /studies/{studyId}/mtes/{mteId} {
       allow read: if studyManagerFor(studyId)
+        || analystFor(studyId)
         || (isEvaluator() && activeParticipant(studyId, request.auth.uid));
-      allow create, update: if studyManagerFor(studyId);
+      allow create, update: if studyManagerFor(studyId)
+        && mteId == request.resource.data.sourceMteId
+        && validStudyMte(request.resource.data)
+        && exists(/databases/$(database)/documents/mteCatalog/$(request.resource.data.sourceMteId))
+        && get(/databases/$(database)/documents/mteCatalog/$(request.resource.data.sourceMteId)).data.active == true;
       allow delete: if false;
     }
 
@@ -196,16 +340,17 @@ service cloud.firestore {
       allow create: if isEvaluator()
         && activeParticipant(studyId, request.auth.uid)
         && request.resource.data.evaluatorUid == request.auth.uid
-        && request.resource.data.mteId is string
+        && ratingId == request.auth.uid + '_' + request.resource.data.mteId
         && exists(/databases/$(database)/documents/studies/$(studyId)/mtes/$(request.resource.data.mteId))
-        && validScores(request.resource.data.scores);
+        && validRating(request.resource.data);
 
       allow update: if isEvaluator()
         && activeParticipant(studyId, request.auth.uid)
         && resource.data.evaluatorUid == request.auth.uid
         && request.resource.data.evaluatorUid == request.auth.uid
+        && ratingId == request.auth.uid + '_' + request.resource.data.mteId
         && request.resource.data.mteId == resource.data.mteId
-        && validScores(request.resource.data.scores);
+        && validRating(request.resource.data);
 
       allow delete: if isAdmin();
     }
@@ -220,7 +365,8 @@ service cloud.firestore {
       allow create, update: if isEvaluator()
         && activeParticipant(studyId, request.auth.uid)
         && uid == request.auth.uid
-        && request.resource.data.evaluatorUid == request.auth.uid;
+        && request.resource.data.evaluatorUid == request.auth.uid
+        && validPairwise(request.resource.data);
 
       allow delete: if isAdmin();
     }
@@ -229,6 +375,7 @@ service cloud.firestore {
       allow read: if isAdmin();
       allow create: if activeUser()
         && request.resource.data.actorUid == request.auth.uid
+        && validAuditEvent(request.resource.data)
         && request.resource.data.keys().hasOnly([
           'actorUid', 'action', 'entityType', 'entityId', 'studyId', 'timestamp', 'summary'
         ]);

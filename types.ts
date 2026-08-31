@@ -78,26 +78,26 @@ export interface IDataSource {
   ratings: Rating[];
   pairwiseComparisons: PairwiseComparison[];
 
-  addProject: (project: Omit<Project, 'id' | 'ownerId' | 'memberIds'>, ownerId: string) => void;
-  updateProject: (project: Project) => void;
-  deleteProject: (id: string) => void;
-  addMemberToProject: (projectId: string, evaluatorId: string) => void;
-  removeMemberFromProject: (projectId: string, evaluatorId: string) => void;
+  addProject: (project: Omit<Project, 'id' | 'ownerId' | 'memberIds'>, ownerId: string) => void | Promise<void>;
+  updateProject: (project: Project) => void | Promise<void>;
+  deleteProject: (id: string) => void | Promise<void>;
+  addMemberToProject: (projectId: string, evaluatorId: string) => void | Promise<void>;
+  removeMemberFromProject: (projectId: string, evaluatorId: string) => void | Promise<void>;
 
-  addEvaluator: (evaluator: Omit<Evaluator, 'id'>) => Evaluator;
-  updateEvaluator: (evaluator: Evaluator) => void;
-  deleteEvaluator: (id: string) => void;
-  addStudy: (study: Omit<Study, 'id' | 'mteIds' | 'evaluatorIds'>) => void;
-  updateStudy: (study: Study) => void;
-  deleteStudy: (id: string) => void;
-  addMte: (mte: Omit<MTE, 'id' | 'refNumber'> & { refNumber?: string }) => MTE;
-  updateMte: (mte: MTE) => void;
-  deleteMte: (id: string) => void;
-  addMTEToStudy: (studyId: string, mteId: string) => void;
-  removeMTEFromStudy: (studyId: string, mteId: string) => void;
-  addEvaluatorToStudy: (studyId: string, evaluatorId: string) => void;
-  removeEvaluatorFromStudy: (studyId: string, evaluatorId: string) => void;
+  addEvaluator: (evaluator: Omit<Evaluator, 'id'>) => Evaluator | Promise<Evaluator>;
+  updateEvaluator: (evaluator: Evaluator) => void | Promise<void>;
+  deleteEvaluator: (id: string) => void | Promise<void>;
+  addStudy: (study: Omit<Study, 'id' | 'mteIds' | 'evaluatorIds'>) => void | Promise<void>;
+  updateStudy: (study: Study) => void | Promise<void>;
+  deleteStudy: (id: string) => void | Promise<void>;
+  addMte: (mte: Omit<MTE, 'id' | 'refNumber'> & { refNumber?: string }) => MTE | Promise<MTE>;
+  updateMte: (mte: MTE) => void | Promise<void>;
+  deleteMte: (id: string) => void | Promise<void>;
+  addMTEToStudy: (studyId: string, mteId: string) => void | Promise<void>;
+  removeMTEFromStudy: (studyId: string, mteId: string) => void | Promise<void>;
+  addEvaluatorToStudy: (studyId: string, evaluatorId: string) => void | Promise<void>;
+  removeEvaluatorFromStudy: (studyId: string, evaluatorId: string) => void | Promise<void>;
   addRating: (rating: Omit<Rating, 'id' | 'timestamp'>) => Promise<void>;
-  addPairwiseComparison: (comparison: PairwiseComparison) => void;
+  addPairwiseComparison: (comparison: PairwiseComparison) => void | Promise<void>;
   hasPreviousRatingInStudy: (evaluatorId: string, studyId: string) => boolean;
 }

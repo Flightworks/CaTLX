@@ -1,4 +1,4 @@
-import { collection, getDocs, updateDoc, doc, type Firestore } from 'firebase/firestore';
+import { collection, doc, getDocs, writeBatch, type Firestore } from 'firebase/firestore';
 import { initializeFirebase } from '../firebase/config';
 import { APP_ROLES, type AccountStatus, type AppRole, type AppUser } from '../auth/types';
 
@@ -48,11 +48,25 @@ export async function updateManagedUser(
   actorUid: string,
   db: Firestore = initializeFirebase().db,
 ): Promise<void> {
+  if (!actorUid.trim()) throw new Error('An authenticated administrator is required');
   if (!validRole(patch.role) || !validStatus(patch.status)) throw new Error('Invalid account role or status');
-  await updateDoc(doc(db, 'users', uid), {
+  if (patch.status === 'active' && (patch.role === 'pending' || patch.role === 'disabled')) {
+    throw new Error('An active account must have an operational role');
+  }
+  const batch = writeBatch(db);
+  batch.update(doc(db, 'users', uid), {
     role: patch.role,
     status: patch.status,
     approvedAt: patch.status === 'active' ? Date.now() : null,
     approvedBy: patch.status === 'active' ? actorUid : null,
   });
+  batch.set(doc(db, 'auditEvents', crypto.randomUUID()), {
+    actorUid,
+    action: 'update-account',
+    entityType: 'user',
+    entityId: uid,
+    timestamp: Date.now(),
+    summary: 'Account role or status updated',
+  });
+  await batch.commit();
 }

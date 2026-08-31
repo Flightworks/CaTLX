@@ -8,7 +8,7 @@ const path = require('path');
 const fs = require('fs');
 
 // --- Configuration ---
-const PORT = process.env.PORT || 8080;
+const PORT = process.env.PORT || 8099;
 const JWT_SECRET = process.env.JWT_SECRET;
 const DB_PATH = process.env.DB_PATH || path.join(__dirname, 'data.sqlite');
 

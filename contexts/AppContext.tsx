@@ -16,6 +16,15 @@ import { IDataSource } from '../types';
 
 type AppMode = 'demo' | 'local' | 'api' | 'firebase';
 type Credentials = { email: string; password: string };
+const MODE_STORAGE_KEY = 'catlx_mode';
+
+const initialMode = (): AppMode => {
+  if (typeof window === 'undefined') return 'demo';
+  const stored = window.localStorage.getItem(MODE_STORAGE_KEY);
+  return stored === 'demo' || stored === 'local' || stored === 'api' || stored === 'firebase'
+    ? stored
+    : 'demo';
+};
 
 interface AuthContextType {
   isLoggedIn: boolean;
@@ -45,7 +54,7 @@ const errorMessage = (error: unknown, fallback: string): string =>
 
 export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [mode, setMode] = useState<AppMode>('demo');
+  const [mode, setMode] = useState<AppMode>(initialMode);
   const [user, setUser] = useState<AppUser | null>(null);
   const [authLoading, setAuthLoading] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
@@ -64,6 +73,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const login = async (loginMode: AppMode, credentials?: Credentials): Promise<void> => {
     setAuthError(null);
     setMode(loginMode);
+    localStorage.setItem(MODE_STORAGE_KEY, loginMode);
     setUser(null);
 
     if (loginMode === 'firebase') {
@@ -120,6 +130,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
   const register = async (credentials: Credentials, displayName = ''): Promise<AppUser> => {
     setAuthError(null);
+    setMode('firebase');
+    localStorage.setItem(MODE_STORAGE_KEY, 'firebase');
     setAuthLoading(true);
     try {
       return await registerWithFirebase(credentials.email, credentials.password, displayName);
@@ -133,6 +145,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
   const requestPasswordReset = async (email: string): Promise<void> => {
     setAuthError(null);
+    setMode('firebase');
+    localStorage.setItem(MODE_STORAGE_KEY, 'firebase');
     setAuthLoading(true);
     try {
       await sendFirebasePasswordReset(email);
@@ -151,12 +165,15 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     window.dispatchEvent(new Event('catlx-auth-changed'));
     setIsLoggedIn(false);
     setUser(null);
+    setMode('demo');
+    localStorage.setItem(MODE_STORAGE_KEY, 'demo');
     setSelectedEvaluatorId('');
     setSelectedProjectId('');
     setSelectedStudyId('');
   };
 
   useEffect(() => {
+    if (mode === 'firebase') return undefined;
     const jwt = localStorage.getItem(API_TOKEN_KEY);
     if (!jwt) return;
     setAuthLoading(true);
@@ -167,16 +184,15 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       })
       .catch(() => localStorage.removeItem(API_TOKEN_KEY))
       .finally(() => setAuthLoading(false));
-  }, []);
+  }, [mode]);
 
   useEffect(() => {
-    if (!isFirebaseConfigured()) return undefined;
+    if (mode !== 'firebase' || !isFirebaseConfigured()) return undefined;
     setAuthLoading(true);
     try {
       return subscribeToFirebaseAuthState(
         (authenticatedUser) => {
           setUser(authenticatedUser);
-          setMode('firebase');
           setIsLoggedIn(Boolean(authenticatedUser));
           setAuthLoading(false);
         },
@@ -192,7 +208,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       setAuthLoading(false);
       return undefined;
     }
-  }, []);
+  }, [mode]);
 
   useEffect(() => {
     setSelectedEvaluatorId('');

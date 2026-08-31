@@ -13,6 +13,20 @@ const ManageStudyMTEsModal: React.FC<{
 }> = ({ study, onClose }) => {
   const { mtes, addMTEToStudy, removeMTEFromStudy } = useData();
   const [searchQuery, setSearchQuery] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const execute = async (operation: () => void | Promise<void>) => {
+    setSaving(true);
+    setError(null);
+    try {
+      await operation();
+    } catch (operationError) {
+      setError(operationError instanceof Error ? operationError.message : 'Unable to update study MTEs.');
+    } finally {
+      setSaving(false);
+    }
+  };
 
   const mtesInStudy = useMemo(() => {
     return study.mteIds
@@ -33,6 +47,7 @@ const ManageStudyMTEsModal: React.FC<{
 
   return (
     <Modal isOpen={true} onClose={onClose} title={`Manage MTEs for: ${study.name}`} size="4xl">
+      {error && <p role="alert" className="mb-4 text-red-300">{error}</p>}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Available MTEs */}
         <div>
@@ -51,7 +66,7 @@ const ManageStudyMTEsModal: React.FC<{
                   <p className="text-sm font-medium text-white">{mte.name}</p>
                   <p className="text-xs text-nasa-gray-400 font-mono">[{mte.refNumber}]</p>
                 </div>
-                <Button size="sm" onClick={() => addMTEToStudy(study.id, mte.id)}>Add</Button>
+                <Button size="sm" disabled={saving} onClick={() => void execute(() => addMTEToStudy(study.id, mte.id))}>Add</Button>
               </div>
             ))}
             {availableMtes.length === 0 && <p className="text-sm text-nasa-gray-500 text-center py-4">No available MTEs match your search.</p>}
@@ -67,7 +82,7 @@ const ManageStudyMTEsModal: React.FC<{
                   <p className="text-sm font-medium text-white">{mte.name}</p>
                   <p className="text-xs text-nasa-gray-400 font-mono">[{mte.refNumber}]</p>
                 </div>
-                <Button size="sm" variant="danger" onClick={() => removeMTEFromStudy(study.id, mte.id)}>Remove</Button>
+                <Button size="sm" variant="danger" disabled={saving} onClick={() => void execute(() => removeMTEFromStudy(study.id, mte.id))}>Remove</Button>
               </div>
             ))}
             {mtesInStudy.length === 0 && <p className="text-sm text-nasa-gray-500 text-center py-4">No MTEs have been added to this study.</p>}
@@ -83,6 +98,20 @@ const ManageStudyEvaluatorsModal: React.FC<{
   onClose: () => void;
 }> = ({ study, onClose }) => {
   const { evaluators, addEvaluatorToStudy, removeEvaluatorFromStudy } = useData();
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const execute = async (operation: () => void | Promise<void>) => {
+    setSaving(true);
+    setError(null);
+    try {
+      await operation();
+    } catch (operationError) {
+      setError(operationError instanceof Error ? operationError.message : 'Unable to update study evaluators.');
+    } finally {
+      setSaving(false);
+    }
+  };
 
   const evaluatorsInStudy = useMemo(() => {
     return study.evaluatorIds
@@ -99,6 +128,7 @@ const ManageStudyEvaluatorsModal: React.FC<{
 
   return (
     <Modal isOpen={true} onClose={onClose} title={`Manage Evaluators for: ${study.name}`} size="4xl">
+      {error && <p role="alert" className="mb-4 text-red-300">{error}</p>}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div>
           <h3 className="text-lg font-semibold text-white mb-2">Available Evaluators</h3>
@@ -106,7 +136,7 @@ const ManageStudyEvaluatorsModal: React.FC<{
             {availableEvaluators.map(evaluator => (
               <div key={evaluator.id} className="flex justify-between items-center p-2 bg-nasa-gray-700 rounded">
                 <p className="text-sm font-medium text-white">{evaluator.name}</p>
-                <Button size="sm" onClick={() => addEvaluatorToStudy(study.id, evaluator.id)}>Add</Button>
+                <Button size="sm" disabled={saving} onClick={() => void execute(() => addEvaluatorToStudy(study.id, evaluator.id))}>Add</Button>
               </div>
             ))}
             {availableEvaluators.length === 0 && <p className="text-sm text-nasa-gray-500 text-center py-4">No other evaluators available.</p>}
@@ -118,7 +148,7 @@ const ManageStudyEvaluatorsModal: React.FC<{
             {evaluatorsInStudy.map(evaluator => (
               <div key={evaluator.id} className="flex justify-between items-center p-2 bg-nasa-gray-700 rounded">
                 <p className="text-sm font-medium text-white">{evaluator.name}</p>
-                <Button size="sm" variant="danger" onClick={() => removeEvaluatorFromStudy(study.id, evaluator.id)}>Remove</Button>
+                <Button size="sm" variant="danger" disabled={saving} onClick={() => void execute(() => removeEvaluatorFromStudy(study.id, evaluator.id))}>Remove</Button>
               </div>
             ))}
             {evaluatorsInStudy.length === 0 && <p className="text-sm text-nasa-gray-500 text-center py-4">No evaluators have been added to this study.</p>}
@@ -132,7 +162,7 @@ const ManageStudyEvaluatorsModal: React.FC<{
 const StudyForm: React.FC<{
   study?: Study | null;
   projectId: string;
-  onSave: (study: Omit<Study, 'id' | 'mteIds' | 'evaluatorIds'> | Study) => void;
+  onSave: (study: Omit<Study, 'id' | 'mteIds' | 'evaluatorIds'> | Study) => void | Promise<void>;
   onCancel: () => void;
 }> = ({ study, projectId, onSave, onCancel }) => {
   const [name, setName] = useState(study?.name || '');
@@ -176,6 +206,7 @@ const ManageStudies: React.FC = () => {
   const [managingMtesForStudy, setManagingMtesForStudy] = useState<Study | null>(null);
   const [managingEvaluatorsForStudy, setManagingEvaluatorsForStudy] = useState<Study | null>(null);
   const [editingStudy, setEditingStudy] = useState<Study | null>(null);
+  const [formError, setFormError] = useState<string | null>(null);
 
   const studiesInProject = useMemo(() => {
     if (!selectedProjectId) return [];
@@ -184,14 +215,28 @@ const ManageStudies: React.FC = () => {
         .sort((a, b) => b.date - a.date);
   }, [studies, selectedProjectId]);
 
-  const handleSaveStudy = (study: Omit<Study, 'id' | 'mteIds' | 'evaluatorIds'> | Study) => {
-    if ('id' in study) {
-      updateStudy(study);
-    } else {
-      addStudy(study);
+  const handleSaveStudy = async (study: Omit<Study, 'id' | 'mteIds' | 'evaluatorIds'> | Study) => {
+    try {
+      setFormError(null);
+      if ('id' in study) {
+        await updateStudy(study);
+      } else {
+        await addStudy(study);
+      }
+      setIsStudyModalOpen(false);
+      setEditingStudy(null);
+    } catch (saveError) {
+      setFormError(saveError instanceof Error ? saveError.message : 'Unable to save study.');
     }
-    setIsStudyModalOpen(false);
-    setEditingStudy(null);
+  };
+
+  const handleDeleteStudy = async (studyId: string) => {
+    try {
+      setFormError(null);
+      await deleteStudy(studyId);
+    } catch (deleteError) {
+      setFormError(deleteError instanceof Error ? deleteError.message : 'Unable to delete study.');
+    }
   };
   
   if (!selectedProjectId) {
@@ -207,6 +252,7 @@ const ManageStudies: React.FC = () => {
 
   return (
     <Card>
+      {formError && <p role="alert" className="mb-4 text-red-300">{formError}</p>}
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-xl font-bold">Manage Studies</h2>
         <Button onClick={() => { setEditingStudy(null); setIsStudyModalOpen(true); }}>Add New Study</Button>
@@ -225,7 +271,7 @@ const ManageStudies: React.FC = () => {
                   </div>
                   <div className="flex-shrink-0 flex flex-wrap items-center gap-2">
                       <Button size="sm" variant="secondary" onClick={() => { setEditingStudy(study); setIsStudyModalOpen(true); }}>Edit Info</Button>
-                      <Button size="sm" variant="danger" onClick={() => deleteStudy(study.id)}>Delete</Button>
+                      <Button size="sm" variant="danger" onClick={() => void handleDeleteStudy(study.id)}>Delete</Button>
                   </div>
               </div>
               
@@ -266,7 +312,8 @@ const ManageStudies: React.FC = () => {
 
       {/* Modals */}
       {isStudyModalOpen && (
-         <Modal isOpen={true} onClose={() => setIsStudyModalOpen(false)} title={editingStudy ? `Edit Study` : `Add New Study`}>
+         <Modal isOpen={true} onClose={() => { setFormError(null); setIsStudyModalOpen(false); }} title={editingStudy ? `Edit Study` : `Add New Study`}>
+            {formError && <p role="alert" className="mb-4 text-red-300">{formError}</p>}
             <StudyForm study={editingStudy} projectId={selectedProjectId} onSave={handleSaveStudy} onCancel={() => setIsStudyModalOpen(false)} />
         </Modal>
       )}

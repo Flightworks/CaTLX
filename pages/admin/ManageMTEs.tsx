@@ -7,7 +7,7 @@ import Modal from '../../components/ui/Modal';
 
 const MTEForm: React.FC<{
   mte?: MTE | null;
-  onSave: (mte: (Omit<MTE, 'id' | 'refNumber'> & { refNumber?: string }) | MTE) => void;
+  onSave: (mte: (Omit<MTE, 'id' | 'refNumber'> & { refNumber?: string }) | MTE) => void | Promise<void>;
   onCancel: () => void;
 }> = ({ mte, onSave, onCancel }) => {
   const [name, setName] = useState(mte?.name || '');
@@ -81,7 +81,7 @@ const ManageMTEs: React.FC = () => {
     );
   }, [mtes, searchQuery]);
 
-  const handleSave = (mte: (Omit<MTE, 'id' | 'refNumber'> & { refNumber?: string }) | MTE) => {
+  const handleSave = async (mte: (Omit<MTE, 'id' | 'refNumber'> & { refNumber?: string }) | MTE) => {
     const normalized = {
       ...mte,
       name: mte.name.trim(),
@@ -97,13 +97,17 @@ const ManageMTEs: React.FC = () => {
       return;
     }
     setFormError(null);
-    if ('id' in normalized) {
-      updateMte(normalized);
-    } else {
-      addMte(normalized);
+    try {
+      if ('id' in normalized) {
+        await updateMte(normalized);
+      } else {
+        await addMte(normalized);
+      }
+      setIsModalOpen(false);
+      setEditingMte(null);
+    } catch (error) {
+      setFormError(error instanceof Error ? error.message : 'Unable to save MTE.');
     }
-    setIsModalOpen(false);
-    setEditingMte(null);
   };
 
   const handleAddNew = () => {
@@ -116,6 +120,15 @@ const ManageMTEs: React.FC = () => {
     setFormError(null);
     setEditingMte(mte);
     setIsModalOpen(true);
+  };
+
+  const handleDelete = async (mteId: string) => {
+    try {
+      setFormError(null);
+      await deleteMte(mteId);
+    } catch (deleteError) {
+      setFormError(deleteError instanceof Error ? deleteError.message : 'Unable to archive MTE.');
+    }
   };
 
   return (
@@ -157,7 +170,7 @@ const ManageMTEs: React.FC = () => {
                 <td className="px-6 py-4 text-sm text-nasa-gray-300">{mte.description}</td>
                 <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-2">
                   <Button size="sm" variant="secondary" onClick={() => handleEdit(mte)}>Edit</Button>
-                  <Button size="sm" variant="danger" onClick={() => deleteMte(mte.id)}>{mode === 'firebase' ? 'Archive' : 'Delete'}</Button>
+                  <Button size="sm" variant="danger" onClick={() => void handleDelete(mte.id)}>{mode === 'firebase' ? 'Archive' : 'Delete'}</Button>
                 </td>
               </tr>
             ))}

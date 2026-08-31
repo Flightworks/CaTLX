@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { managedUserFromDocument } from './admin';
+import { managedUserFromDocument, updateManagedUser } from './admin';
 
 describe('managed user documents', () => {
   it('normalizes a Firebase user profile', () => {
@@ -13,5 +13,10 @@ describe('managed user documents', () => {
   it('rejects an unknown role or status', () => {
     expect(() => managedUserFromDocument('uid-1', { role: 'root', status: 'active' })).toThrow(/Invalid user profile/);
     expect(() => managedUserFromDocument('uid-1', { role: 'evaluator', status: 'unknown' })).toThrow(/Invalid user profile/);
+  });
+
+  it('rejects an operational role with an active pending account', async () => {
+    await expect(updateManagedUser('uid-1', { role: 'pending', status: 'active' }, 'admin', {} as never))
+      .rejects.toThrow(/operational role/);
   });
 });

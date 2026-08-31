@@ -6,7 +6,7 @@
 
 ## Décision
 
-CaTLX ajoutera un mode en ligne basé sur :
+CaTLX intègre progressivement un mode en ligne basé sur :
 
 - Firebase Hosting pour le frontend React/Vite ;
 - Firebase Authentication pour les comptes ;
@@ -16,7 +16,7 @@ CaTLX ajoutera un mode en ligne basé sur :
 
 La première cible utilise exclusivement le plan **Firebase Spark**. Aucun moyen de paiement ne doit être associé au projet pendant la phase initiale. Aucun service Blaze, Cloud Run, Cloud Functions, Cloud SQL ou Firebase Storage n’est requis pour cette version.
 
-Le mode Firebase sera ajouté derrière l’abstraction `IDataSource`. Les modes `demo`, `local` et l’API Express/SQLite existante seront conservés jusqu’à la validation complète du mode Firebase.
+Le mode Firebase est branché derrière l’abstraction `IDataSource`. Les modes `demo`, `local` et l’API Express/SQLite existante sont conservés pendant la transition et servent de retour arrière fonctionnel.
 
 ## Contexte
 
@@ -43,7 +43,9 @@ Lorsqu’un MTE est affecté à une étude, une copie contrôlée sera créée d
 
 Cette copie est un **snapshot de l’étude**. Elle contient uniquement les informations nécessaires à l’évaluation et conserve la révision utilisée. Un évaluateur ne pourra jamais lire `/mteCatalog`.
 
-Cette séparation évite qu’un évaluateur découvre le catalogue complet en devinant un identifiant ou en exécutant une requête Firestore différente de celle prévue par l’interface.
+Cette séparation évite qu’un évaluateur découvre le catalogue complet en devinant un identifiant ou en exécutant une requête Firestore différente de celle prévue par l’interface. Le `study_manager` est un rôle opérationnel autorisé à lire uniquement les MTE actifs afin de créer ces affectations ; les évaluateurs et analystes ne lisent jamais la collection globale.
+
+Les documents `/studies/{studyId}/participants/{uid}` et `/studies/{studyId}/mtes/{mteId}` sont les sources de vérité runtime des affectations. Les tableaux parent `evaluatorIds`, `evaluatorUids` et `mteIds` sont conservés pour compatibilité des exports, mais ne sont pas modifiables par le client et ne servent pas à accorder un accès.
 
 ## Rôles
 

@@ -6,9 +6,13 @@ const emulatorHost = process.env.FIRESTORE_EMULATOR_HOST;
 if (!emulatorHost) {
   throw new Error('Refusing to seed without FIRESTORE_EMULATOR_HOST; this script is emulator-only.');
 }
-const [host, portText] = emulatorHost.split(':');
+const separator = emulatorHost.lastIndexOf(':');
+const host = emulatorHost.slice(0, separator).replace(/^\[|\]$/g, '');
+const portText = emulatorHost.slice(separator + 1);
 const port = Number(portText);
-if (!host || !Number.isInteger(port)) throw new Error(`Invalid FIRESTORE_EMULATOR_HOST: ${emulatorHost}`);
+if (!['127.0.0.1', 'localhost', '::1'].includes(host) || port !== 8081) {
+  throw new Error(`Refusing non-local Firestore emulator endpoint: ${emulatorHost}`);
+}
 
 const env = await initializeTestEnvironment({
   projectId: 'demo-catlx',
@@ -34,7 +38,7 @@ try {
       managerUids: ['demo-admin'], analystUids: [], evaluatorUids: ['demo-evaluator'], mteIds: ['demo-mte-1'],
     });
     await db.collection('studies').doc('demo-study').collection('participants').doc('demo-evaluator').set({
-      role: 'evaluator', active: true,
+      uid: 'demo-evaluator', role: 'evaluator', active: true, assignedAt: Date.now(),
     });
     await db.collection('studies').doc('demo-study').collection('mtes').doc('demo-mte-1').set({
       sourceMteId: 'demo-mte-1', sourceRevision: 1, refNumber: 'DEMO-001', name: 'Synthetic task', description: 'Emulator-only data',

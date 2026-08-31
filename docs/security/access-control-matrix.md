@@ -23,13 +23,13 @@
 |---|---:|---:|---:|---:|---:|
 | Voir les utilisateurs | Oui | Non | Non | Non | Non |
 | Modifier rôles/états | Oui | Non | Non | Non | Non |
-| Lire le catalogue MTE global | Oui | Oui | Selon périmètre | Non | Non |
+| Lire le catalogue MTE global | Oui | Oui | Oui, uniquement les MTE actifs pour les affectations opérationnelles | Non | Non |
 | Créer ou modifier un MTE | Oui | Oui | Non | Non | Non |
 | Archiver un MTE | Oui | Oui | Non | Non | Non |
 | Lire ses études autorisées | Oui | Selon périmètre | Oui | Selon périmètre | Oui |
 | Modifier une étude | Oui | Non | Oui | Non | Non |
-| Affecter un MTE à une étude | Oui | Selon périmètre | Oui | Non | Non |
-| Lire les snapshots MTE d’une étude | Oui | Lecture autorisée | Oui | Selon périmètre | Si participant actif |
+| Affecter un MTE à une étude | Oui | Non dans le périmètre Spark initial | Oui | Non | Non |
+| Lire les snapshots MTE d’une étude | Oui | Non par défaut | Oui | Selon périmètre | Si participant actif |
 | Lire les réponses individuelles | Oui | Non par défaut | Selon étude | Selon autorisation | Ses réponses |
 | Lire les résultats agrégés | Oui | Non par défaut | Oui | Oui selon étude | Son résumé |
 | Soumettre une notation | Non | Non | Non | Non | Oui, pour lui-même |
@@ -70,7 +70,8 @@
 
 - `admin` voit tout.
 - `study_manager` voit uniquement ses projets/études autorisés.
-- `evaluator` ne lit que les études pour lesquelles un document participant actif existe.
+- `evaluator` découvre ses études via une query collection-group des documents `participants` actifs, puis la règle revérifie le participant pour chaque étude.
+- Les documents `participants` sont la source de vérité mutable des affectations. Les snapshots `/studies/{studyId}/mtes/{mteId}` sont la source de vérité des MTE affectés. Les champs parent historiques `evaluatorIds`/`evaluatorUids`/`mteIds` ne sont pas modifiables par le client et ne servent pas à accorder un accès.
 - Une modification ne doit pas permettre à un utilisateur de s’ajouter lui-même comme administrateur ou participant privilégié.
 
 ### `/studies/{studyId}/mtes`
@@ -85,6 +86,7 @@
 - Un évaluateur peut créer ou modifier uniquement sa propre réponse, selon la politique de verrouillage retenue.
 - `evaluatorUid`, `studyId` et `mteId` sont vérifiés par rapport à l’utilisateur authentifié et aux affectations.
 - Les scores doivent contenir uniquement les six dimensions TLX attendues et des valeurs dans l’intervalle défini par l’application.
+- L’identifiant d’une notation est déterministe : `{evaluatorUid}_{mteId}`. Il empêche la création de plusieurs documents pour la même notation.
 - Les lectures de résultats individuels sont réservées aux rôles et périmètres autorisés.
 
 ### `/auditEvents`

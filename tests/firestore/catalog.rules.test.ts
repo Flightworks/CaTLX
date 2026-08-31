@@ -1,5 +1,6 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { assertFails, assertSucceeds } from '@firebase/rules-unit-testing';
+import { collection, getDocs, query, where } from 'firebase/firestore';
 import {
   authenticated,
   createRulesTestEnvironment,
@@ -26,6 +27,7 @@ describe('MTE catalogue rules', () => {
     await env.clearFirestore();
     await seedUser(env, 'admin', 'admin');
     await seedUser(env, 'catalog', 'catalog_manager');
+    await seedUser(env, 'manager', 'study_manager');
     await seedUser(env, 'evaluator', 'evaluator');
     await seedUser(env, 'pending', 'pending', 'pending');
   });
@@ -46,7 +48,12 @@ describe('MTE catalogue rules', () => {
   it('allows catalogue managers to archive but not delete an assigned MTE', async () => {
     const catalog = authenticated(env, 'catalog');
     await assertSucceeds(catalog.firestore().collection('mteCatalog').doc('mte-1').set(mte));
+    const manager = authenticated(env, 'manager');
+    await assertSucceeds(manager.firestore().collection('mteCatalog').doc('mte-1').get());
+    await assertSucceeds(getDocs(query(collection(manager.firestore(), 'mteCatalog'), where('active', '==', true))));
+    await assertFails(manager.firestore().collection('mteCatalog').get());
     await assertFails(catalog.firestore().collection('mteCatalog').doc('mte-1').delete());
-    await assertSucceeds(catalog.firestore().collection('mteCatalog').doc('mte-1').update({ active: false, revision: 2 }));
+    await assertSucceeds(authenticated(env, 'catalog').firestore().collection('mteCatalog').doc('mte-1').update({ active: false, revision: 2 }));
+    await assertFails(manager.firestore().collection('mteCatalog').doc('mte-1').get());
   });
 });

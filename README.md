@@ -82,19 +82,20 @@ npx tsc --noEmit
 
 ## Modes de fonctionnement
 
-L'application propose trois modes au login :
+L'application propose quatre modes au login :
 
 | Mode | Description | Persistance |
 |------|-------------|-------------|
 | **Demo** | Données d'exemple en mémoire, idéal pour découvrir l'outil. | Aucune (reset à chaque refresh) |
 | **Local** | Données sauvegardées dans le navigateur (localStorage). | Local à l'appareil |
 | **API** (auto-hébergé) | Connecté au backend Express + SQLite avec JWT. | Serveur, partagé entre utilisateurs |
+| **Firebase** | Firebase Authentication + Firestore, avec règles par rôle et par étude. | Cloud Firebase ou émulateurs locaux |
 
-Le mode en ligne Firebase sera ajouté séparément après validation avec l'émulateur Firebase. Il utilisera Firebase Authentication et Cloud Firestore avec des règles d'accès par rôle et par étude. Le catalogue MTE global ne sera jamais accessible à un évaluateur : celui-ci recevra uniquement les snapshots MTE des études qui lui sont affectées.
+Le mode Firebase est intégré derrière `IDataSource`, mais reste désactivé tant que la configuration Firebase n'est pas fournie. Le catalogue MTE global ne sera jamais accessible à un évaluateur : celui-ci recevra uniquement les snapshots MTE des études qui lui sont affectées.
 
 Les émulateurs locaux utilisent le projet virtuel `demo-catlx`, Firebase Auth sur `9099` et Firestore sur `8081` (le port `8080` est déjà utilisé localement par qBittorrent).
 
-Commandes disponibles : `npm run emulators`, `npm run test:rules`, `npm run seed:firebase`, `npm run export:sqlite`, `npm run validate:export <export.json>`. L'import Firebase est volontairement limité à l'émulateur et nécessite `FIRESTORE_EMULATOR_HOST` ; aucune commande du dépôt n'importe vers un projet Google réel.
+Commandes disponibles : `npm run emulators`, `npm run test:rules`, `npm run seed:firebase`, `npm run export:sqlite`, `npm run validate:export -- <export.json>`, `npm run import:firebase -- <export.json> <uid-map.json>`. L'import Firebase est volontairement limité à l'émulateur, exige une correspondance explicite entre anciens identifiants et UID Firebase, et importe les comptes en `pending` par défaut ; aucune commande du dépôt n'importe vers un projet Google réel.
 
 ## Structure du projet
 
@@ -143,7 +144,7 @@ La base SQLite est initialisée automatiquement au premier démarrage.
 ## Déploiement
 
 - **Frontend** : `npm run build` puis servir `dist/` (GitHub Pages, Netlify, etc.)
-- **Backend + frontend** : `docker compose up -d --build` (frontend sur `http://localhost:3000`, backend sur `http://localhost:8080`)
+- **Backend + frontend** : `docker compose up -d --build` (frontend sur `http://localhost:3000`, backend sur `http://localhost:8099` dans la configuration CaTLX)
 
 ### Cible Firebase Spark
 
@@ -155,7 +156,7 @@ Voir :
 - `docs/security/access-control-matrix.md` — rôles et permissions ;
 - `docs/operations/firebase-spark-deployment.md` — staging et garde-fous de déploiement.
 
-En production, définir un `JWT_SECRET` long et aléatoire dans un fichier `.env` avant le premier démarrage. Le backend refuse de démarrer sans ce secret.
+En production du mode API, définir un `JWT_SECRET` long et aléatoire dans un fichier `.env` avant le premier démarrage. Le backend refuse de démarrer sans ce secret. Le port `8080` est réservé localement à qBittorrent ; la configuration API CaTLX utilise `8099`.
 
 ## Licence
 

@@ -53,6 +53,20 @@ npx firebase deploy --only hosting,firestore:rules,firestore:indexes
 
 Il refuse tout autre identifiant de projet que `catlx-staging` et s’arrête si les deux confirmations Spark ne sont pas présentes.
 
+## Migration depuis SQLite
+
+L’export produit le format `catlx-firestore-export-v2`. Il contient les projets, études, MTE, participants, snapshots, ratings et comparaisons paire-à-paire.
+
+```bash
+npm run export:sqlite -- /tmp/catlx-export.json
+npm run validate:export -- /tmp/catlx-export.json
+npm run import:firebase -- /tmp/catlx-export.json /tmp/catlx-uid-map.json
+```
+
+Le fichier `uid-map.json` doit être construit après la création manuelle des comptes Firebase. Il ne contient pas de mot de passe ni de jeton. Sans l’option explicite `--allow-active-users`, tous les profils importés restent `pending`; l’administrateur doit ensuite vérifier et approuver chaque compte.
+
+L’import crée aussi `/participants/{uid}` et les snapshots `/studies/{studyId}/mtes/{mteId}`. Les participants et snapshots sont les sources de vérité runtime ; les listes parent sont conservées pour compatibilité de migration mais ne sont pas modifiables par le client. Il refuse toute référence orpheline, tout hash incorrect, tout UID dupliqué et tout endpoint autre que l’émulateur local `127.0.0.1:8081`.
+
 ## Vérification après déploiement
 
 - ouvrir l’URL Firebase Hosting du staging ;

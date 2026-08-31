@@ -80,24 +80,29 @@ export async function registerWithFirebase(
 ): Promise<AppUser> {
   const { auth, db } = initializeFirebase();
   const credential = await createUserWithEmailAndPassword(auth, email.trim(), password);
-  if (displayName.trim()) {
-    await updateProfile(credential.user, { displayName: displayName.trim() });
+  try {
+    if (displayName.trim()) {
+      await updateProfile(credential.user, { displayName: displayName.trim() });
+    }
+    const normalizedEmail = credential.user.email || email.trim();
+    const normalizedName = credential.user.displayName || displayName.trim();
+    const profile: AppUser = {
+      uid: credential.user.uid,
+      email: normalizedEmail,
+      displayName: normalizedName,
+      role: 'pending',
+      status: 'pending',
+    };
+    await setDoc(doc(db, 'users', credential.user.uid), {
+      ...profile,
+      createdAt: serverTimestamp(),
+    });
+    await signOut(auth);
+    return profile;
+  } catch (error) {
+    await signOut(auth);
+    throw error;
   }
-  const normalizedEmail = credential.user.email || email.trim();
-  const normalizedName = credential.user.displayName || displayName.trim();
-  const profile: AppUser = {
-    uid: credential.user.uid,
-    email: normalizedEmail,
-    displayName: normalizedName,
-    role: 'pending',
-    status: 'pending',
-  };
-  await setDoc(doc(db, 'users', credential.user.uid), {
-    ...profile,
-    createdAt: serverTimestamp(),
-  });
-  await signOut(auth);
-  return profile;
 }
 
 export async function sendFirebasePasswordReset(email: string): Promise<void> {

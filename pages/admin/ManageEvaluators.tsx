@@ -8,7 +8,7 @@ import Modal from '../../components/ui/Modal';
 
 const EvaluatorForm: React.FC<{
   evaluator?: Evaluator | null;
-  onSave: (evaluator: Omit<Evaluator, 'id'> | Evaluator) => void;
+  onSave: (evaluator: Omit<Evaluator, 'id'> | Evaluator) => void | Promise<void>;
   onCancel: () => void;
 }> = ({ evaluator, onSave, onCancel }) => {
   const [name, setName] = useState(evaluator?.name || '');
@@ -68,6 +68,7 @@ const ManageEvaluators: React.FC = () => {
   const { selectedProjectId } = useSession();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingEvaluator, setEditingEvaluator] = useState<Evaluator | null>(null);
+  const [formError, setFormError] = useState<string | null>(null);
 
   const projectEvaluators = useMemo(() => {
     if (!selectedProjectId) return [];
@@ -79,28 +80,42 @@ const ManageEvaluators: React.FC = () => {
   }, [evaluators, projects, selectedProjectId]);
 
 
-  const handleSave = (evaluator: Omit<Evaluator, 'id'> | Evaluator) => {
-    if ('id' in evaluator) {
-      updateEvaluator(evaluator);
-    } else {
-      const newEvaluator = addEvaluator(evaluator);
-      if (selectedProjectId) {
-        addMemberToProject(selectedProjectId, newEvaluator.id);
+  const handleSave = async (evaluator: Omit<Evaluator, 'id'> | Evaluator) => {
+    try {
+      setFormError(null);
+      if ('id' in evaluator) {
+        await updateEvaluator(evaluator);
+      } else {
+        const newEvaluator = await addEvaluator(evaluator);
+        if (selectedProjectId) await addMemberToProject(selectedProjectId, newEvaluator.id);
       }
+      setIsModalOpen(false);
+      setEditingEvaluator(null);
+    } catch (error) {
+      setFormError(error instanceof Error ? error.message : 'Unable to save evaluator.');
     }
-    setIsModalOpen(false);
-    setEditingEvaluator(null);
   };
 
   const handleAddNew = () => {
+    setFormError(null);
     setEditingEvaluator(null);
     setIsModalOpen(true);
   };
   
   const handleEdit = (evaluator: Evaluator) => {
+    setFormError(null);
     setEditingEvaluator(evaluator);
     setIsModalOpen(true);
   }
+
+  const handleDelete = async (evaluatorId: string) => {
+    try {
+      setFormError(null);
+      await deleteEvaluator(evaluatorId);
+    } catch (deleteError) {
+      setFormError(deleteError instanceof Error ? deleteError.message : 'Unable to delete evaluator.');
+    }
+  };
   
   if (!selectedProjectId) {
       return (
@@ -139,7 +154,7 @@ const ManageEvaluators: React.FC = () => {
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-nasa-gray-300">{evaluator.company}</td>
                 <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-2">
                   <Button size="sm" variant="secondary" onClick={() => handleEdit(evaluator)}>Edit</Button>
-                  <Button size="sm" variant="danger" onClick={() => deleteEvaluator(evaluator.id)}>Delete</Button>
+                  <Button size="sm" variant="danger" onClick={() => void handleDelete(evaluator.id)}>Delete</Button>
                 </td>
               </tr>
             ))}
@@ -153,7 +168,8 @@ const ManageEvaluators: React.FC = () => {
           </tbody>
         </table>
       </div>
-      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={editingEvaluator ? 'Edit Evaluator' : 'Add Evaluator'}>
+      <Modal isOpen={isModalOpen} onClose={() => { setFormError(null); setIsModalOpen(false); }} title={editingEvaluator ? 'Edit Evaluator' : 'Add Evaluator'}>
+        {formError && <p role="alert" className="mb-4 text-red-300">{formError}</p>}
         <EvaluatorForm
           evaluator={editingEvaluator}
           onSave={handleSave}

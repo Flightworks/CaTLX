@@ -9,7 +9,7 @@ export function timestampToMillis(value: unknown): number {
     return value.toMillis();
   }
   const number = Number(value);
-  if (!Number.isFinite(number)) return Date.now();
+  if (!Number.isFinite(number)) return 0;
   return number < 1_000_000_000_000 ? number * 1000 : number;
 }
 
