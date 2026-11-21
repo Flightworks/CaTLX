@@ -6,6 +6,7 @@ import { Study, MTE, Evaluator } from '../../types';
 import Card from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
 import Modal from '../../components/ui/Modal';
+import RowAction from '../../components/ui/RowAction';
 import { studyPath } from '../projectPaths';
 
 
@@ -71,7 +72,7 @@ const ManageStudyMTEsModal: React.FC<{
                   <p className="text-sm font-medium text-foreground">{mte.name}</p>
                   <p className="text-xs text-nasa-gray-400 font-mono">[{mte.refNumber}]</p>
                 </div>
-                <Button size="sm" variant="danger" disabled={ratings.some(rating => rating.studyId === study.id && rating.mteId === mte.id) ||
+                <Button size="sm" variant="secondary" disabled={ratings.some(rating => rating.studyId === study.id && rating.mteId === mte.id) ||
                     scenarios.some(scenario => scenario.studyId === study.id && scenario.mteIds.includes(mte.id))}
                   onClick={() => removeMTEFromStudy(study.id, mte.id)}>{t('study_settings.remove')}</Button>
               </div>
@@ -125,7 +126,7 @@ const ManageStudyEvaluatorsModal: React.FC<{
             {evaluatorsInStudy.map(evaluator => (
               <div key={evaluator.id} className="flex justify-between items-center p-2 bg-nasa-gray-700 rounded">
                 <p className="text-sm font-medium text-foreground">{evaluator.name}</p>
-                <Button size="sm" variant="danger" onClick={() => removeEvaluatorFromStudy(study.id, evaluator.id)}>{t('study_settings.remove')}</Button>
+                <Button size="sm" variant="secondary" onClick={() => removeEvaluatorFromStudy(study.id, evaluator.id)}>{t('study_settings.remove')}</Button>
               </div>
             ))}
             {evaluatorsInStudy.length === 0 && <p className="text-sm text-nasa-gray-500 text-center py-4">{t('study_settings.no_evaluators')}</p>}
@@ -245,47 +246,47 @@ const ManageStudies: React.FC<{ projectId?: string; studyId?: string }> = ({ pro
           }
           const studyEvaluators = study.evaluatorIds.map(id => evaluators.find(e => e.id === id)).filter((e): e is Evaluator => !!e);
           return (
-            <div key={study.id} className="p-4 bg-nasa-gray-900 rounded-lg border border-nasa-gray-700">
-              <div className="flex flex-col sm:flex-row justify-between items-start gap-2">
-                  <div>
-                      <h3 className="text-lg font-semibold text-foreground">{study.name}</h3>
-                      <p className="text-sm text-nasa-gray-300 font-medium">{new Date(study.date).toLocaleDateString(i18n.resolvedLanguage)}</p>
-                      <p className="text-sm text-nasa-gray-400 mt-1">{study.description}</p>
-                  </div>
-                  <div className="flex-shrink-0 flex flex-wrap items-center gap-2">
-                      <Button size="sm" variant="secondary" onClick={() => { setEditingStudy(study); setIsStudyModalOpen(true); }}>{t('study_settings.edit')}</Button>
-                      <Button size="sm" variant="danger" disabled={ratings.some(rating => rating.studyId === study.id)}
-                        onClick={() => deleteStudy(study.id)}>{t('study_settings.delete')}</Button>
-                  </div>
+            <div key={study.id} className="rounded-lg border border-separator px-3 py-3 sm:px-4">
+              <div className="flex items-start justify-between gap-2">
+                <div className="min-w-0">
+                  <h3 className="break-words text-base font-semibold text-foreground">{study.name}</h3>
+                  <p className="text-xs text-nasa-gray-400">{new Date(study.date).toLocaleDateString(i18n.resolvedLanguage)}</p>
+                  {study.description && <p className="mt-1 break-words text-sm text-nasa-gray-300">{study.description}</p>}
+                </div>
+                <div className="flex shrink-0 items-center gap-1">
+                  <RowAction icon="edit" label={t('study_settings.edit')} onClick={() => { setEditingStudy(study); setIsStudyModalOpen(true); }} />
+                  <RowAction icon="delete" label={t('study_settings.delete')} disabled={ratings.some(rating => rating.studyId === study.id)}
+                    onClick={() => deleteStudy(study.id)} />
+                </div>
               </div>
               
-              <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-6">
-                <section className="rounded-lg border border-nasa-gray-700 p-3">
-                  <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-                    <h4 className="font-medium">{t('study_settings.assigned_mtes', { count: studyMtes.length })}</h4>
+              <div className="mt-3 grid grid-cols-1 gap-3 md:grid-cols-2">
+                <section className="min-w-0 rounded-lg border border-separator p-3">
+                  <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+                    <h4 className="text-sm font-semibold">{t('study_settings.assigned_mtes', { count: studyMtes.length })}</h4>
                     <Button size="sm" variant="secondary" onClick={() => setManagingMtesForStudy(study)}>
                       {t('study_settings.manage_mtes')}
                     </Button>
                   </div>
-                  <ul className="space-y-2">
+                  <ul className="divide-y divide-separator">
                     {studyMtes.map(mte => (
-                      <li key={mte.id} className="rounded bg-nasa-gray-800 p-2 text-sm">
+                      <li key={mte.id} className="break-words py-1.5 text-sm">
                         {mte.refNumber && `[${mte.refNumber}] `}{mte.name}
                       </li>
                     ))}
                     {studyMtes.length === 0 && <li className="text-sm text-nasa-gray-400">{t('study_settings.no_mtes')}</li>}
                   </ul>
                 </section>
-                <section className="rounded-lg border border-nasa-gray-700 p-3">
-                  <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-                    <h4 className="font-medium">{t('study_settings.assigned_evaluators', { count: studyEvaluators.length })}</h4>
+                <section className="min-w-0 rounded-lg border border-separator p-3">
+                  <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+                    <h4 className="text-sm font-semibold">{t('study_settings.assigned_evaluators', { count: studyEvaluators.length })}</h4>
                     <Button size="sm" variant="secondary" onClick={() => setManagingEvaluatorsForStudy(study)}>
                       {t('admin.manage_evaluators')}
                     </Button>
                   </div>
-                  <ul className="space-y-2">
+                  <ul className="divide-y divide-separator">
                     {studyEvaluators.map(evaluator => (
-                      <li key={evaluator.id} className="rounded bg-nasa-gray-800 p-2 text-sm">{evaluator.name}</li>
+                      <li key={evaluator.id} className="break-words py-1.5 text-sm">{evaluator.name}</li>
                     ))}
                     {studyEvaluators.length === 0 && <li className="text-sm text-nasa-gray-400">{t('study_settings.no_evaluators')}</li>}
                   </ul>

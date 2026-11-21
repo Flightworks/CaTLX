@@ -6,6 +6,9 @@ import { Evaluator } from '../../types';
 import Card from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
 import Modal from '../../components/ui/Modal';
+import RowAction from '../../components/ui/RowAction';
+
+const tableHeading = 'px-2 py-2 text-left text-xs font-medium text-nasa-gray-400 sm:px-3';
 
 const EvaluatorForm: React.FC<{
   evaluator?: Evaluator | null;
@@ -118,39 +121,42 @@ const ManageEvaluators: React.FC<{ projectId?: string }> = ({ projectId }) => {
 
   return (
     <Card>
-      <div className="flex justify-between items-center mb-4">
-        <h2 className="text-xl font-bold">{t('admin.manage_evaluators')}</h2>
-        <Button onClick={handleAddNew} disabled={!selectedProjectId}>{t('people.new')}</Button>
+      <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+        <h2 className="text-lg font-semibold tracking-tight">{t('admin.manage_evaluators')}</h2>
+        <Button size="sm" onClick={handleAddNew}>{t('people.new')}</Button>
       </div>
-       <p className="text-sm text-nasa-gray-400 mb-4">
+      <p className="mb-3 text-sm text-nasa-gray-400">
         {t('people.hint')}
       </p>
-      <div className="overflow-x-auto">
-        <table className="min-w-full divide-y divide-nasa-gray-700">
-          <thead className="bg-nasa-gray-800">
+      <div className="overflow-hidden rounded-lg border border-separator">
+        <table className="w-full table-fixed divide-y divide-separator">
+          <thead>
             <tr>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-nasa-gray-300 uppercase tracking-wider">{t('evaluator.name')}</th>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-nasa-gray-300 uppercase tracking-wider">{t('people.quality')}</th>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-nasa-gray-300 uppercase tracking-wider">{t('people.company')}</th>
-              <th scope="col" className="relative px-6 py-3"><span className="sr-only">{t('common.actions')}</span></th>
+              <th scope="col" className={tableHeading}>{t('evaluator.name')}</th>
+              <th scope="col" className={tableHeading}>{t('people.quality')}</th>
+              <th scope="col" className={tableHeading}>{t('people.company')}</th>
+              <th scope="col" className="w-24 lg:w-20"><span className="sr-only">{t('common.actions')}</span></th>
             </tr>
           </thead>
-          <tbody className="bg-nasa-gray-900 divide-y divide-nasa-gray-700">
+          <tbody className="divide-y divide-separator">
             {projectEvaluators.map((evaluator) => (
-              <tr key={evaluator.id}>
-                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-foreground">{evaluator.name}</td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-nasa-gray-300">{evaluator.quality}</td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-nasa-gray-300">{evaluator.company}</td>
-                <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-2">
-                  <Button size="sm" variant="secondary" onClick={() => handleEdit(evaluator)}>{t('common.edit')}</Button>
-                  <Button size="sm" variant="danger" disabled={ratings.some(rating => rating.evaluatorId === evaluator.id)}
-                    onClick={() => deleteEvaluator(evaluator.id)}>{t('common.delete')}</Button>
+              <tr key={evaluator.id} className="align-top hover:bg-hover-surface/50">
+                <td className="break-words px-2 py-2.5 text-sm font-semibold text-foreground sm:px-3">{evaluator.name}</td>
+                <td className="break-words px-2 py-2.5 text-sm text-nasa-gray-300 sm:px-3">{evaluator.quality}</td>
+                <td className="break-words px-2 py-2.5 text-sm text-nasa-gray-300 sm:px-3">{evaluator.company}</td>
+                <td className="px-1 py-1">
+                  <div className="flex justify-end gap-1">
+                    <RowAction icon="edit" label={t('common.edit')} onClick={() => handleEdit(evaluator)} />
+                    <RowAction icon="delete" label={t('common.delete')}
+                      disabled={ratings.some(rating => rating.evaluatorId === evaluator.id)}
+                      onClick={() => deleteEvaluator(evaluator.id)} />
+                  </div>
                 </td>
               </tr>
             ))}
             {projectEvaluators.length === 0 && (
                 <tr>
-                    <td colSpan={4} className="text-center py-10 text-nasa-gray-500">
+                    <td colSpan={4} className="px-3 py-7 text-center text-sm text-nasa-gray-400">
                         {t('people.empty')}
                     </td>
                 </tr>

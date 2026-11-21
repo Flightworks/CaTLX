@@ -7,6 +7,7 @@ import Button from '../components/ui/Button';
 import Card from '../components/ui/Card';
 import Modal from '../components/ui/Modal';
 import Select from '../components/ui/Select';
+import RowAction from '../components/ui/RowAction';
 import { ProjectForm } from './AdminDashboardPage';
 import { AssessmentRunner } from './EvaluatorPage';
 import ManageStudies from './admin/ManageStudies';
@@ -126,19 +127,34 @@ function ProjectOverview({ project }: { project: Project }) {
   );
 }
 
-function ScenarioForm({ study, scenario, onClose }: { study: Study; scenario?: Scenario; onClose: () => void }) {
+type ScenarioDraft = { studyId?: string; scenario?: Scenario };
+
+function ScenarioForm({ studies, draft, onClose }: { studies: Study[]; draft: ScenarioDraft; onClose: () => void }) {
   const { t } = useTranslation();
   const { mtes, ratings, saveScenario } = useData();
+  const { scenario } = draft;
+  const [studyId, setStudyId] = useState(draft.studyId ?? (studies.length === 1 ? studies[0].id : ''));
   const [name, setName] = useState(scenario?.name ?? '');
   const [ids, setIds] = useState(scenario?.mteIds ?? []);
   const [search, setSearch] = useState('');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(false);
-  const used = new Set(scenario ? ratings.filter(rating => rating.scenarioId === scenario.id).map(rating => rating.mteId) : []);
 
-  const allowedIds = new Set([...study.mteIds, ...(scenario?.mteIds ?? [])]);
+  const study = studies.find(entry => entry.id === studyId);
+  const used = new Set(scenario ? ratings.filter(rating => rating.scenarioId === scenario.id).map(rating => rating.mteId) : []);
+  const allowedIds = new Set([...(study?.mteIds ?? []), ...(scenario?.mteIds ?? [])]);
   const tasksById = new Map(mtes.map(task => [task.id, task]));
   const availableTasks = mtes.filter(task => allowedIds.has(task.id));
+  const query = search.trim().toLocaleLowerCase();
+  const visibleTasks = availableTasks.filter(task => `${task.refNumber} ${task.name}`.toLocaleLowerCase().includes(query));
+
+  function changeStudy(id: string) {
+    setStudyId(id);
+    setIds([]);
+    setSearch('');
+    setError(false);
+  }
+
   function moveTask(index: number, offset: number) {
     setIds(current => {
       const ordered = [...current];
@@ -149,7 +165,7 @@ function ScenarioForm({ study, scenario, onClose }: { study: Study; scenario?: S
 
   async function submit(event: React.FormEvent) {
     event.preventDefault();
-    if (saving || !name.trim()) return;
+    if (saving || !study || !name.trim()) return;
     setSaving(true);
     setError(false);
     try {
@@ -163,124 +179,163 @@ function ScenarioForm({ study, scenario, onClose }: { study: Study; scenario?: S
   }
 
   return (
-    <Card title={t(scenario ? 'projects.edit_scenario' : 'projects.new_scenario')}>
+    <Modal isOpen size="2xl" title={t(scenario ? 'projects.edit_scenario' : 'projects.new_scenario')}
+      onClose={() => { if (!saving) onClose(); }}>
       <form onSubmit={submit} className="space-y-4">
-        <label className="block space-y-1">
-          <span>{t('projects.scenario_name')}</span>
-          <input className={inputClass} value={name} required onChange={e => setName(e.target.value)} />
-        </label>
-        <input type="search" aria-label={t('projects.search_tasks')} value={search}
-          placeholder={t('projects.search_tasks')} className={inputClass} onChange={e => setSearch(e.target.value)} />
-        <fieldset className="max-h-64 overflow-y-auto space-y-2">
-          <legend className="sr-only">{t('admin.mte_catalog')}</legend>
-          {availableTasks.filter(task => `${task.refNumber} ${task.name}`.toLowerCase().includes(search.trim().toLowerCase()))
-            .map(task => (
-              <label className="flex gap-3 items-center rounded-md bg-nasa-gray-900 p-2" key={task.id}>
-                <input type="checkbox" checked={ids.includes(task.id)} disabled={used.has(task.id)}
-                  onChange={e => setIds(e.target.checked ? [...ids, task.id] : ids.filter(id => id !== task.id))} />
-                <span>{task.refNumber && `[${task.refNumber}] `}{task.name}</span>
-              </label>
-            ))}
-        </fieldset>
-        {!availableTasks.length && <Link className="underline" to={`${studyPath(study)}/settings`}>{t('projects.prepare_tasks')}</Link>}
-        {ids.length > 0 && (
-          <div>
-            <h3 className="font-semibold mb-2">{t('projects.scenario_order')}</h3>
-            <ol className="list-decimal pl-6 space-y-2">
-              {ids.map((id, index) => (
-                <li key={id} className="pl-1">
-                  <span>{tasksById.get(id)?.name ?? id}</span>
-                  <span className="ml-2 inline-flex gap-1">
-                    <Button type="button" size="sm" variant="secondary" disabled={index === 0}
-                      onClick={() => moveTask(index, -1)}>{t('projects.move_up')}</Button>
-                    <Button type="button" size="sm" variant="secondary" disabled={index === ids.length - 1}
-                      onClick={() => moveTask(index, 1)}>{t('projects.move_down')}</Button>
-                  </span>
-                </li>
-              ))}
-            </ol>
-          </div>
+        {study && (scenario || studies.length === 1) && (
+          <p className="flex flex-wrap items-baseline gap-x-2 text-sm">
+            <span className="text-nasa-gray-400">{t('evaluator.study_label')}</span>
+            <span className="font-medium">{study.name}</span>
+          </p>
         )}
-        {error && <p role="alert" className="text-danger-ink">{t('evaluator.error_submitting')}</p>}
-        <div className="flex justify-end gap-2">
-          <Button type="button" variant="secondary" onClick={onClose} disabled={saving}>{t('evaluator.cancel')}</Button>
-          <Button type="submit" disabled={saving || !name.trim()}>{t(saving ? 'evaluator.submitting' : 'evaluator.save_changes')}</Button>
+        {!scenario && studies.length > 1 && (
+          <Select id="scenario-study" label={t('evaluator.study_label')} value={studyId} required autoFocus disabled={saving}
+            onChange={event => changeStudy(event.target.value)}>
+            <option value="">{t('evaluator.choose_study')}</option>
+            {studies.map(entry => <option key={entry.id} value={entry.id}>{entry.name}</option>)}
+          </Select>
+        )}
+        <label className="block space-y-1 text-sm">
+          <span className="font-medium">{t('projects.scenario_name')}</span>
+          <input className={inputClass} value={name} required autoFocus={Boolean(scenario) || studies.length === 1}
+            disabled={saving} onChange={event => setName(event.target.value)} />
+        </label>
+        {study && (availableTasks.length > 0 ? (
+          <div className="grid gap-3 sm:grid-cols-2">
+            <fieldset className="min-w-0 rounded-lg border border-separator px-3 pb-2 pt-1.5" disabled={saving}>
+              <legend className="px-1 text-sm font-semibold">{t('projects.study_tasks')}</legend>
+              <input type="search" aria-label={t('projects.search_tasks')} value={search}
+                placeholder={t('projects.search_tasks')} className={`${inputClass} text-sm`}
+                onChange={event => setSearch(event.target.value)} />
+              <div className="mt-1.5 max-h-48 divide-y divide-separator overflow-y-auto">
+                {visibleTasks.map(task => (
+                  <label className="flex items-center gap-2 py-2 text-sm" key={task.id}>
+                    <input type="checkbox" checked={ids.includes(task.id)} disabled={used.has(task.id)}
+                      onChange={event => setIds(event.target.checked ? [...ids, task.id] : ids.filter(id => id !== task.id))} />
+                    <span className="min-w-0 break-words">{task.refNumber && `[${task.refNumber}] `}{task.name}</span>
+                  </label>
+                ))}
+              </div>
+              {visibleTasks.length === 0 && <p className="py-2 text-sm text-nasa-gray-400">{t('projects.no_matching_tasks')}</p>}
+            </fieldset>
+            <fieldset className="min-w-0 rounded-lg border border-separator px-3 pb-2 pt-1.5" disabled={saving}>
+              <legend className="px-1 text-sm font-semibold">{t('projects.scenario_order')}</legend>
+              {ids.length > 0 ? (
+                <ol className="max-h-56 list-decimal divide-y divide-separator overflow-y-auto pl-5 text-sm">
+                  {ids.map((id, index) => (
+                    <li key={id}>
+                      <div className="flex items-center justify-between gap-1">
+                        <span className="min-w-0 break-words">{tasksById.get(id)?.name ?? id}</span>
+                        <div className="flex shrink-0">
+                          <RowAction icon="up" label={t('projects.move_up')} disabled={index === 0} onClick={() => moveTask(index, -1)} />
+                          <RowAction icon="down" label={t('projects.move_down')} disabled={index === ids.length - 1} onClick={() => moveTask(index, 1)} />
+                        </div>
+                      </div>
+                    </li>
+                  ))}
+                </ol>
+              ) : <p className="py-2 text-sm text-nasa-gray-400">{t('projects.select_scenario_tasks')}</p>}
+            </fieldset>
+          </div>
+        ) : <Link className="text-sm text-accent-ink underline" to={`${studyPath(study)}/settings`}>{t('projects.prepare_tasks')}</Link>)}
+        {error && <p role="alert" className="text-sm text-danger-ink">{t('evaluator.error_submitting')}</p>}
+        <div className="flex flex-wrap justify-end gap-2 border-t border-separator pt-3">
+          <Button type="button" size="sm" variant="secondary" onClick={onClose} disabled={saving}>{t('evaluator.cancel')}</Button>
+          <Button type="submit" size="sm" disabled={saving || !study || !name.trim()}>
+            {t(saving ? 'evaluator.submitting' : scenario ? 'evaluator.save_changes' : 'projects.create_scenario')}
+          </Button>
         </div>
       </form>
-    </Card>
+    </Modal>
   );
 }
 
 function ProjectScenarios({ projectId }: { projectId: string }) {
-  const { t } = useTranslation();
   const { studies } = useData();
-  const projectStudies = studies.filter(study => study.projectId === projectId);
+  const projectStudies = studies.filter(study => study.projectId === projectId).sort((a, b) => b.date - a.date);
+  return <ScenarioDirectory studies={projectStudies} grouped />;
+}
+
+function ScenarioDirectory({ studies, grouped = false }: { studies: Study[]; grouped?: boolean }) {
+  const { t } = useTranslation();
+  const { scenarios = [], archiveScenario } = useData();
+  const [draft, setDraft] = useState<ScenarioDraft | null>(null);
+  const [archiving, setArchiving] = useState(false);
+  const [error, setError] = useState(false);
+
+  async function toggleArchive(scenario: Scenario) {
+    setArchiving(true);
+    setError(false);
+    try {
+      await archiveScenario(scenario.id, !scenario.archived);
+    } catch {
+      setError(true);
+    } finally {
+      setArchiving(false);
+    }
+  }
 
   return (
     <section className="space-y-3">
-      <div>
-        <h2 className="text-lg font-semibold">{t('projects.scenarios_by_study')}</h2>
-        <p className="text-sm text-nasa-gray-300">{t('projects.scenario_scope')}</p>
-      </div>
-      {projectStudies.length ? projectStudies.map(study => (
-        <Scenarios key={study.id} study={study} showStudy />
-      )) : <Card><p>{t('study_settings.no_studies')}</p></Card>}
-    </section>
-  );
-}
-
-function Scenarios({ study, showStudy = false }: { study: Study; showStudy?: boolean }) {
-  const { t } = useTranslation();
-  const { scenarios = [], archiveScenario } = useData();
-  const [editor, setEditor] = useState<{ scenario?: Scenario } | null>(null);
-  const [error, setError] = useState(false);
-  const entries = scenarios.filter(scenario => scenario.studyId === study.id);
-  const studyHeading = showStudy && (
-    <div>
-      <p className="text-xs font-medium text-nasa-gray-400">{t('evaluator.study_label')}</p>
-      <h3 className="font-semibold"><Link className="hover:underline" to={studyPath(study)}>{study.name}</Link></h3>
-    </div>
-  );
-  if (editor) return (
-    <div className="space-y-2">
-      {studyHeading}
-      <ScenarioForm study={study} scenario={editor.scenario} onClose={() => setEditor(null)} />
-    </div>
-  );
-  return (
-    <section className="overflow-hidden rounded-lg border border-separator bg-nasa-gray-800">
-      <div className="flex flex-wrap items-center justify-between gap-2 px-3 py-2.5 sm:px-4">
-        {studyHeading || <h2 className="font-semibold">{t('header.study_scenarios')}</h2>}
-        <Button size="sm" onClick={() => setEditor({})}>{t('projects.new_scenario')}</Button>
-      </div>
-      {error && <p role="alert" className="px-4 pb-2 text-sm text-danger-ink">{t('evaluator.error_submitting')}</p>}
-      {entries.length ? (
-        <ul className="divide-y divide-separator border-t border-separator bg-nasa-gray-900">
-          {entries.map(scenario => (
-            <li key={scenario.id} className="flex flex-wrap items-center justify-between gap-2 px-3 py-2.5 sm:px-4">
-              <div className="flex min-w-0 items-center gap-2">
-                <span aria-hidden="true" className="h-2.5 w-2.5 shrink-0 rounded-bl border-b border-l border-nasa-gray-600" />
-                <div className="min-w-0">
-                  <Link className="break-words text-sm font-medium text-accent-ink hover:underline" to={scenarioPath(study, scenario.id)}>{scenario.name}</Link>
-                  <p className="text-xs text-nasa-gray-300">
-                    {t('projects.task_count', { count: scenario.mteIds.length })}
-                    {scenario.archived && ` · ${t('projects.archived')}`}
+      <header className="flex flex-wrap items-start justify-between gap-2">
+        <div>
+          <h2 className="text-lg font-semibold tracking-tight">{t(grouped ? 'projects.scenarios_by_study' : 'header.study_scenarios')}</h2>
+          {grouped && <p className="text-sm text-nasa-gray-300">{t('projects.scenario_scope')}</p>}
+        </div>
+        {studies.length > 0 && <Button size="sm" onClick={() => setDraft({})}>{t('projects.new_scenario')}</Button>}
+      </header>
+      {error && <p role="alert" className="text-sm text-danger-ink">{t('evaluator.error_submitting')}</p>}
+      {studies.length ? (
+        <div data-workspace-surface className="divide-y divide-separator overflow-hidden rounded-xl bg-nasa-gray-800">
+          {studies.map(study => {
+            const entries = scenarios.filter(scenario => scenario.studyId === study.id);
+            return (
+              <section key={study.id}>
+                {grouped && (
+                  <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1 bg-nasa-gray-900/45 px-3 py-2 sm:px-4">
+                    <span className="text-xs text-nasa-gray-400">{t('evaluator.study_label')}</span>
+                    <h3 className="min-w-0 break-words text-sm font-semibold">
+                      <Link className="hover:underline" to={studyPath(study)}>{study.name}</Link>
+                    </h3>
+                  </div>
+                )}
+                {entries.length ? (
+                  <ul className={`divide-y divide-separator ${grouped ? 'border-t border-separator' : ''}`}>
+                    {entries.map(scenario => (
+                      <li key={scenario.id} className="flex min-w-0 items-center gap-1 px-2 py-1 transition-colors hover:bg-hover-surface/50 sm:px-3">
+                        <Link className="group flex min-w-0 flex-1 items-center gap-2 rounded-md px-1.5 py-1.5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent-ink"
+                          to={scenarioPath(study, scenario.id)}>
+                          {grouped && <span aria-hidden="true" className="size-2.5 shrink-0 rounded-bl border-b border-l border-nasa-gray-600" />}
+                          <div className="min-w-0 flex-1">
+                            <p className={`break-words text-sm font-medium group-hover:underline ${scenario.archived ? 'text-nasa-gray-300' : 'text-foreground'}`}>{scenario.name}</p>
+                            <p className="text-xs text-nasa-gray-400">
+                              {t('projects.task_count', { count: scenario.mteIds.length })}
+                              {scenario.archived && ` · ${t('projects.archived')}`}
+                            </p>
+                          </div>
+                        </Link>
+                        <div className="flex shrink-0 gap-0.5">
+                          {!scenario.archived && (
+                            <RowAction icon="edit" label={t('projects.edit_scenario')} onClick={() => setDraft({ studyId: study.id, scenario })} />
+                          )}
+                          <RowAction icon={scenario.archived ? 'restore' : 'archive'}
+                            label={t(scenario.archived ? 'projects.restore_scenario' : 'projects.archive_scenario')}
+                            disabled={archiving} onClick={() => void toggleArchive(scenario)} />
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className={`px-4 py-2.5 text-sm text-nasa-gray-400 ${grouped ? 'border-t border-separator' : ''}`}>
+                    {t('projects.no_scenarios')}
                   </p>
-                </div>
-              </div>
-              <div className="flex flex-wrap gap-1.5">
-                {!scenario.archived && <Button size="sm" variant="secondary" onClick={() => setEditor({ scenario })}>
-                  {t('projects.edit_scenario')}
-                </Button>}
-                <Button size="sm" variant="secondary" onClick={() => {
-                  setError(false);
-                  void archiveScenario(scenario.id, !scenario.archived).catch(() => setError(true));
-                }}>{t(scenario.archived ? 'projects.restore_scenario' : 'projects.archive_scenario')}</Button>
-              </div>
-            </li>
-          ))}
-        </ul>
-      ) : <p className="border-t border-separator px-4 py-3 text-sm text-nasa-gray-300">{t('projects.no_scenarios')}</p>}
+                )}
+              </section>
+            );
+          })}
+        </div>
+      ) : <p className="rounded-lg border border-separator px-4 py-3 text-sm text-nasa-gray-300">{t('study_settings.no_studies')}</p>}
+      {draft && <ScenarioForm studies={studies} draft={draft} onClose={() => setDraft(null)} />}
     </section>
   );
 }
@@ -335,7 +390,7 @@ function StudyOverview({ project, study }: { project: Project; study: Study }) {
       <Routes>
         <Route path="results" element={<ViewStats projectId={project.id} studyId={study.id} />} />
         <Route path="settings" element={<ManageStudies projectId={project.id} studyId={study.id} />} />
-        <Route path="scenarios" element={<Scenarios study={study} />} />
+        <Route path="scenarios" element={<ScenarioDirectory studies={[study]} />} />
         <Route index element={(
           <div className="space-y-4">
             {activeScenarios.length > 0 && (

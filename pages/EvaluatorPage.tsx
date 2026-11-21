@@ -6,14 +6,12 @@ import { TLXDimension, type MTE, type Scenario, type Study } from '../types';
 import { TLX_DIMENSIONS_INFO, PAIRWISE_COMBINATIONS, DEFAULT_WEIGHTS } from '../constants';
 import { latestRating } from '../data/workspace';
 import ExpressTlxControl from '../components/ui/ExpressTlxControl';
-import TlxSlider from '../components/ui/TlxSlider';
 import Button from '../components/ui/Button';
-import Card from '../components/ui/Card';
 import PairwiseWeightsDisplay from '../components/ui/PairwiseWeightsDisplay';
 import ToggleSwitch from '../components/ui/ToggleSwitch';
 
 const initialScores = Object.fromEntries(TLX_DIMENSIONS_INFO.map(dim => [dim.id, 50])) as Record<TLXDimension, number>;
-const fieldClass = 'w-full rounded-md bg-nasa-gray-900 border border-nasa-gray-600 p-2 text-foreground';
+const fieldClass = 'w-full rounded-md border border-separator bg-nasa-gray-900 px-2.5 py-1.5 text-sm text-foreground placeholder:text-nasa-gray-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent-ink';
 
 function dimensionKey(id: TLXDimension) {
     return id.toLowerCase().replaceAll(' ', '_');
@@ -65,59 +63,45 @@ const PairwiseComparisonView: React.FC<{
     const dimensionB = TLX_DIMENSIONS_INFO.find(d => d.id === currentPair[1]);
     const progress = ((currentPairIndex + 1) / PAIRWISE_COMBINATIONS.length) * 100;
 
-    if (!dimensionA || !dimensionB) return null; // Should not happen
-
-    const DimensionCard: React.FC<{ dimension: typeof dimensionA, onSelect: () => void }> = ({ dimension, onSelect }) => (
-        <div
-            onClick={onSelect}
-            className="w-full sm:w-1/2 p-6 bg-nasa-gray-900 rounded-lg cursor-pointer transition-all duration-200 ease-in-out hover:bg-nasa-gray-700 hover:shadow-2xl hover:scale-105 border-2 border-nasa-gray-700 hover:border-nasa-blue"
-            role="button"
-            tabIndex={0}
-            onKeyDown={(e) => {
-                if (e.key === 'Enter' || e.key === ' ') {
-                    e.preventDefault();
-                    onSelect();
-                }
-            }}
-            aria-label={t(`tlx_dimensions.${dimensionKey(dimension.id)}.title`)}
-        >
-            <h3 className="text-xl font-bold text-center text-foreground">{t(`tlx_dimensions.${dimension.id.toLowerCase().replace(/ /g, '_')}.title`)}</h3>
-            <p className="text-sm text-nasa-gray-400 mt-2 text-center">{t(`tlx_dimensions.${dimension.id.toLowerCase().replace(/ /g, '_')}.description`)}</p>
-        </div>
-    );
+    if (!dimensionA || !dimensionB) return null;
 
     return (
-        <Card title={t('evaluator.determine_weights')}>
-            <div className="space-y-6">
-                <div>
-                    <p className="text-nasa-gray-300 mb-4 text-center">{t('evaluator.weights_description')}</p>
-                </div>
-
-                {/* Progress Bar */}
-                <div>
-                    <div className="flex justify-between mb-1">
-                        <span className="text-base font-medium text-accent-ink">{t('evaluator.comparison', { current: currentPairIndex + 1, total: PAIRWISE_COMBINATIONS.length })}</span>
-                    </div>
-                    <div className="w-full bg-nasa-gray-700 rounded-full h-2.5">
-                        <div className="bg-nasa-blue h-2.5 rounded-full transition-all duration-300 ease-in-out" style={{ width: `${progress}%` }}></div>
-                    </div>
-                </div>
-
-                {/* Comparison Section */}
-                <div className="text-center">
-                    <h2 className="text-lg font-semibold text-foreground mb-4">{t('evaluator.which_workload')}</h2>
-                    <div className="flex flex-col sm:flex-row items-stretch justify-center gap-4">
-                        <DimensionCard dimension={dimensionA} onSelect={() => handleSelect(dimensionA.id)} />
-                        <DimensionCard dimension={dimensionB} onSelect={() => handleSelect(dimensionB.id)} />
-                    </div>
+        <section className="max-w-3xl space-y-4 rounded-lg border border-separator bg-nasa-gray-800 p-3 sm:p-4">
+            <header className="space-y-1">
+                <h2 className="font-semibold text-foreground">{t('evaluator.determine_weights')}</h2>
+                <p className="text-sm leading-relaxed text-nasa-gray-400">{t('evaluator.weights_description')}</p>
+            </header>
+            <div className="space-y-1.5">
+                <p className="text-xs font-medium tabular-nums text-accent-ink" aria-live="polite">
+                    {t('evaluator.comparison', { current: currentPairIndex + 1, total: PAIRWISE_COMBINATIONS.length })}
+                </p>
+                <div className="h-1 overflow-hidden rounded-full bg-nasa-gray-700" aria-hidden="true">
+                    <div className="h-full rounded-full bg-accent-ink transition-[width] motion-reduce:transition-none" style={{ width: `${progress}%` }} />
                 </div>
             </div>
-
-            <div className="flex flex-wrap justify-center gap-3 mt-8 pt-4 border-t border-nasa-gray-700">
-                <Button onClick={onCancel} variant="secondary">{t('evaluator.cancel')}</Button>
-                <Button onClick={handleSkip} variant="secondary" className="w-full sm:w-auto">{t('evaluator.skip_weighting')}</Button>
+            <div className="space-y-2">
+                <h3 className="text-sm font-semibold text-foreground">{t('evaluator.which_workload')}</h3>
+                <div className="grid gap-2 sm:grid-cols-2">
+                    {[dimensionA, dimensionB].map(({ id }, position) => {
+                        const key = `tlx_dimensions.${dimensionKey(id)}`;
+                        return (
+                            <button key={position} type="button" onClick={() => handleSelect(id)}
+                                aria-label={t(`${key}.title`)} aria-describedby={`assessment-pair-description-${position}`}
+                                className="group rounded-md border border-separator bg-nasa-gray-900 px-3 py-2.5 text-left transition-colors hover:border-accent-ink hover:bg-hover-surface focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-accent-ink">
+                                <span className="block text-sm font-semibold text-foreground group-hover:text-accent-ink">{t(`${key}.title`)}</span>
+                                <span id={`assessment-pair-description-${position}`} className="mt-1 block text-xs leading-relaxed text-nasa-gray-400">
+                                    {t(`${key}.description`)}
+                                </span>
+                            </button>
+                        );
+                    })}
+                </div>
             </div>
-        </Card>
+            <div className="flex flex-wrap justify-end gap-2">
+                <Button onClick={onCancel} variant="secondary" size="sm">{t('evaluator.cancel')}</Button>
+                <Button onClick={handleSkip} variant="secondary" size="sm">{t('evaluator.skip_weighting')}</Button>
+            </div>
+        </section>
     );
 };
 
@@ -168,12 +152,12 @@ function RatingForm({ study, scenario, evaluatorId, task, submitLabel, onClose }
     }
 
     return (
-        <section className="rounded-xl border border-nasa-gray-700 bg-nasa-gray-800 px-3 py-3 sm:px-5 sm:py-4">
-            <div className="mb-3 flex items-start justify-between gap-3">
+        <section className="rounded-lg border border-separator bg-nasa-gray-800 p-3 sm:p-4">
+            <div className="mb-2 flex items-start justify-between gap-2.5">
                 <div className="min-w-0">
                     {task.refNumber && <p className="text-xs font-medium tabular-nums text-accent-ink">{task.refNumber}</p>}
                     <h2 className="break-words text-lg font-semibold leading-tight sm:text-xl">{task.name}</h2>
-                    {task.description && <p className="mt-1 text-sm text-nasa-gray-300">{task.description}</p>}
+                    {task.description && <p className="mt-0.5 text-sm text-nasa-gray-300">{task.description}</p>}
                 </div>
                 {isExpress && (
                     <div className="shrink-0 rounded-lg border border-blue-400/25 bg-blue-400/10 px-2.5 py-1.5 text-right sm:px-3">
@@ -184,7 +168,7 @@ function RatingForm({ study, scenario, evaluatorId, task, submitLabel, onClose }
                     </div>
                 )}
             </div>
-            {!assigned && <p className="mb-3 text-sm">{t('projects.add_on_save')}</p>}
+            {!assigned && <p className="mb-2 text-sm text-nasa-gray-300">{t('projects.add_on_save')}</p>}
             <ToggleSwitch
                 label={t('evaluator.rating_mode')}
                 options={['express', 'step-by-step'].map(value => ({
@@ -198,24 +182,28 @@ function RatingForm({ study, scenario, evaluatorId, task, submitLabel, onClose }
                     localStorage.setItem('catlx_rating_mode', nextMode);
                 }}
             />
-            <form onSubmit={submit} className="mt-3 space-y-3">
+            <form onSubmit={submit} className="mt-2 space-y-2">
                 {error && <p role="alert" className="text-danger-ink">{t('evaluator.error_submitting')}</p>}
-                <fieldset disabled={saving} className={isExpress
-                    ? 'grid gap-px overflow-hidden rounded-lg border border-nasa-gray-700 bg-nasa-gray-700 min-[320px]:grid-cols-2 lg:grid-cols-3'
-                    : 'space-y-3'}>
-                    {TLX_DIMENSIONS_INFO.filter((_, index) => isExpress || index === step).map(dim => {
-                        const key = `tlx_dimensions.${dimensionKey(dim.id)}`;
+                {(isExpress || step < lastStep) && <fieldset disabled={saving} className={isExpress
+                    ? 'grid gap-px overflow-hidden rounded-md border border-separator bg-separator min-[320px]:grid-cols-2 max-[359px]:[&>div]:px-2 max-[359px]:[&_label]:text-xs lg:grid-cols-3'
+                    : 'overflow-hidden rounded-md border border-separator bg-nasa-gray-900'}>
+                    {TLX_DIMENSIONS_INFO.filter((_, index) => isExpress || index === step).map(({ id }) => {
+                        const key = `tlx_dimensions.${dimensionKey(id)}`;
                         const props = {
                             title: t(`${key}.title`),
                             lowAnchor: t(`${key}.low_anchor`),
                             highAnchor: t(`${key}.high_anchor`),
-                            value: scores[dim.id],
-                            onChange: (value: number) => setScores(current => ({ ...current, [dim.id]: value })),
+                            value: scores[id],
+                            onChange: (value: number) => setScores(current => ({ ...current, [id]: value })),
                         };
-                        return isExpress ? <ExpressTlxControl key={dim.id} {...props} />
-                            : <TlxSlider key={dim.id} {...props} description={t(`${key}.description`)} />;
+                        return isExpress ? <ExpressTlxControl key={id} {...props} /> : (
+                            <div key={id}>
+                                <p className="border-b border-separator px-3 py-2 text-sm text-nasa-gray-300 sm:px-4">{t(`${key}.description`)}</p>
+                                <ExpressTlxControl {...props} />
+                            </div>
+                        );
                     })}
-                </fieldset>
+                </fieldset>}
                 {isExpress ? (
                     <details open={existing?.comments ? true : undefined}>
                         <summary className="w-fit cursor-pointer rounded text-sm text-accent-ink focus-visible:outline focus-visible:outline-2">
@@ -231,22 +219,25 @@ function RatingForm({ study, scenario, evaluatorId, task, submitLabel, onClose }
                             onChange={event => setComments(event.target.value)} />
                     </label>
                 )}
-                <div className="flex flex-wrap justify-between gap-2 border-t border-nasa-gray-700 pt-3">
-                    <Button variant="secondary" type="button" onClick={() => onClose()} disabled={saving}>
+                <div className="flex flex-wrap items-center justify-between gap-2 border-t border-separator pt-2">
+                    <Button variant="secondary" type="button" size="sm" className="min-h-9" onClick={() => onClose()} disabled={saving}>
                         {t('evaluator.back_to_tasks')}
                     </Button>
                     <div className="flex flex-wrap gap-2">
                         {!isExpress && step > 0 && (
-                            <Button variant="secondary" type="button" onClick={() => setStep(step - 1)} disabled={saving}>
+                            <Button variant="secondary" type="button" size="sm" className="min-h-9" onClick={() => setStep(step - 1)} disabled={saving}>
                                 {t('evaluator.previous')}
                             </Button>
                         )}
                         {isExpress || step === lastStep ? (
-                            <Button type="submit" disabled={saving}>
+                            <Button type="submit" size="sm" className="min-h-9" disabled={saving}>
                                 {t(saving ? 'evaluator.submitting' : submitLabel)}
                             </Button>
                         ) : (
-                            <Button type="button" onClick={() => setStep(step + 1)}>
+                            <Button type="button" size="sm" className="min-h-9" onClick={event => {
+                                event.preventDefault();
+                                setStep(step + 1);
+                            }}>
                                 {t('evaluator.next', { current: step + 1, total: lastStep + 1 })}
                             </Button>
                         )}
@@ -312,68 +303,104 @@ export function AssessmentRunner({ study, scenario, evaluatorId }: {
             onComplete={() => setShowWeights(false)} onCancel={() => setShowWeights(false)} />;
     }
 
+    const completed = assigned.filter(entry => completedIds.has(entry.id)).length;
+    const progressText = t('projects.progress', { completed, total: assigned.length });
+    const weights = comparison?.isWeighted ? comparison.weights : DEFAULT_WEIGHTS;
+    const totalWeight = Object.values(weights).reduce((sum, weight) => sum + weight, 0);
+    const canConfigureWeights = Boolean(evaluatorId && !scenario?.archived);
+
     return (
-        <Card title={t(scenario ? 'projects.scenario_order' : 'projects.study_tasks')}>
-            <div className="space-y-4">
-                <div className="flex flex-wrap items-center justify-between gap-3">
-                    <p>{t('projects.progress', {
-                        completed: [...assignedIds].filter(id => completedIds.has(id)).length, total: assignedIds.size,
-                    })}</p>
-                    {evaluatorId && !scenario?.archived && (
-                        <Button variant="secondary" size="sm" onClick={() => setShowWeights(true)}>
-                            {t('evaluator.determine_weights')}
-                        </Button>
-                    )}
+        <section className="overflow-hidden rounded-lg border border-separator bg-nasa-gray-800">
+            <header className="flex flex-wrap items-center justify-between gap-3 border-b border-separator px-3 py-2.5 sm:px-4">
+                <div className="min-w-0">
+                    <h2 className="text-base font-semibold text-foreground">
+                        {t(scenario ? 'projects.scenario_order' : 'projects.study_tasks')}
+                    </h2>
+                    <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-1">
+                        <p className="text-xs tabular-nums text-nasa-gray-300">{progressText}</p>
+                        {assigned.length > 0 && <div className="h-1 w-12 overflow-hidden rounded-full bg-nasa-gray-700" aria-hidden="true">
+                            <div className="h-full rounded-full bg-accent-ink" style={{ width: `${completed / assigned.length * 100}%` }} />
+                        </div>}
+                    </div>
                 </div>
-                {comparison?.isWeighted && (
-                    <PairwiseWeightsDisplay weights={comparison.weights} isWeighted />
+                {scenario && evaluatorId && assigned.length > 0 && !scenario.archived && next && (
+                    <Button size="sm" className="min-h-9" onClick={() => openTask(next.id)}>
+                        {t(completed ? 'projects.resume_scenario' : 'projects.start_scenario')}
+                    </Button>
                 )}
-                {saved && <p role="status" className="text-success-ink">{t('projects.rating_saved')}</p>}
-                {!evaluatorId && <p>{t('projects.choose_evaluator')}</p>}
-                {scenario && evaluatorId && assigned.length > 0 && !scenario.archived && (
-                    next ? (
-                        <Button onClick={() => openTask(next.id)}>
-                            {t(completedIds.size ? 'projects.resume_scenario' : 'projects.start_scenario')}
-                        </Button>
-                    ) : <p className="text-success-ink">{t('projects.scenario_complete')}</p>
+            </header>
+
+            <div className="space-y-2.5 p-3 sm:px-4">
+                {saved && <p role="status" className="text-sm text-success-ink">{t('projects.rating_saved')}</p>}
+                {!evaluatorId && <p className="text-sm text-nasa-gray-300">{t('projects.choose_evaluator')}</p>}
+                {scenario && evaluatorId && assigned.length > 0 && !scenario.archived && !next && (
+                    <p className="text-sm font-medium text-success-ink">{t('projects.scenario_complete')}</p>
                 )}
-                {!scenario && (
+
+                {(!scenario || canConfigureWeights) && (
                     <div className="flex flex-wrap items-center gap-2">
-                        <Button variant="secondary" size="sm" aria-pressed={showCatalog} onClick={() => {
+                        {!scenario && <Button variant="secondary" size="sm" className="min-h-8" aria-pressed={showCatalog} onClick={() => {
                             setShowCatalog(!showCatalog);
                             setSearch('');
                         }}>
                             {t(showCatalog ? 'projects.study_tasks' : 'projects.open_catalog')}
-                        </Button>
-                        {showCatalog && <input type="search" aria-label={t('projects.search_tasks')} placeholder={t('projects.search_tasks')}
-                            className={fieldClass} value={search} onChange={e => setSearch(e.target.value)} />}
+                        </Button>}
+                        {canConfigureWeights && <Button variant="secondary" size="sm" className="min-h-8" onClick={() => setShowWeights(true)}>
+                            {t('evaluator.determine_weights')}
+                        </Button>}
                     </div>
                 )}
-                {tasks.map((entry, index) => {
-                    const previous = latestRating(scopeRatings, { ...context, mteId: entry.id });
-                    const weights = comparison?.isWeighted ? comparison.weights : DEFAULT_WEIGHTS;
-                    const totalWeight = Object.values(weights).reduce((sum, weight) => sum + weight, 0);
-                    const score = previous && totalWeight > 0 ? TLX_DIMENSIONS_INFO.reduce(
-                        (sum, dim) => sum + previous.scores[dim.id] * weights[dim.id], 0) / totalWeight : null;
-                    return (
-                        <div className="flex flex-wrap items-center justify-between rounded-md bg-nasa-gray-900 p-3 gap-2" key={entry.id}>
-                            <div>
-                                <p className="font-semibold">{scenario && `${index + 1}. `}{entry.refNumber && `[${entry.refNumber}] `}{entry.name}</p>
-                                <p className="text-sm text-nasa-gray-300">
-                                    {previous ? `${t('projects.rated')} · ${score?.toFixed(2) ?? '—'}`
-                                        : t(assignedIds.has(entry.id) ? 'projects.to_rate' : 'projects.catalog_task')}
-                                </p>
-                            </div>
-                            {!scenario?.archived && <Button size="sm" disabled={!evaluatorId || Boolean(scenario && !previous && entry.id !== next?.id)}
-                                onClick={() => openTask(entry.id)}>
-                                {t(previous ? 'projects.open_rating' : assignedIds.has(entry.id) ? 'evaluator.rate_task' : 'projects.add_and_rate')}
-                            </Button>}
+
+                {comparison?.isWeighted && (
+                    <details className="rounded-md border border-separator px-2.5 py-1.5">
+                        <summary className="w-fit cursor-pointer rounded text-sm font-medium text-accent-ink focus-visible:outline focus-visible:outline-2">
+                            {t('evaluator.weights_used')}
+                        </summary>
+                        <div className="max-w-lg pt-2">
+                            <PairwiseWeightsDisplay weights={comparison.weights} isWeighted />
                         </div>
-                    );
-                })}
-                {tasks.length === 0 && <p className="text-nasa-gray-300">{t(scenario ? 'evaluator.no_mtes' : showCatalog ? 'projects.no_matching_tasks' : 'projects.study_tasks_empty')}</p>}
+                    </details>
+                )}
+
+                {showCatalog && !scenario && <input type="search" aria-label={t('projects.search_tasks')}
+                    placeholder={t('projects.search_tasks')} className={fieldClass} value={search} onChange={e => setSearch(e.target.value)} />}
+
+                {tasks.length === 0 ? (
+                    <p className="rounded-md border border-dashed border-separator px-3 py-2.5 text-sm text-nasa-gray-300">
+                        {t(scenario ? 'evaluator.no_mtes' : showCatalog ? 'projects.no_matching_tasks' : 'projects.study_tasks_empty')}
+                    </p>
+                ) : (
+                    <ul className="divide-y divide-separator overflow-hidden rounded-md border border-separator">
+                        {tasks.map((entry, index) => {
+                            const previous = latestRating(scopeRatings, { ...context, mteId: entry.id });
+                            const score = previous && totalWeight > 0 ? TLX_DIMENSIONS_INFO.reduce(
+                                (sum, dim) => sum + previous.scores[dim.id] * weights[dim.id], 0) / totalWeight : null;
+                            const isAssigned = assignedIds.has(entry.id);
+                            return (
+                                <li className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1.5 bg-nasa-gray-900 px-2.5 py-2" key={entry.id}>
+                                    <div className="min-w-0 flex-1 basis-32">
+                                        <p className="break-words text-sm font-semibold text-foreground">
+                                            {scenario && `${index + 1}. `}{entry.refNumber && `[${entry.refNumber}] `}{entry.name}
+                                        </p>
+                                        <p className={`mt-0.5 text-xs tabular-nums ${previous ? 'text-success-ink' : 'text-nasa-gray-300'}`}>
+                                            {previous ? `${t('projects.rated')} · ${score?.toFixed(2) ?? '—'}`
+                                                : t(isAssigned ? 'projects.to_rate' : 'projects.catalog_task')}
+                                        </p>
+                                    </div>
+                                    {!scenario?.archived && (
+                                        <Button size="sm" className="min-h-8" variant={!scenario && entry.id === next?.id ? 'primary' : 'secondary'}
+                                            disabled={!evaluatorId || Boolean(scenario && !previous && entry.id !== next?.id)}
+                                            onClick={() => openTask(entry.id)}>
+                                            {t(previous ? 'projects.open_rating' : isAssigned ? 'evaluator.rate_task' : 'projects.add_and_rate')}
+                                        </Button>
+                                    )}
+                                </li>
+                            );
+                        })}
+                    </ul>
+                )}
             </div>
-        </Card>
+        </section>
     );
 }
 

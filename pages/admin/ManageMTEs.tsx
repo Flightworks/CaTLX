@@ -5,12 +5,12 @@ import { useData } from '../../contexts/AppContext';
 import type { MTE, Project, Scenario, Study } from '../../types';
 import Button from '../../components/ui/Button';
 import Modal from '../../components/ui/Modal';
+import RowAction from '../../components/ui/RowAction';
 import { projectPath, scenarioPath, studyPath } from '../projectPaths';
 
 type StudyUsage = { study: Study; project: Project; scenarios: Scenario[] };
 
 const columnHeading = 'px-4 py-2 text-left text-xs font-medium text-nasa-gray-400 xl:px-5';
-const rowAction = 'inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-md text-nasa-gray-400 transition-colors enabled:hover:bg-hover-surface enabled:hover:text-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent-ink disabled:cursor-not-allowed disabled:opacity-40 lg:h-8 lg:w-8';
 
 function MteUsage({ entries, showProject }: { entries: Map<string, StudyUsage> | undefined; showProject: boolean }) {
   const { t } = useTranslation();
@@ -230,17 +230,9 @@ const ManageMTEs: React.FC<{ projectId?: string; standalone?: boolean }> = ({ pr
                 {!projectId && (
                   <td role="cell" className="absolute right-4 top-1.5 lg:static lg:py-1 lg:pl-2 lg:pr-3 xl:pr-4">
                     <div className="flex justify-end gap-1">
-                      <button type="button" className={rowAction} aria-label={t('common.edit')} title={t('common.edit')} onClick={() => handleEdit(mte)}>
-                        <svg aria-hidden="true" className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
-                          <path d="m14 5 5 5M4 20l4.5-1 12-12a1.5 1.5 0 0 0 0-2l-1.5-1.5a1.5 1.5 0 0 0-2 0l-12 12L4 20Z" />
-                        </svg>
-                      </button>
-                      <button type="button" className={`${rowAction} enabled:hover:!text-danger-ink`} aria-label={t('common.delete')} title={t('common.delete')}
-                        disabled={ratings.some(rating => rating.mteId === mte.id)} onClick={() => deleteMte(mte.id)}>
-                        <svg aria-hidden="true" className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
-                          <path d="M4 7h16m-10 4v5m4-5v5M9 7V4h6v3m3 0-.8 12a1 1 0 0 1-1 .9H7.8a1 1 0 0 1-1-.9L6 7" />
-                        </svg>
-                      </button>
+                      <RowAction icon="edit" label={t('common.edit')} onClick={() => handleEdit(mte)} />
+                      <RowAction icon="delete" label={t('common.delete')}
+                        disabled={ratings.some(rating => rating.mteId === mte.id)} onClick={() => deleteMte(mte.id)} />
                     </div>
                   </td>
                 )}
