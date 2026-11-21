@@ -362,8 +362,5 @@
     "export_csv": "Export result (CSV)",
     "title": "Quick Rating",
     "description": "Calculate TLX scores without saving data."
-  },
-  "common": {
-    "close": "Close"
   }
 }

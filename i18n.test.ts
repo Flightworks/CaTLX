@@ -14,3 +14,10 @@ function messageKeys(locale: Locale, prefix = ''): string[] {
 test('French and English define the same application messages', () => {
   expect(messageKeys(french).sort()).toEqual(messageKeys(english).sort());
 });
+
+test('both locales contain the shared form and table messages', () => {
+  const commonKeys = ['actions', 'close', 'delete', 'edit', 'save', 'unknown'];
+  for (const locale of [english, french]) {
+    expect(Object.keys(locale.common)).toEqual(expect.arrayContaining(commonKeys));
+  }
+});

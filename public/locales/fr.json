@@ -362,8 +362,5 @@
     "export_csv": "Exporter le résultat (CSV)",
     "title": "Évaluation rapide",
     "description": "Calculez les scores TLX sans enregistrer les données."
-  },
-  "common": {
-    "close": "Fermer"
   }
 }
