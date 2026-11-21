@@ -1,16 +1,13 @@
-
-import React from 'react';
+import type { ReactNode } from 'react';
 import Header from './Header';
 
-const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+export default function Layout({ children }: { children: ReactNode }) {
   return (
-    <div className="min-h-screen bg-nasa-gray-900">
+    <div className="workspace-shell min-h-screen md:flex">
       <Header />
-      <main className="container mx-auto p-4 sm:p-6 lg:p-8">
+      <main className="mx-auto w-full min-w-0 max-w-screen-xl px-4 py-5 sm:px-6 md:flex-1 lg:px-8 lg:py-7">
         {children}
       </main>
     </div>
   );
-};
-
-export default Layout;
+}

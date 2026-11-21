@@ -221,13 +221,13 @@ const ManageStudies: React.FC<{ projectId?: string; studyId?: string }> = ({ pro
         <h2 className="text-xl font-bold">{t(studyId ? 'projects.study_settings' : 'admin.manage_studies')}</h2>
         {!studyId && <Button onClick={() => { setEditingStudy(null); setIsStudyModalOpen(true); }}>{t('projects.new_study')}</Button>}
       </div>
-      <div className="space-y-6">
+      <div className="space-y-2">
         {studiesInProject.map((study) => {
           const studyMtes = study.mteIds.map(id => mtes.find(m => m.id === id)).filter((m): m is MTE => !!m);
           const studyEvaluators = study.evaluatorIds.map(id => evaluators.find(e => e.id === id)).filter((e): e is Evaluator => !!e);
           if (projectId && !studyId) {
             return (
-              <Link key={study.id} className="flex flex-wrap justify-between items-center gap-3 p-4 rounded-lg bg-nasa-gray-900 hover:bg-nasa-gray-700"
+              <Link key={study.id} className="flex flex-wrap justify-between items-center gap-3 rounded-md border border-white/10 px-4 py-3 hover:bg-white/5"
                 to={`/projects/${encodeURIComponent(projectId)}/studies/${encodeURIComponent(study.id)}`}>
                 <div>
                   <h3 className="font-semibold text-lg">{study.name}</h3>

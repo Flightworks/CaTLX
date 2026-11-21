@@ -146,6 +146,9 @@
     "discard_confirm": "Any unsaved changes will be lost. Continue?"
   },
   "header": {
+    "administration": "Administration",
+    "main_navigation": "Main navigation",
+    "open_menu": "Open menu",
     "evaluations": "Evaluations",
     "admin_dashboard": "Admin Dashboard",
     "about": "About",

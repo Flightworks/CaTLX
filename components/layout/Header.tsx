@@ -1,112 +1,113 @@
-
-import React, { useState } from 'react';
-import { NavLink } from 'react-router-dom';
+import { useEffect, useRef } from 'react';
+import { Link, NavLink } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../contexts/AppContext';
-import Button from '../ui/Button';
 import LanguageSwitcher from '../ui/LanguageSwitcher';
 import { APP_ICON } from '../../assets';
 
-const Header: React.FC = () => {
-  const { logout, mode } = useAuth();
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
+const links = [
+  { to: '/projects', label: 'projects.title', path: 'M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z' },
+  { to: '/workspace/quick-rating', label: 'quick_rating.title', path: 'M3 13h4l3-8 4 14 3-6h4' },
+  { to: '/admin', label: 'header.administration', path: 'M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h6v6h-6z' },
+  { to: '/about', label: 'header.about', path: 'M12 16v-4m0-4h.01M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z' },
+];
+
+function Icon({ path }: { path: string }) {
+  return (
+    <svg aria-hidden="true" className="h-[18px] w-[18px] shrink-0" viewBox="0 0 24 24" fill="none"
+      stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+      <path d={path} />
+    </svg>
+  );
+}
+
+function Brand({ onClick }: { onClick?: () => void }) {
+  return (
+    <Link to="/projects" onClick={onClick} className="flex w-fit items-center gap-2.5 rounded font-semibold tracking-tight">
+      <img src={APP_ICON} alt="" className="h-7 w-7 rounded-md" />
+      CaTLX
+    </Link>
+  );
+}
+
+function Navigation({ close }: { close?: () => void }) {
+  const { mode, logout, offlineEnrollment } = useAuth();
   const { t } = useTranslation();
+  return (
+    <>
+      <div className="flex items-center justify-between gap-3 px-4 pb-4 pt-5">
+        <Brand onClick={close} />
+        {close && (
+          <button type="button" className="workspace-icon-button" aria-label={t('common.close')} onClick={close}>
+            <Icon path="m6 6 12 12M18 6 6 18" />
+          </button>
+        )}
+      </div>
+      <nav aria-label={t('header.main_navigation')} className="flex-1 space-y-1 px-2.5">
+        {links.map(item => (
+          <NavLink key={item.to} to={item.to} onClick={close} className="workspace-nav-link">
+            <Icon path={item.path} />
+            <span>{t(item.label)}</span>
+          </NavLink>
+        ))}
+      </nav>
+      <div className="space-y-3 border-t border-white/10 px-4 py-4">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <LanguageSwitcher />
+          {mode !== 'cloud' && <span className="text-xs text-nasa-gray-300">{t(`header.${mode}`)}</span>}
+        </div>
+        {offlineEnrollment && (
+          <>
+            <button type="button" className="workspace-nav-link w-full" disabled={offlineEnrollment.busy}
+              onClick={offlineEnrollment.activate}>
+              <Icon path="M12 3v12m-4-4 4 4 4-4M5 15v5h14v-5" />
+              {t('offline.enable')}
+            </button>
+            {offlineEnrollment.error && <p role="alert" className="text-xs text-red-300">{t(offlineEnrollment.error)}</p>}
+          </>
+        )}
+        <button type="button" className="workspace-nav-link w-full" onClick={() => { close?.(); logout(); }}>
+          <Icon path="M10 5H5v14h5m-1-7h12m-4-4 4 4-4 4" />
+          {t('header.logout')}
+        </button>
+      </div>
+    </>
+  );
+}
 
-  const handleLogout = () => {
-    logout();
-    setIsMenuOpen(false);
-  };
+export default function Header() {
+  const { t } = useTranslation();
+  const drawer = useRef<HTMLDialogElement>(null);
+  const openButton = useRef<HTMLButtonElement>(null);
 
-  const navLinkClass = ({ isActive }: { isActive: boolean }) =>
-    `px-3 py-2 rounded-md text-sm font-medium transition-colors ${isActive
-      ? 'bg-nasa-light-blue text-white'
-      : 'text-nasa-gray-300 hover:bg-nasa-gray-700 hover:text-white'
-    }`;
-
-  const mobileNavLinkClass = ({ isActive }: { isActive: boolean }) =>
-    `block px-3 py-2 rounded-md text-base font-medium transition-colors ${isActive
-      ? 'bg-nasa-light-blue text-white'
-      : 'text-nasa-gray-300 hover:bg-nasa-gray-700 hover:text-white'
-    }`;
+  useEffect(() => {
+    const desktop = window.matchMedia('(min-width: 768px)');
+    const closeOnDesktop = () => { if (desktop.matches) drawer.current?.close(); };
+    desktop.addEventListener('change', closeOnDesktop);
+    return () => desktop.removeEventListener('change', closeOnDesktop);
+  }, []);
 
   return (
-    <header className="bg-nasa-gray-800 shadow-lg">
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-16">
-          <div className="flex items-center">
-            <div className="flex-shrink-0 text-white font-bold text-xl flex items-center space-x-3">
-              <img src={APP_ICON} alt="CaTLX Logo" className="w-8 h-8 rounded-full" />
-              <span>CaTLX</span>
-              {mode === 'demo' ? (
-                <span className="text-xs font-semibold bg-green-500 text-green-900 px-2 py-0.5 rounded-full">{t('header.demo')}</span>
-              ) : mode === 'local' ? (
-                <span className="text-xs font-semibold bg-yellow-500 text-yellow-900 px-2 py-0.5 rounded-full">{t('header.local')}</span>
-              ) : (
-                <span className="text-xs font-semibold bg-blue-500 text-blue-900 px-2 py-0.5 rounded-full">{t('header.cloud')}</span>
-              )}
-            </div>
-            <nav className="hidden md:block ml-10">
-              <div className="flex items-center space-x-4">
-                <NavLink to="/projects" className={navLinkClass}>
-                  {t('projects.title')}
-                </NavLink>
-                <NavLink to="/workspace/quick-rating" className={navLinkClass}>
-                  {t('header.quick_rating', 'Quick Rating')}
-                </NavLink>
-                <NavLink to="/admin" className={navLinkClass}>
-                  {t('header.admin_dashboard')}
-                </NavLink>
-                <NavLink to="/about" className={navLinkClass}>
-                  {t('header.about')}
-                </NavLink>
-              </div>
-            </nav>
-          </div>
-          <div className="hidden md:flex items-center space-x-3">
-            <LanguageSwitcher />
-            <Button onClick={handleLogout} variant="danger" size="sm">
-              {t('header.logout')}
-            </Button>
-          </div>
-          <div className="md:hidden flex items-center">
-            <button onClick={() => setIsMenuOpen(!isMenuOpen)} className="inline-flex items-center justify-center p-2 rounded-md text-nasa-gray-400 hover:text-white hover:bg-nasa-gray-700 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-white" aria-controls="mobile-menu" aria-expanded={isMenuOpen}>
-              <span className="sr-only">Open main menu</span>
-              {isMenuOpen ? (
-                <svg className="block h-6 w-6" xmlns="http://www.w.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              ) : (
-                <svg className="block h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16m4 6H4" />
-                </svg>
-              )}
-            </button>
-          </div>
+    <>
+      <aside className="workspace-sidebar hidden md:sticky md:top-0 md:flex md:h-dvh md:w-52 md:shrink-0 md:flex-col lg:w-56">
+        <Navigation />
+      </aside>
+      <header className="workspace-sidebar flex min-h-12 items-center justify-between gap-3 border-b border-white/10 px-3 md:hidden">
+        <button ref={openButton} type="button" className="workspace-icon-button"
+          aria-label={t('header.open_menu')} aria-haspopup="dialog" aria-controls="workspace-menu"
+          onClick={() => drawer.current?.showModal()}>
+          <Icon path="M4 6h16M4 12h16M4 18h16" />
+        </button>
+        <Brand />
+      </header>
+      <dialog ref={drawer} id="workspace-menu" aria-label={t('header.main_navigation')}
+        className="workspace-drawer"
+        onClick={event => { if (event.target === event.currentTarget) drawer.current?.close(); }}
+        onClose={() => { if (openButton.current?.offsetParent) openButton.current.focus(); }}>
+        <div className="workspace-sidebar flex min-h-full flex-col">
+          <Navigation close={() => drawer.current?.close()} />
         </div>
-      </div>
-
-      {isMenuOpen && (
-        <div className="md:hidden" id="mobile-menu">
-          <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3">
-            <NavLink to="/projects" className={mobileNavLinkClass} onClick={() => setIsMenuOpen(false)}>{t('projects.title')}</NavLink>
-            <NavLink to="/workspace/quick-rating" className={mobileNavLinkClass} onClick={() => setIsMenuOpen(false)}>{t('header.quick_rating', 'Quick Rating')}</NavLink>
-            <NavLink to="/admin" className={mobileNavLinkClass} onClick={() => setIsMenuOpen(false)}>{t('header.admin_dashboard')}</NavLink>
-            <NavLink to="/about" className={mobileNavLinkClass} onClick={() => setIsMenuOpen(false)}>{t('header.about')}</NavLink>
-          </div>
-          <div className="pt-4 pb-3 border-t border-nasa-gray-700">
-            <div className="mt-3 px-4">
-              <LanguageSwitcher />
-            </div>
-            <div className="mt-3 px-4">
-              <Button onClick={handleLogout} variant="danger" size="md" className="w-full">
-                {t('header.logout')}
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
-    </header>
+      </dialog>
+    </>
   );
-};
-
-export default Header;
+}

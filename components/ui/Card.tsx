@@ -9,7 +9,7 @@ interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
 
 const Card: React.FC<CardProps> = ({ children, className = '', title, ...props }) => {
   return (
-    <div className={`bg-nasa-gray-800 shadow-xl rounded-lg overflow-hidden ${className}`} {...props}>
+    <div data-workspace-surface className={`bg-nasa-gray-800 shadow-xl rounded-lg overflow-hidden ${className}`} {...props}>
       {title && (
         <div className="px-4 py-3 border-b border-nasa-gray-700 sm:px-6">
           <h3 className="text-lg leading-6 font-medium text-white">{title}</h3>

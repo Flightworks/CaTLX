@@ -146,6 +146,9 @@
     "discard_confirm": "Les modifications qui restent à enregistrer seront perdues. Continuer ?"
   },
   "header": {
+    "administration": "Administration",
+    "main_navigation": "Navigation principale",
+    "open_menu": "Ouvrir le menu",
     "evaluations": "Évaluations",
     "admin_dashboard": "Tableau de bord administrateur",
     "about": "À propos",

@@ -21,6 +21,7 @@ interface AuthContextType {
   logout: () => void;
   signInWithGoogle?: () => Promise<void>;
   cloudError?: CloudError;
+  offlineEnrollment?: { activate: () => void; busy: boolean; error: string | null };
 }
 
 interface SessionContextType {
@@ -129,18 +130,17 @@ function CloudWorkspaceProvider({ config, initial, auth, ownerId, onEnroll, onDe
   };
 
   return (
-    <AuthContext.Provider value={{ ...auth, logout }}>
+    <AuthContext.Provider value={{
+      ...auth, logout,
+      offlineEnrollment: status === 'idle' && online
+        ? { activate: () => void enroll(), busy: enrolling, error: enrollmentFailed }
+        : undefined,
+    }}>
       {config.environment === 'preprod' && (
-        <p className="bg-nasa-blue px-4 py-2 text-center text-sm text-white">{t('cloud.preprod')}</p>
+        <p className="border-b border-white/10 bg-[#22232d] px-4 py-1 text-center text-xs text-indigo-200">{t('cloud.preprod')}</p>
       )}
       {auth.cloudError === 'signout_failed' && (
         <p role="alert" className="bg-nasa-gray-700 px-4 py-2 text-center">{t('cloud.signout_failed')}</p>
-      )}
-      {status === 'idle' && online && (
-        <div className="container mx-auto px-4 py-2 flex flex-wrap justify-end items-center gap-2">
-          {enrollmentFailed && <p role="alert" className="text-sm text-red-300">{t(enrollmentFailed)}</p>}
-          <Button variant="secondary" size="sm" disabled={enrolling} onClick={() => void enroll()}>{t('offline.enable')}</Button>
-        </div>
       )}
       {status === 'saving' && (
         <p role="status" className="bg-nasa-gray-700 px-4 py-2 text-center">{t('cloud.saving')}</p>
@@ -206,7 +206,7 @@ function EnrolledWorkspace({ config, vault, canSync, auth, lock, onDenied, onCon
   return (
     <AuthContext.Provider value={{ ...auth, logout: () => { void finishLocalWrites().then(auth.logout); } }}>
       {config.environment === 'preprod' && (
-        <p className="bg-nasa-blue px-4 py-2 text-center text-sm text-white">{t('cloud.preprod')}</p>
+        <p className="border-b border-white/10 bg-[#22232d] px-4 py-1 text-center text-xs text-indigo-200">{t('cloud.preprod')}</p>
       )}
       <div className="bg-nasa-gray-800">
         <div className="container mx-auto px-4 py-2 flex flex-wrap items-center justify-between gap-3">
