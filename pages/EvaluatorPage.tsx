@@ -5,6 +5,7 @@ import { useData } from '../contexts/AppContext';
 import { TLXDimension, type MTE, type Scenario, type Study } from '../types';
 import { TLX_DIMENSIONS_INFO, PAIRWISE_COMBINATIONS, DEFAULT_WEIGHTS } from '../constants';
 import { latestRating } from '../data/workspace';
+import ExpressTlxControl from '../components/ui/ExpressTlxControl';
 import TlxSlider from '../components/ui/TlxSlider';
 import Button from '../components/ui/Button';
 import Card from '../components/ui/Card';
@@ -128,8 +129,8 @@ function RatingForm({ study, scenario, evaluatorId, task, submitLabel, onClose }
     submitLabel: string;
     onClose: (saved?: boolean) => void;
 }) {
-    const { t } = useTranslation();
-    const { ratings, saveRating } = useData();
+    const { t, i18n } = useTranslation();
+    const { ratings, saveRating, pairwiseComparisons } = useData();
     const context = { studyId: study.id, scenarioId: scenario?.id, evaluatorId, mteId: task.id };
     const existing = latestRating(ratings, context);
     const [scores, setScores] = useState(existing?.scores ?? initialScores);
@@ -142,6 +143,14 @@ function RatingForm({ study, scenario, evaluatorId, task, submitLabel, onClose }
     const isExpress = mode === 'express';
     const lastStep = TLX_DIMENSIONS_INFO.length;
     const assigned = (scenario?.mteIds ?? study.mteIds).includes(task.id);
+
+    const comparison = pairwiseComparisons.find(entry => entry.studyId === study.id && entry.evaluatorId === evaluatorId);
+    const weights = comparison?.isWeighted ? comparison.weights : DEFAULT_WEIGHTS;
+    const totalWeight = Object.values(weights).reduce((sum, weight) => sum + weight, 0);
+    const overallScore = totalWeight > 0
+        ? TLX_DIMENSIONS_INFO.reduce((sum, dim) => sum + scores[dim.id] * weights[dim.id], 0) / totalWeight
+        : 0;
+    const scoreLabel = new Intl.NumberFormat(i18n.resolvedLanguage, { maximumFractionDigits: 1 }).format(overallScore);
 
     async function submit(event: React.FormEvent) {
         event.preventDefault();
@@ -159,9 +168,23 @@ function RatingForm({ study, scenario, evaluatorId, task, submitLabel, onClose }
     }
 
     return (
-        <Card title={t('evaluator.rating_for', { mteName: task.name })}>
-            <p className="text-nasa-gray-300 mb-4">{task.refNumber && `[${task.refNumber}] `}{task.description}</p>
-            {!assigned && <p className="mb-4 text-sm">{t('projects.add_on_save')}</p>}
+        <section className="rounded-xl border border-nasa-gray-700 bg-nasa-gray-800 px-3 py-3 sm:px-5 sm:py-4">
+            <div className="mb-3 flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                    {task.refNumber && <p className="text-xs font-medium tabular-nums text-blue-200">{task.refNumber}</p>}
+                    <h2 className="break-words text-lg font-semibold leading-tight sm:text-xl">{task.name}</h2>
+                    {task.description && <p className="mt-1 text-sm text-nasa-gray-300">{task.description}</p>}
+                </div>
+                {isExpress && (
+                    <div className="shrink-0 rounded-lg border border-blue-400/25 bg-blue-400/10 px-2.5 py-1.5 text-right sm:px-3">
+                        <p className="text-xs font-medium text-blue-200">{t('evaluator.total_score')}</p>
+                        <p className="text-xl font-semibold leading-tight tabular-nums text-white">
+                            {scoreLabel}<span className="ml-1 text-xs font-normal text-nasa-gray-300">/ 100</span>
+                        </p>
+                    </div>
+                )}
+            </div>
+            {!assigned && <p className="mb-3 text-sm">{t('projects.add_on_save')}</p>}
             <ToggleSwitch
                 label={t('evaluator.rating_mode')}
                 options={['express', 'step-by-step'].map(value => ({
@@ -175,27 +198,40 @@ function RatingForm({ study, scenario, evaluatorId, task, submitLabel, onClose }
                     localStorage.setItem('catlx_rating_mode', nextMode);
                 }}
             />
-            <form onSubmit={submit} className="mt-6 space-y-6">
+            <form onSubmit={submit} className="mt-3 space-y-3">
                 {error && <p role="alert" className="text-red-300">{t('evaluator.error_submitting')}</p>}
-                <fieldset disabled={saving} className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <fieldset disabled={saving} className={isExpress
+                    ? 'grid gap-px overflow-hidden rounded-lg border border-nasa-gray-700 bg-nasa-gray-700 min-[320px]:grid-cols-2 lg:grid-cols-3'
+                    : 'space-y-3'}>
                     {TLX_DIMENSIONS_INFO.filter((_, index) => isExpress || index === step).map(dim => {
                         const key = `tlx_dimensions.${dimensionKey(dim.id)}`;
-                        return (
-                            <TlxSlider key={dim.id} title={t(`${key}.title`)} description={t(`${key}.description`)}
-                                lowAnchor={t(`${key}.low_anchor`)} highAnchor={t(`${key}.high_anchor`)}
-                                value={scores[dim.id]} compact={isExpress}
-                                onChange={value => setScores(current => ({ ...current, [dim.id]: value }))} />
-                        );
+                        const props = {
+                            title: t(`${key}.title`),
+                            lowAnchor: t(`${key}.low_anchor`),
+                            highAnchor: t(`${key}.high_anchor`),
+                            value: scores[dim.id],
+                            onChange: (value: number) => setScores(current => ({ ...current, [dim.id]: value })),
+                        };
+                        return isExpress ? <ExpressTlxControl key={dim.id} {...props} />
+                            : <TlxSlider key={dim.id} {...props} description={t(`${key}.description`)} />;
                     })}
-                    {(isExpress || step === lastStep) && (
-                        <label className="lg:col-span-2 space-y-2">
-                            <span className="block">{t('evaluator.optional_comments')}</span>
-                            <textarea className={fieldClass} value={comments} rows={3}
-                                onChange={event => setComments(event.target.value)} />
-                        </label>
-                    )}
                 </fieldset>
-                <div className="flex flex-wrap justify-between gap-3">
+                {isExpress ? (
+                    <details open={existing?.comments ? true : undefined}>
+                        <summary className="w-fit cursor-pointer rounded text-sm text-blue-200 focus-visible:outline focus-visible:outline-2">
+                            {t('evaluator.optional_comments')}
+                        </summary>
+                        <textarea className={`mt-2 ${fieldClass}`} aria-label={t('evaluator.optional_comments')}
+                            value={comments} rows={2} disabled={saving} onChange={event => setComments(event.target.value)} />
+                    </details>
+                ) : step === lastStep && (
+                    <label className="block space-y-2">
+                        <span className="block">{t('evaluator.optional_comments')}</span>
+                        <textarea className={fieldClass} value={comments} rows={3} disabled={saving}
+                            onChange={event => setComments(event.target.value)} />
+                    </label>
+                )}
+                <div className="flex flex-wrap justify-between gap-2 border-t border-nasa-gray-700 pt-3">
                     <Button variant="secondary" type="button" onClick={() => onClose()} disabled={saving}>
                         {t('evaluator.back_to_tasks')}
                     </Button>
@@ -217,7 +253,7 @@ function RatingForm({ study, scenario, evaluatorId, task, submitLabel, onClose }
                     </div>
                 </div>
             </form>
-        </Card>
+        </section>
     );
 }
 

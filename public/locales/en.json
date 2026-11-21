@@ -1,4 +1,28 @@
 {
+  "common": {
+    "close": "Close"
+  },
+  "study_settings": {
+    "manage_mtes": "Manage MTEs",
+    "manage_mtes_for": "Manage MTEs · {{study}}",
+    "manage_evaluators_for": "Manage evaluators · {{study}}",
+    "available_mtes": "Available MTEs",
+    "assigned_mtes": "Study MTEs ({{count}})",
+    "available_evaluators": "Available evaluators",
+    "assigned_evaluators": "Study evaluators ({{count}})",
+    "no_available_evaluators": "No other evaluators available.",
+    "no_evaluators": "No evaluators in this study.",
+    "no_mtes": "No MTEs in this study.",
+    "add": "Add",
+    "remove": "Remove",
+    "name": "Study name",
+    "date": "Study date",
+    "edit": "Edit study",
+    "delete": "Delete",
+    "save": "Save Study",
+    "choose_project": "Select a project to view its studies.",
+    "no_studies": "No studies in this project."
+  },
   "projects": {
     "title": "Projects",
     "path": "Project path",

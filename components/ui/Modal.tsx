@@ -1,5 +1,6 @@
 
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 
 interface ModalProps {
   isOpen: boolean;
@@ -11,6 +12,7 @@ interface ModalProps {
 }
 
 const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children, footer, size = 'lg' }) => {
+  const { t } = useTranslation();
   if (!isOpen) return null;
   
   const sizeClasses = {
@@ -36,7 +38,7 @@ const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children, footer,
               className="p-1 -mt-1 -mr-2 text-nasa-gray-300 rounded-full hover:bg-nasa-gray-700 focus:outline-none focus:ring-2 focus:ring-nasa-blue"
               onClick={onClose}
             >
-              <span className="sr-only">Close</span>
+              <span className="sr-only">{t('common.close')}</span>
               <svg className="h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
               </svg>

@@ -1,4 +1,28 @@
 {
+  "common": {
+    "close": "Fermer"
+  },
+  "study_settings": {
+    "manage_mtes": "Gérer les MTE",
+    "manage_mtes_for": "Gérer les MTE · {{study}}",
+    "manage_evaluators_for": "Gérer les évaluateurs · {{study}}",
+    "available_mtes": "MTE disponibles",
+    "assigned_mtes": "MTE de l’étude ({{count}})",
+    "available_evaluators": "Évaluateurs disponibles",
+    "assigned_evaluators": "Évaluateurs de l’étude ({{count}})",
+    "no_available_evaluators": "Aucun autre évaluateur disponible.",
+    "no_evaluators": "Aucun évaluateur dans cette étude.",
+    "no_mtes": "Aucune MTE dans cette étude.",
+    "add": "Ajouter",
+    "remove": "Retirer",
+    "name": "Nom de l’étude",
+    "date": "Date de l’étude",
+    "edit": "Modifier l’étude",
+    "delete": "Supprimer",
+    "save": "Enregistrer l’étude",
+    "choose_project": "Choisis un projet pour afficher ses études.",
+    "no_studies": "Aucune étude dans ce projet."
+  },
   "projects": {
     "title": "Projets",
     "path": "Chemin dans les projets",

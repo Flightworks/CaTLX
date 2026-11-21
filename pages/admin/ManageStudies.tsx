@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useId } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useData, useSession } from '../../contexts/AppContext';
@@ -6,13 +6,13 @@ import { Study, MTE, Evaluator } from '../../types';
 import Card from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
 import Modal from '../../components/ui/Modal';
-import Select from '../../components/ui/Select';
 
 
 const ManageStudyMTEsModal: React.FC<{
   study: Study;
   onClose: () => void;
 }> = ({ study, onClose }) => {
+  const { t } = useTranslation();
   const { mtes, ratings, scenarios = [], addMTEToStudy, removeMTEFromStudy } = useData();
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -34,14 +34,15 @@ const ManageStudyMTEsModal: React.FC<{
   }, [mtes, study.mteIds, searchQuery]);
 
   return (
-    <Modal isOpen={true} onClose={onClose} title={`Manage MTEs for: ${study.name}`} size="4xl">
+    <Modal isOpen={true} onClose={onClose} title={t('study_settings.manage_mtes_for', { study: study.name })} size="4xl">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Available MTEs */}
         <div>
-          <h3 className="text-lg font-semibold text-white mb-2">Available MTEs</h3>
+          <h3 className="text-lg font-semibold text-white mb-2">{t('study_settings.available_mtes')}</h3>
           <input
             type="search"
-            placeholder="Search catalog..."
+            placeholder={t('projects.search_tasks')}
+            aria-label={t('projects.search_tasks')}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="w-full bg-nasa-gray-900 border-nasa-gray-600 rounded-md shadow-sm focus:ring-nasa-blue focus:border-nasa-blue text-white placeholder-nasa-gray-400 mb-3"
@@ -53,15 +54,15 @@ const ManageStudyMTEsModal: React.FC<{
                   <p className="text-sm font-medium text-white">{mte.name}</p>
                   <p className="text-xs text-nasa-gray-400 font-mono">[{mte.refNumber}]</p>
                 </div>
-                <Button size="sm" onClick={() => addMTEToStudy(study.id, mte.id)}>Add</Button>
+                <Button size="sm" onClick={() => addMTEToStudy(study.id, mte.id)}>{t('study_settings.add')}</Button>
               </div>
             ))}
-            {availableMtes.length === 0 && <p className="text-sm text-nasa-gray-500 text-center py-4">No available MTEs match your search.</p>}
+            {availableMtes.length === 0 && <p className="text-sm text-nasa-gray-500 text-center py-4">{t('projects.no_matching_tasks')}</p>}
           </div>
         </div>
         {/* MTEs in Study */}
         <div>
-          <h3 className="text-lg font-semibold text-white mb-2">MTEs in this Study ({mtesInStudy.length})</h3>
+          <h3 className="text-lg font-semibold text-white mb-2">{t('study_settings.assigned_mtes', { count: mtesInStudy.length })}</h3>
            <div className="space-y-2 max-h-96 overflow-y-auto pr-2">
             {mtesInStudy.map(mte => (
               <div key={mte.id} className="flex justify-between items-center p-2 bg-nasa-gray-700 rounded">
@@ -71,10 +72,10 @@ const ManageStudyMTEsModal: React.FC<{
                 </div>
                 <Button size="sm" variant="danger" disabled={ratings.some(rating => rating.studyId === study.id && rating.mteId === mte.id) ||
                     scenarios.some(scenario => scenario.studyId === study.id && scenario.mteIds.includes(mte.id))}
-                  onClick={() => removeMTEFromStudy(study.id, mte.id)}>Remove</Button>
+                  onClick={() => removeMTEFromStudy(study.id, mte.id)}>{t('study_settings.remove')}</Button>
               </div>
             ))}
-            {mtesInStudy.length === 0 && <p className="text-sm text-nasa-gray-500 text-center py-4">No MTEs have been added to this study.</p>}
+            {mtesInStudy.length === 0 && <p className="text-sm text-nasa-gray-500 text-center py-4">{t('study_settings.no_mtes')}</p>}
            </div>
         </div>
       </div>
@@ -86,6 +87,7 @@ const ManageStudyEvaluatorsModal: React.FC<{
   study: Study;
   onClose: () => void;
 }> = ({ study, onClose }) => {
+  const { t } = useTranslation();
   const { evaluators, addEvaluatorToStudy, removeEvaluatorFromStudy } = useData();
 
   const evaluatorsInStudy = useMemo(() => {
@@ -102,30 +104,30 @@ const ManageStudyEvaluatorsModal: React.FC<{
   }, [evaluators, study.evaluatorIds]);
 
   return (
-    <Modal isOpen={true} onClose={onClose} title={`Manage Evaluators for: ${study.name}`} size="4xl">
+    <Modal isOpen={true} onClose={onClose} title={t('study_settings.manage_evaluators_for', { study: study.name })} size="4xl">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div>
-          <h3 className="text-lg font-semibold text-white mb-2">Available Evaluators</h3>
+          <h3 className="text-lg font-semibold text-white mb-2">{t('study_settings.available_evaluators')}</h3>
           <div className="space-y-2 max-h-80 overflow-y-auto pr-2">
             {availableEvaluators.map(evaluator => (
               <div key={evaluator.id} className="flex justify-between items-center p-2 bg-nasa-gray-700 rounded">
                 <p className="text-sm font-medium text-white">{evaluator.name}</p>
-                <Button size="sm" onClick={() => addEvaluatorToStudy(study.id, evaluator.id)}>Add</Button>
+                <Button size="sm" onClick={() => addEvaluatorToStudy(study.id, evaluator.id)}>{t('study_settings.add')}</Button>
               </div>
             ))}
-            {availableEvaluators.length === 0 && <p className="text-sm text-nasa-gray-500 text-center py-4">No other evaluators available.</p>}
+            {availableEvaluators.length === 0 && <p className="text-sm text-nasa-gray-500 text-center py-4">{t('study_settings.no_available_evaluators')}</p>}
           </div>
         </div>
         <div>
-          <h3 className="text-lg font-semibold text-white mb-2">Evaluators in this Study ({evaluatorsInStudy.length})</h3>
+          <h3 className="text-lg font-semibold text-white mb-2">{t('study_settings.assigned_evaluators', { count: evaluatorsInStudy.length })}</h3>
            <div className="space-y-2 max-h-96 overflow-y-auto pr-2">
             {evaluatorsInStudy.map(evaluator => (
               <div key={evaluator.id} className="flex justify-between items-center p-2 bg-nasa-gray-700 rounded">
                 <p className="text-sm font-medium text-white">{evaluator.name}</p>
-                <Button size="sm" variant="danger" onClick={() => removeEvaluatorFromStudy(study.id, evaluator.id)}>Remove</Button>
+                <Button size="sm" variant="danger" onClick={() => removeEvaluatorFromStudy(study.id, evaluator.id)}>{t('study_settings.remove')}</Button>
               </div>
             ))}
-            {evaluatorsInStudy.length === 0 && <p className="text-sm text-nasa-gray-500 text-center py-4">No evaluators have been added to this study.</p>}
+            {evaluatorsInStudy.length === 0 && <p className="text-sm text-nasa-gray-500 text-center py-4">{t('study_settings.no_evaluators')}</p>}
            </div>
         </div>
       </div>
@@ -140,6 +142,7 @@ const StudyForm: React.FC<{
   onCancel: () => void;
 }> = ({ study, projectId, onSave, onCancel }) => {
   const { t } = useTranslation();
+  const formId = useId();
   const [name, setName] = useState(study?.name || '');
   const [description, setDescription] = useState(study?.description || '');
   const [date, setDate] = useState(study ? new Date(study.date).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]);
@@ -153,20 +156,20 @@ const StudyForm: React.FC<{
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <div>
-        <label className="block text-sm font-medium text-nasa-gray-300">Study Name</label>
-        <input type="text" value={name} onChange={e => setName(e.target.value)} required className="mt-1 block w-full bg-nasa-gray-700 border-nasa-gray-600 rounded-md shadow-sm focus:ring-nasa-blue focus:border-nasa-blue text-white" />
+        <label htmlFor={`${formId}-name`} className="block text-sm font-medium text-nasa-gray-300">{t('study_settings.name')}</label>
+        <input id={`${formId}-name`} type="text" value={name} onChange={e => setName(e.target.value)} required className="mt-1 block w-full bg-nasa-gray-700 border-nasa-gray-600 rounded-md shadow-sm focus:ring-nasa-blue focus:border-nasa-blue text-white" />
       </div>
        <div>
-        <label className="block text-sm font-medium text-nasa-gray-300">Study Date</label>
-        <input type="date" value={date} onChange={e => setDate(e.target.value)} required className="mt-1 block w-full bg-nasa-gray-700 border-nasa-gray-600 rounded-md shadow-sm focus:ring-nasa-blue focus:border-nasa-blue text-white" />
+        <label htmlFor={`${formId}-date`} className="block text-sm font-medium text-nasa-gray-300">{t('study_settings.date')}</label>
+        <input id={`${formId}-date`} type="date" value={date} onChange={e => setDate(e.target.value)} required className="mt-1 block w-full bg-nasa-gray-700 border-nasa-gray-600 rounded-md shadow-sm focus:ring-nasa-blue focus:border-nasa-blue text-white" />
       </div>
       <div>
-        <label className="block text-sm font-medium text-nasa-gray-300">{t('evaluator.optional_description')}</label>
-        <textarea value={description} onChange={e => setDescription(e.target.value)} rows={3} className="mt-1 block w-full bg-nasa-gray-700 border-nasa-gray-600 rounded-md shadow-sm focus:ring-nasa-blue focus:border-nasa-blue text-white" />
+        <label htmlFor={`${formId}-description`} className="block text-sm font-medium text-nasa-gray-300">{t('evaluator.optional_description')}</label>
+        <textarea id={`${formId}-description`} value={description} onChange={e => setDescription(e.target.value)} rows={3} className="mt-1 block w-full bg-nasa-gray-700 border-nasa-gray-600 rounded-md shadow-sm focus:ring-nasa-blue focus:border-nasa-blue text-white" />
       </div>
       <div className="flex justify-end space-x-2">
-        <Button type="button" variant="secondary" onClick={onCancel}>Cancel</Button>
-        <Button type="submit">Save Study</Button>
+        <Button type="button" variant="secondary" onClick={onCancel}>{t('evaluator.cancel')}</Button>
+        <Button type="submit">{t('study_settings.save')}</Button>
       </div>
     </form>
   );
@@ -205,8 +208,8 @@ const ManageStudies: React.FC<{ projectId?: string; studyId?: string }> = ({ pro
       return (
         <Card>
             <div className="text-center py-8 text-nasa-gray-400">
-                <p>Please select a project to view its studies.</p>
-                <p className="text-sm text-nasa-gray-500">If no projects are available, create one in the database.</p>
+                <p>{t('study_settings.choose_project')}</p>
+                <p className="text-sm text-nasa-gray-500">{t('projects.no_projects')}</p>
             </div>
         </Card>
       )
@@ -243,50 +246,57 @@ const ManageStudies: React.FC<{ projectId?: string; studyId?: string }> = ({ pro
                       <p className="text-sm text-nasa-gray-400 mt-1">{study.description}</p>
                   </div>
                   <div className="flex-shrink-0 flex flex-wrap items-center gap-2">
-                      <Button size="sm" variant="secondary" onClick={() => { setEditingStudy(study); setIsStudyModalOpen(true); }}>Edit Info</Button>
+                      <Button size="sm" variant="secondary" onClick={() => { setEditingStudy(study); setIsStudyModalOpen(true); }}>{t('study_settings.edit')}</Button>
                       <Button size="sm" variant="danger" disabled={ratings.some(rating => rating.studyId === study.id)}
-                        onClick={() => deleteStudy(study.id)}>Delete</Button>
+                        onClick={() => deleteStudy(study.id)}>{t('study_settings.delete')}</Button>
                   </div>
               </div>
               
               <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {/* MTEs in Study */}
-                  <div>
-                      <h4 className="text-md font-medium text-nasa-gray-200 mb-2">MTEs ({studyMtes.length})</h4>
-                      <div className="space-y-2">
-                          {studyMtes.map(mte => (
-                              <div key={mte.id} className="p-2 bg-nasa-gray-800 rounded text-sm text-white">[{mte.refNumber}] {mte.name}</div>
-                          ))}
-                          {studyMtes.length === 0 && <p className="text-xs text-nasa-gray-500">No MTEs assigned.</p>}
-                          <Button size="sm" variant="secondary" className="w-full mt-2" onClick={() => setManagingMtesForStudy(study)}>Manage MTEs</Button>
-                      </div>
+                <section className="rounded-lg border border-nasa-gray-700 p-3">
+                  <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+                    <h4 className="font-medium">{t('study_settings.assigned_mtes', { count: studyMtes.length })}</h4>
+                    <Button size="sm" variant="secondary" onClick={() => setManagingMtesForStudy(study)}>
+                      {t('study_settings.manage_mtes')}
+                    </Button>
                   </div>
-                  {/* Evaluators in Study */}
-                  <div>
-                      <h4 className="text-md font-medium text-nasa-gray-200 mb-2">Evaluators ({studyEvaluators.length})</h4>
-                      <div className="space-y-2">
-                          {studyEvaluators.map(evaluator => (
-                              <div key={evaluator.id} className="p-2 bg-nasa-gray-800 rounded text-sm text-white">{evaluator.name}</div>
-                          ))}
-                          {studyEvaluators.length === 0 && <p className="text-xs text-nasa-gray-500">No evaluators assigned.</p>}
-                          <Button size="sm" variant="secondary" className="w-full mt-2" onClick={() => setManagingEvaluatorsForStudy(study)}>Manage Evaluators</Button>
-                      </div>
+                  <ul className="space-y-2">
+                    {studyMtes.map(mte => (
+                      <li key={mte.id} className="rounded bg-nasa-gray-800 p-2 text-sm">
+                        {mte.refNumber && `[${mte.refNumber}] `}{mte.name}
+                      </li>
+                    ))}
+                    {studyMtes.length === 0 && <li className="text-sm text-nasa-gray-400">{t('study_settings.no_mtes')}</li>}
+                  </ul>
+                </section>
+                <section className="rounded-lg border border-nasa-gray-700 p-3">
+                  <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+                    <h4 className="font-medium">{t('study_settings.assigned_evaluators', { count: studyEvaluators.length })}</h4>
+                    <Button size="sm" variant="secondary" onClick={() => setManagingEvaluatorsForStudy(study)}>
+                      {t('admin.manage_evaluators')}
+                    </Button>
                   </div>
+                  <ul className="space-y-2">
+                    {studyEvaluators.map(evaluator => (
+                      <li key={evaluator.id} className="rounded bg-nasa-gray-800 p-2 text-sm">{evaluator.name}</li>
+                    ))}
+                    {studyEvaluators.length === 0 && <li className="text-sm text-nasa-gray-400">{t('study_settings.no_evaluators')}</li>}
+                  </ul>
+                </section>
               </div>
             </div>
           )
         })}
         {studiesInProject.length === 0 && (
             <div className="text-center py-10 text-nasa-gray-500">
-                <h3 className="text-lg font-semibold">No Studies in this Project</h3>
-                <p>Click "Add New Study" to get started.</p>
+                <h3 className="text-lg font-semibold">{t('study_settings.no_studies')}</h3>
             </div>
         )}
       </div>
 
       {/* Modals */}
       {isStudyModalOpen && (
-         <Modal isOpen={true} onClose={() => setIsStudyModalOpen(false)} title={editingStudy ? `Edit Study` : `Add New Study`}>
+         <Modal isOpen={true} onClose={() => setIsStudyModalOpen(false)} title={t(editingStudy ? 'study_settings.edit' : 'projects.new_study')}>
             <StudyForm study={editingStudy} projectId={selectedProjectId} onSave={handleSaveStudy} onCancel={() => setIsStudyModalOpen(false)} />
         </Modal>
       )}
