@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { NavLink, useNavigate } from 'react-router-dom';
+import { NavLink } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../contexts/AppContext';
 import Button from '../ui/Button';
@@ -9,13 +9,11 @@ import { APP_ICON } from '../../assets';
 
 const Header: React.FC = () => {
   const { logout, mode } = useAuth();
-  const navigate = useNavigate();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const { t } = useTranslation();
 
   const handleLogout = () => {
     logout();
-    navigate('/login');
     setIsMenuOpen(false);
   };
 

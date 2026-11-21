@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../contexts/AppContext';
@@ -18,13 +18,23 @@ const GoogleIcon = () => (
 );
 
 const LoginPage: React.FC = () => {
-  const { login } = useAuth();
+  const { login, signInWithGoogle, cloudError } = useAuth();
+  const [connecting, setConnecting] = useState(false);
   const navigate = useNavigate();
   const { t } = useTranslation();
 
-  const handleLogin = (mode: 'demo' | 'local' | 'api') => {
+  const handleLogin = (mode: 'demo' | 'local') => {
     login(mode);
     navigate('/evaluator');
+  };
+
+  const handleGoogleLogin = async () => {
+    setConnecting(true);
+    try {
+      await signInWithGoogle?.();
+    } finally {
+      setConnecting(false);
+    }
   };
 
   return (
@@ -38,29 +48,37 @@ const LoginPage: React.FC = () => {
           <p className="text-nasa-gray-300 mt-2">{t('login.subtitle')}</p>
         </div>
         <div className="bg-nasa-gray-800 p-8 rounded-lg shadow-2xl">
-          <h2 className="text-2xl font-semibold text-white mb-8">{t('login.choose_mode')}</h2>
+          <h2 className="text-2xl font-semibold text-white mb-8">
+            {t(signInWithGoogle ? 'login.cloud_title' : 'login.choose_mode')}
+          </h2>
           <div className="space-y-4">
-            <Button onClick={() => handleLogin('demo')} className="w-full !justify-start !p-4 text-left">
-              <div className="flex flex-col">
-                <span className="font-bold text-base">{t('login.demo_mode')}</span>
-                <span className="text-sm font-normal text-nasa-gray-200">{t('login.demo_mode_desc')}</span>
-              </div>
-            </Button>
-            <Button onClick={() => handleLogin('local')} variant="secondary" className="w-full !justify-start !p-4 text-left">
-              <div className="flex flex-col">
-                <span className="font-bold text-base">{t('login.local_mode')}</span>
-                <span className="text-sm font-normal text-nasa-gray-300">{t('login.local_mode_desc')}</span>
-              </div>
-            </Button>
-            <Button disabled variant="secondary" className="w-full !justify-start !p-4 text-left">
-              <div className="flex items-center">
-                <GoogleIcon />
-                <div className="flex flex-col">
-                  <span className="font-bold text-base">{t('login.cloud_login')}</span>
-                  <span className="text-sm font-normal text-nasa-gray-300">{t('login.cloud_login_desc')}</span>
+            {signInWithGoogle ? (
+              <Button onClick={() => void handleGoogleLogin()} disabled={connecting} variant="secondary" className="w-full !justify-start !p-4 text-left">
+                <div className="flex items-center">
+                  <GoogleIcon />
+                  <div className="flex flex-col">
+                    <span className="font-bold text-base">{t(connecting ? 'cloud.checking_access' : 'login.cloud_login')}</span>
+                    <span className="text-sm font-normal text-nasa-gray-300">{t('login.cloud_login_desc')}</span>
+                  </div>
                 </div>
-              </div>
-            </Button>
+              </Button>
+            ) : (
+              <>
+                <Button onClick={() => handleLogin('demo')} className="w-full !justify-start !p-4 text-left">
+                  <div className="flex flex-col">
+                    <span className="font-bold text-base">{t('login.demo_mode')}</span>
+                    <span className="text-sm font-normal text-nasa-gray-200">{t('login.demo_mode_desc')}</span>
+                  </div>
+                </Button>
+                <Button onClick={() => handleLogin('local')} variant="secondary" className="w-full !justify-start !p-4 text-left">
+                  <div className="flex flex-col">
+                    <span className="font-bold text-base">{t('login.local_mode')}</span>
+                    <span className="text-sm font-normal text-nasa-gray-300">{t('login.local_mode_desc')}</span>
+                  </div>
+                </Button>
+              </>
+            )}
+            {cloudError && <p role="alert" className="text-left text-red-300">{t(`cloud.${cloudError}`)}</p>}
           </div>
         </div>
         <div className="mt-6 flex justify-center items-center">

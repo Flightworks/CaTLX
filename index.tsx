@@ -4,6 +4,8 @@ import ReactDOM from 'react-dom/client';
 import App from './App';
 import { APP_ICON } from './assets';
 import initI18n from './i18n-init';
+import { cloudConfig } from './data/supabase';
+import './index.css';
 
 const rootElement = document.getElementById('root');
 if (!rootElement) {
@@ -23,6 +25,12 @@ if (faviconLink) {
 const root = ReactDOM.createRoot(rootElement);
 
 (async () => {
+  const siteUrl = cloudConfig?.siteUrl;
+  if (siteUrl && window.location.origin !== new URL(siteUrl).origin) {
+    window.location.replace(siteUrl);
+    return;
+  }
+
   await initI18n();
   root.render(
     <React.StrictMode>

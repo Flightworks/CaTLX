@@ -70,14 +70,16 @@ export interface ComputedTLXScore {
   comments?: string;
 }
 
-export interface IDataSource {
+export interface WorkspaceData {
   projects: Project[];
   evaluators: Evaluator[];
   studies: Study[];
   mtes: MTE[];
   ratings: Rating[];
   pairwiseComparisons: PairwiseComparison[];
+}
 
+export interface IDataSource extends WorkspaceData {
   addProject: (project: Omit<Project, 'id' | 'ownerId' | 'memberIds'>, ownerId: string) => void;
   updateProject: (project: Project) => void;
   deleteProject: (id: string) => void;

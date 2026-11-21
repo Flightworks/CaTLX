@@ -8,8 +8,24 @@
     "demo_mode_desc": "Explore with sample data.",
     "local_mode": "Use Local Mode",
     "local_mode_desc": "Save data for offline/cached use.",
-    "cloud_login": "Login (Cloud)",
-    "cloud_login_desc": "Connect to the cloud backend."
+    "cloud_title": "Sign in",
+    "cloud_login": "Sign in with Google",
+    "cloud_login_desc": "Open your studies and assessments."
+  },
+  "cloud": {
+    "preprod": "Preproduction · Use test data only.",
+    "checking_access": "Checking your connection…",
+    "auth_failed": "Google sign-in failed. Please try again.",
+    "access_denied": "This Google account cannot access this CaTLX workspace.",
+    "load_failed": "Could not load data from Supabase. Try signing in again.",
+    "signout_failed": "Could not complete sign-out. Please try again.",
+    "saving": "Saving to Supabase…",
+    "save_error": "Could not confirm the save. Your changes are still in this tab.",
+    "save_conflict": "Another device saved changes. Reload the workspace to avoid overwriting them.",
+    "save_denied": "Supabase denied access. Check your Google account and sign in again.",
+    "retry": "Retry save",
+    "reload": "Reload workspace",
+    "discard_confirm": "Any unsaved changes will be lost. Continue?"
   },
   "header": {
     "evaluations": "Evaluations",

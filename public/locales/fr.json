@@ -7,9 +7,25 @@
     "demo_mode_desc": "Explorer avec des exemples de données.",
     "local_mode": "Utiliser le mode local",
     "local_mode_desc": "Enregistrer les données pour une utilisation hors ligne/en cache.",
-    "cloud_login": "Connexion (Cloud)",
-    "cloud_login_desc": "Se connecter au backend cloud.",
+    "cloud_title": "Connexion",
+    "cloud_login": "Se connecter avec Google",
+    "cloud_login_desc": "Accéder à tes études et évaluations.",
     "language_label": "Langue"
+  },
+  "cloud": {
+    "preprod": "Préproduction · Utilise uniquement des données fictives.",
+    "checking_access": "Vérification de la connexion…",
+    "auth_failed": "La connexion Google a échoué. Réessaie.",
+    "access_denied": "Ce compte Google n’a pas accès à cet espace CaTLX.",
+    "load_failed": "Impossible de charger les données Supabase. Réessaie de te connecter.",
+    "signout_failed": "Impossible de terminer la déconnexion. Réessaie.",
+    "saving": "Enregistrement dans Supabase…",
+    "save_error": "Impossible de confirmer l’enregistrement. Les modifications sont encore dans cet onglet.",
+    "save_conflict": "Un autre appareil a enregistré des modifications. Recharge les données pour éviter de les écraser.",
+    "save_denied": "Supabase a refusé l’accès. Vérifie le compte Google et reconnecte-toi.",
+    "retry": "Réessayer l’enregistrement",
+    "reload": "Recharger les données",
+    "discard_confirm": "Les modifications qui restent à enregistrer seront perdues. Continuer ?"
   },
   "header": {
     "evaluations": "Évaluations",
