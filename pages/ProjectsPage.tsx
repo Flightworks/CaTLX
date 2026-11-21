@@ -1,5 +1,5 @@
 import { useState, type ReactNode } from 'react';
-import { Link, Navigate, NavLink, Route, Routes, useParams, useSearchParams } from 'react-router-dom';
+import { Link, Navigate, NavLink, Route, Routes, useMatch, useParams, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useData } from '../contexts/AppContext';
 import type { Project, Scenario, Study } from '../types';
@@ -20,28 +20,33 @@ const tabClass = ({ isActive }: { isActive: boolean }) => isActive
   ? 'border-b-2 border-indigo-300 px-2.5 py-2 text-sm font-semibold text-foreground'
   : 'border-b-2 border-transparent px-2.5 py-2 text-sm text-nasa-gray-300 hover:text-foreground';
 
-function Breadcrumbs() {
+function Breadcrumbs({ project, study }: { project?: Project; study?: Study }) {
   const { t } = useTranslation();
   return (
-    <nav aria-label={t('projects.path')} className="text-sm text-nasa-gray-300">
-      <Link className="underline" to="/projects?all=1">{t('projects.title')}</Link>
+    <nav aria-label={t('projects.path')} className="flex flex-wrap items-baseline gap-x-2 gap-y-1 text-sm text-nasa-gray-300">
+      <Link className="hover:underline" to="/projects?all=1">{t('projects.title')}</Link>
+      {project && (
+        <>
+          <span aria-hidden="true" className="text-nasa-gray-400">›</span>
+          <Link className="break-words hover:underline" to={projectPath(project.id)}>{project.name}</Link>
+        </>
+      )}
+      {study && (
+        <>
+          <span aria-hidden="true" className="text-nasa-gray-400">›</span>
+          <Link className="break-words hover:underline" to={studyPath(study)}>{study.name}</Link>
+        </>
+      )}
     </nav>
   );
 }
 
-function ActiveProjectHeader({ project, nested = false, action }: { project: Project; nested?: boolean; action?: ReactNode }) {
+function ActiveProjectHeader({ project, action }: { project: Project; action?: ReactNode }) {
   return (
     <header className="flex flex-wrap items-end justify-between gap-3 border-b border-separator pb-2 sm:pb-4">
-      <div className={nested ? 'flex min-w-0 flex-wrap items-baseline gap-x-2 gap-y-1' : 'min-w-0 space-y-1'}>
+      <div className="min-w-0 space-y-1">
         <Breadcrumbs />
-        {nested ? (
-          <>
-            <span aria-hidden="true" className="text-nasa-gray-400">/</span>
-            <Link to={projectPath(project.id)} className="min-w-0 break-words font-semibold tracking-tight hover:underline sm:text-lg">
-              {project.name}
-            </Link>
-          </>
-        ) : <h1 className="break-words text-2xl font-semibold tracking-tight sm:text-3xl">{project.name}</h1>}
+        <h1 className="break-words text-2xl font-semibold tracking-tight sm:text-3xl">{project.name}</h1>
       </div>
       {action}
     </header>
@@ -101,7 +106,7 @@ function ProjectOverview({ project }: { project: Project }) {
         <NavLink end className={tabClass} to={path}>{t('projects.studies')}</NavLink>
         <NavLink className={tabClass} to={`${path}/catalog`}>{t('admin.mte_catalog')}</NavLink>
         <NavLink className={tabClass} to={`${path}/evaluators`}>{t('header.evaluators')}</NavLink>
-        <NavLink className={tabClass} to={`${path}/scenarios`}>{t('projects.scenarios')}</NavLink>
+        <NavLink className={tabClass} to={`${path}/scenarios`}>{t('projects.scenarios_by_study')}</NavLink>
         <NavLink className={tabClass} to={`${path}/results`}>{t('projects.results')}</NavLink>
       </nav>
       <Routes>
@@ -212,47 +217,58 @@ function ProjectScenarios({ projectId }: { projectId: string }) {
   const projectStudies = studies.filter(study => study.projectId === projectId);
 
   return (
-    <section className="space-y-4">
-      <h2 className="text-xl font-bold">{t('projects.scenarios')}</h2>
+    <section className="space-y-3">
+      <div>
+        <h2 className="text-lg font-semibold">{t('projects.scenarios_by_study')}</h2>
+        <p className="text-sm text-nasa-gray-300">{t('projects.scenario_scope')}</p>
+      </div>
       {projectStudies.length ? projectStudies.map(study => (
-        <Scenarios key={study.id} study={study} title={study.name} />
+        <Scenarios key={study.id} study={study} showStudy />
       )) : <Card><p>{t('study_settings.no_studies')}</p></Card>}
     </section>
   );
 }
 
-function Scenarios({ study, title }: { study: Study; title?: string }) {
+function Scenarios({ study, showStudy = false }: { study: Study; showStudy?: boolean }) {
   const { t } = useTranslation();
   const { scenarios = [], archiveScenario } = useData();
   const [editor, setEditor] = useState<{ scenario?: Scenario } | null>(null);
   const [error, setError] = useState(false);
   const entries = scenarios.filter(scenario => scenario.studyId === study.id);
+  const studyHeading = showStudy && (
+    <div>
+      <p className="text-xs font-medium text-nasa-gray-400">{t('evaluator.study_label')}</p>
+      <h3 className="font-semibold"><Link className="hover:underline" to={studyPath(study)}>{study.name}</Link></h3>
+    </div>
+  );
   if (editor) return (
     <div className="space-y-2">
-      {title && <h3 className="font-semibold">{title}</h3>}
+      {studyHeading}
       <ScenarioForm study={study} scenario={editor.scenario} onClose={() => setEditor(null)} />
     </div>
   );
-  const Heading = title ? 'h3' : 'h2';
   return (
-    <Card>
-      <div className="flex flex-wrap items-center gap-3 justify-between mb-4">
-        <Heading className={title ? "font-semibold" : "text-xl font-bold"}>{title ?? t('projects.scenarios')}</Heading>
-        <Button onClick={() => setEditor({})}>{t('projects.new_scenario')}</Button>
+    <section className="overflow-hidden rounded-lg border border-separator bg-nasa-gray-800">
+      <div className="flex flex-wrap items-center justify-between gap-2 px-3 py-2.5 sm:px-4">
+        {studyHeading || <h2 className="font-semibold">{t('header.study_scenarios')}</h2>}
+        <Button size="sm" onClick={() => setEditor({})}>{t('projects.new_scenario')}</Button>
       </div>
-      {error && <p role="alert" className="text-danger-ink">{t('evaluator.error_submitting')}</p>}
+      {error && <p role="alert" className="px-4 pb-2 text-sm text-danger-ink">{t('evaluator.error_submitting')}</p>}
       {entries.length ? (
-        <ul className="space-y-3">
+        <ul className="divide-y divide-separator border-t border-separator bg-nasa-gray-900">
           {entries.map(scenario => (
-            <li key={scenario.id} className="rounded-md bg-nasa-gray-900 p-3 flex flex-wrap justify-between items-center gap-3">
-              <div>
-                <Link className="font-semibold underline" to={scenarioPath(study, scenario.id)}>{scenario.name}</Link>
-                <p className="text-sm text-nasa-gray-300">
-                  {t('projects.task_count', { count: scenario.mteIds.length })}
-                  {scenario.archived && ` · ${t('projects.archived')}`}
-                </p>
+            <li key={scenario.id} className="flex flex-wrap items-center justify-between gap-2 px-3 py-2.5 sm:px-4">
+              <div className="flex min-w-0 items-center gap-2">
+                <span aria-hidden="true" className="h-2.5 w-2.5 shrink-0 rounded-bl border-b border-l border-nasa-gray-600" />
+                <div className="min-w-0">
+                  <Link className="break-words text-sm font-medium text-accent-ink hover:underline" to={scenarioPath(study, scenario.id)}>{scenario.name}</Link>
+                  <p className="text-xs text-nasa-gray-300">
+                    {t('projects.task_count', { count: scenario.mteIds.length })}
+                    {scenario.archived && ` · ${t('projects.archived')}`}
+                  </p>
+                </div>
               </div>
-              <div className="flex gap-2">
+              <div className="flex flex-wrap gap-1.5">
                 {!scenario.archived && <Button size="sm" variant="secondary" onClick={() => setEditor({ scenario })}>
                   {t('projects.edit_scenario')}
                 </Button>}
@@ -264,25 +280,17 @@ function Scenarios({ study, title }: { study: Study; title?: string }) {
             </li>
           ))}
         </ul>
-      ) : <p>{t('projects.no_scenarios')}</p>}
-    </Card>
+      ) : <p className="border-t border-separator px-4 py-3 text-sm text-nasa-gray-300">{t('projects.no_scenarios')}</p>}
+    </section>
   );
-}
-
-function StudyTasks({ study, evaluatorId }: { study: Study; evaluatorId: string }) {
-  const { t } = useTranslation();
-  const { scenarios = [] } = useData();
-  const { scenarioId } = useParams();
-  const scenario = scenarioId ? scenarios.find(entry => entry.id === scenarioId && entry.studyId === study.id) : undefined;
-
-  if (scenarioId && !scenario) return <Card><p>{t('projects.not_found')}</p></Card>;
-  return <AssessmentRunner key={`${scenario?.id ?? ''}/${evaluatorId}`} study={study} scenario={scenario} evaluatorId={evaluatorId} />;
 }
 
 function StudyOverview({ project, study }: { project: Project; study: Study }) {
   const { t } = useTranslation();
   const { evaluators, scenarios = [] } = useData();
   const activeScenarios = scenarios.filter(scenario => scenario.studyId === study.id && !scenario.archived);
+  const scenarioMatch = useMatch('/projects/:projectId/studies/:studyId/scenarios/:scenarioId');
+  const scenario = scenarios.find(entry => entry.studyId === study.id && entry.id === scenarioMatch?.params.scenarioId);
   const [pickedEvaluator, setPickedEvaluator] = useState('');
   const available = evaluators.filter(evaluator => study.evaluatorIds.includes(evaluator.id));
   const evaluatorId = available.find(evaluator => evaluator.id === pickedEvaluator)?.id ??
@@ -302,16 +310,25 @@ function StudyOverview({ project, study }: { project: Project; study: Study }) {
           {available.map(evaluator => <option key={evaluator.id} value={evaluator.id}>{evaluator.name}</option>)}
         </Select></div>
       ) : <Link className="underline" to={`${path}/settings`}>{t('projects.assign_evaluators')}</Link>}
-      <StudyTasks study={study} evaluatorId={evaluatorId} />
+      <AssessmentRunner key={`${scenario?.id ?? ''}/${evaluatorId}`} study={study} scenario={scenario} evaluatorId={evaluatorId} />
     </div>
   );
   return (
-    <div className="space-y-5">
-      <ActiveProjectHeader project={project} nested />
-      <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">{study.name}</h1>
+    <div className="space-y-3 sm:space-y-4">
+      <header className="space-y-1.5 border-b border-separator pb-2.5">
+        <Breadcrumbs project={project} study={scenario ? study : undefined} />
+        <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+          <span className={`shrink-0 rounded border px-2 py-0.5 text-xs font-medium ${scenario
+            ? 'border-indigo-400/30 bg-indigo-500/10 text-accent-ink'
+            : 'border-separator bg-nasa-gray-800 text-nasa-gray-300'}`}>
+            {t(scenario ? 'projects.scenario' : 'evaluator.study_label')}
+          </span>
+          <h1 className="min-w-0 break-words text-2xl font-semibold tracking-tight sm:text-3xl">{scenario?.name ?? study.name}</h1>
+        </div>
+      </header>
       <nav className="flex flex-wrap gap-x-2 border-b border-separator md:hidden">
         <NavLink end className={tabClass} to={path}>{t('projects.study_tasks')}</NavLink>
-        <NavLink className={tabClass} to={`${path}/scenarios`}>{t('projects.scenarios')}</NavLink>
+        <NavLink className={tabClass} to={`${path}/scenarios`}>{t('header.study_scenarios')}</NavLink>
         <NavLink className={tabClass} to={`${path}/results`}>{t('projects.results')}</NavLink>
         <NavLink className={tabClass} to={`${path}/settings`}>{t('projects.study_settings')}</NavLink>
       </nav>
@@ -322,10 +339,10 @@ function StudyOverview({ project, study }: { project: Project; study: Study }) {
         <Route index element={(
           <div className="space-y-4">
             {activeScenarios.length > 0 && (
-              <section className="flex flex-wrap items-center gap-2 border-b border-separator pb-3">
-                <h2 className="mr-2 text-sm font-medium text-nasa-gray-300">{t('projects.scenarios')}</h2>
+              <section className="flex flex-wrap items-center gap-1.5 border-b border-separator pb-2">
+                <h2 className="mr-1 text-xs font-semibold text-nasa-gray-300">{t('header.study_scenarios')}</h2>
                   {activeScenarios.map(scenario => (
-                    <Link key={scenario.id} className="rounded border border-separator px-2.5 py-1.5 text-sm text-accent-ink hover:bg-hover-surface"
+                    <Link key={scenario.id} className="rounded-md border border-separator px-2 py-1 text-sm text-accent-ink hover:bg-hover-surface"
                       to={scenarioPath(study, scenario.id)}>
                       {scenario.name} · {t('projects.task_count', { count: scenario.mteIds.length })}
                     </Link>
@@ -335,7 +352,7 @@ function StudyOverview({ project, study }: { project: Project; study: Study }) {
             {assessment}
           </div>
         )} />
-        <Route path="scenarios/:scenarioId" element={assessment} />
+        <Route path="scenarios/:scenarioId" element={scenario ? assessment : <Card><p>{t('projects.not_found')}</p></Card>} />
         <Route path="*" element={<Card><p>{t('projects.not_found')}</p></Card>} />
       </Routes>
     </div>

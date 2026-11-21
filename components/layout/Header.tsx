@@ -36,7 +36,7 @@ function Brand({ onClick, compact = false }: { onClick?: () => void; compact?: b
   );
 }
 
-type NavigationItem = { to: string; label: string; path: string; end?: boolean };
+type NavigationItem = { to: string; label: string; path: string; end?: boolean; currentBranch?: boolean };
 
 function Navigation({ close, collapsed = false, toggle }: { close?: () => void; collapsed?: boolean; toggle?: () => void }) {
   const { mode, logout, offlineEnrollment } = useAuth();
@@ -49,10 +49,10 @@ function Navigation({ close, collapsed = false, toggle }: { close?: () => void; 
   const projectPath = project ? `/projects/${encodeURIComponent(project.id)}` : '';
   const studyPath = study ? `${projectPath}/studies/${encodeURIComponent(study.id)}` : '';
   const projectLinks: NavigationItem[] = [
-    { to: projectPath, label: 'projects.studies', path: 'M7 4h10v14H7zM4 7v14h10M10 8h4m-4 4h4', end: true },
+    { to: projectPath, label: 'projects.studies', path: 'M7 4h10v14H7zM4 7v14h10M10 8h4m-4 4h4', end: true, currentBranch: !!study },
     { to: `${projectPath}/catalog`, label: 'admin.mte_catalog', path: catalogIcon },
     { to: `${projectPath}/evaluators`, label: 'header.evaluators', path: 'M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2m20 0v-2a4 4 0 0 0-3-4M9 3a4 4 0 1 0 0 8 4 4 0 0 0 0-8m8 0a4 4 0 0 1 0 8' },
-    { to: `${projectPath}/scenarios`, label: 'projects.scenarios', path: 'M3 4h6v5H3zM15 10h6v5h-6zM3 16h6v5H3zM6 9v7m0-4h9' },
+    { to: `${projectPath}/scenarios`, label: 'projects.scenarios_by_study', path: 'M3 4h6v5H3zM15 10h6v5h-6zM3 16h6v5H3zM6 9v7m0-4h9' },
     { to: `${projectPath}/results`, label: 'header.project_results', path: 'M3 4v16h18M8 16v-4m5 4V7m5 9v-6' },
   ];
   const studyLinks: NavigationItem[] = [
@@ -67,17 +67,23 @@ function Navigation({ close, collapsed = false, toggle }: { close?: () => void; 
     const label = t(item.label);
     return (
       <NavLink key={item.to} to={item.to} end={item.end} onClick={close}
-        title={collapsed ? label : undefined} className={`workspace-nav-link ${nested ? 'workspace-nav-child' : ''}`}>
+        title={collapsed ? label : undefined} data-current-branch={item.currentBranch || undefined}
+        className={`workspace-nav-link ${nested ? 'workspace-nav-child' : ''}`}>
         <Icon path={item.path} />
         <span className={collapsed ? 'sr-only' : undefined}>{label}</span>
       </NavLink>
     );
   }
 
-  function renderSection(name: string, items: NavigationItem[]) {
+  function renderSection(name: string, items: NavigationItem[], parentLabel?: string) {
     return (
       <div role="group" aria-label={name} className="workspace-nav-section">
-        {!collapsed && <p aria-hidden="true" title={name} className="truncate px-2.5 pb-1 text-xs font-semibold text-nasa-gray-400">{name}</p>}
+        {!collapsed && (
+          <div aria-hidden="true" className="px-2.5 pb-1 text-xs">
+            {parentLabel && <p className="font-medium text-nasa-gray-400">{parentLabel}</p>}
+            <p title={name} className={`truncate font-semibold ${parentLabel ? 'text-foreground' : 'text-nasa-gray-400'}`}>{name}</p>
+          </div>
+        )}
         {items.map(item => renderLink(item, true))}
       </div>
     );
@@ -112,7 +118,7 @@ function Navigation({ close, collapsed = false, toggle }: { close?: () => void; 
         {renderLink({ ...projectLink, end: true })}
         {renderLink({ to: '/catalog', label: 'catalog.global_title', path: 'M4 5h5v15H4zM9 5h5v15H9zm5 2 4-2 4 14-4 1zM4 9h10m-10 7h10' })}
         {project && renderSection(t('header.project_section'), projectLinks)}
-        {study && renderSection(study.name, studyLinks)}
+        {study && renderSection(study.name, studyLinks, t('evaluator.study_label'))}
         <div className="workspace-nav-section">
           {links.map(item => renderLink(item))}
         </div>

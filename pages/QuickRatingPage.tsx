@@ -3,10 +3,8 @@ import React, { useState, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { TLXDimension } from '../types';
 import { TLX_DIMENSIONS_INFO, PAIRWISE_COMBINATIONS, DEFAULT_WEIGHTS } from '../constants';
-import TlxSlider from '../components/ui/TlxSlider';
+import ExpressTlxControl from '../components/ui/ExpressTlxControl';
 import Button from '../components/ui/Button';
-import Card from '../components/ui/Card';
-import PairwiseWeightsDisplay from '../components/ui/PairwiseWeightsDisplay';
 import { downloadCsv } from '../data/csv';
 import ToggleSwitch from '../components/ui/ToggleSwitch';
 
@@ -14,6 +12,8 @@ const initialScores = TLX_DIMENSIONS_INFO.reduce((acc, dim) => {
     acc[dim.id] = 50;
     return acc;
 }, {} as Record<TLXDimension, number>);
+
+const dimensionKey = (id: TLXDimension) => id.toLowerCase().replaceAll(' ', '_');
 
 const getScoreColor = (score: number): string => {
     const green = [74, 222, 128];
@@ -77,62 +77,51 @@ const PairwiseComparisonView: React.FC<{
 
     if (!dimensionA || !dimensionB) return null;
 
-    const DimensionCard: React.FC<{ dimension: typeof dimensionA, onSelect: () => void }> = ({ dimension, onSelect }) => (
-        <div
-            onClick={onSelect}
-            className="w-full sm:w-1/2 p-6 bg-nasa-gray-900 rounded-lg cursor-pointer transition-all duration-200 ease-in-out hover:bg-nasa-gray-700 hover:shadow-2xl hover:scale-105 border-2 border-nasa-gray-700 hover:border-nasa-blue"
-            role="button"
-            tabIndex={0}
-            onKeyDown={(e) => {
-                if (e.key === 'Enter' || e.key === ' ') {
-                    e.preventDefault();
-                    onSelect();
-                }
-            }}
-        >
-            <h3 className="text-xl font-bold text-center text-foreground">{t(`tlx_dimensions.${dimension.id.toLowerCase().replaceAll(' ', '_')}.title`)}</h3>
-            <p className="text-sm text-nasa-gray-400 mt-2 text-center">{t(`tlx_dimensions.${dimension.id.toLowerCase().replaceAll(' ', '_')}.description`)}</p>
-        </div>
-    );
-
     return (
-        <Card title={t('evaluator.determine_weights')}>
-            <div className="space-y-6">
-                <div>
-                    <p className="text-nasa-gray-300 mb-4 text-center">{t('evaluator.weights_description')}</p>
-                </div>
-
-                <div>
-                    <div className="flex justify-between mb-1">
-                        <span className="text-base font-medium text-accent-ink">{t('evaluator.comparison', { current: currentPairIndex + 1, total: PAIRWISE_COMBINATIONS.length })}</span>
-                    </div>
-                    <div className="w-full bg-nasa-gray-700 rounded-full h-2.5">
-                        <div className="bg-nasa-blue h-2.5 rounded-full transition-all duration-300 ease-in-out" style={{ width: `${progress}%` }}></div>
-                    </div>
-                </div>
-
-                <div className="text-center">
-                    <h2 className="text-lg font-semibold text-foreground mb-4">{t('evaluator.which_workload')}</h2>
-                    <div className="flex flex-col sm:flex-row items-stretch justify-center gap-4">
-                        <DimensionCard dimension={dimensionA} onSelect={() => handleSelect(dimensionA.id)} />
-                        <DimensionCard dimension={dimensionB} onSelect={() => handleSelect(dimensionB.id)} />
-                    </div>
+        <section data-workspace-surface className="mx-auto max-w-3xl space-y-4 rounded-lg border border-separator bg-nasa-gray-800 p-4 sm:p-5">
+            <header className="space-y-1">
+                <h1 className="text-xl font-semibold tracking-tight text-foreground">{t('evaluator.determine_weights')}</h1>
+                <p className="text-sm leading-relaxed text-nasa-gray-400">{t('evaluator.weights_description')}</p>
+            </header>
+            <div className="space-y-1.5">
+                <p className="text-xs font-medium tabular-nums text-accent-ink" aria-live="polite">
+                    {t('evaluator.comparison', { current: currentPairIndex + 1, total: PAIRWISE_COMBINATIONS.length })}
+                </p>
+                <div className="h-1 overflow-hidden rounded-full bg-nasa-gray-700" aria-hidden="true">
+                    <div className="h-full rounded-full bg-accent-ink transition-[width] motion-reduce:transition-none" style={{ width: `${progress}%` }} />
                 </div>
             </div>
-
-            <div className="flex justify-center mt-8 pt-4 border-t border-nasa-gray-700">
-                <Button onClick={onCancel} variant="secondary" className="w-full sm:w-auto">{t('evaluator.cancel')}</Button>
+            <div className="space-y-2">
+                <h2 className="text-sm font-semibold text-foreground">{t('evaluator.which_workload')}</h2>
+                <div className="grid gap-2 sm:grid-cols-2">
+                    {[dimensionA, dimensionB].map(({ id }, position) => (
+                        <button
+                            key={position}
+                            type="button"
+                            className="group rounded-md border border-separator bg-nasa-gray-900 px-3 py-2.5 text-left transition-colors hover:border-accent-ink hover:bg-hover-surface focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-accent-ink"
+                            aria-labelledby={`quick-pair-${position}-title`}
+                            aria-describedby={`quick-pair-${position}-description`}
+                            onClick={() => handleSelect(id)}
+                        >
+                            <span id={`quick-pair-${position}-title`} className="block text-sm font-semibold text-foreground group-hover:text-accent-ink">
+                                {t(`tlx_dimensions.${dimensionKey(id)}.title`)}
+                            </span>
+                            <span id={`quick-pair-${position}-description`} className="mt-1 block text-xs leading-relaxed text-nasa-gray-400">
+                                {t(`tlx_dimensions.${dimensionKey(id)}.description`)}
+                            </span>
+                        </button>
+                    ))}
+                </div>
             </div>
-        </Card>
+            <div className="flex justify-end">
+                <Button onClick={onCancel} variant="secondary" size="sm">{t('evaluator.cancel')}</Button>
+            </div>
+        </section>
     );
 };
 
 const QuickRatingPage: React.FC = () => {
     const { t } = useTranslation();
-
-    const getDimensionKey = (id: string) => {
-        return id.toLowerCase().replace(/ /g, '_');
-    };
 
     const [scores, setScores] = useState<Record<TLXDimension, number>>(initialScores);
     const [weights, setWeights] = useState<Record<TLXDimension, number>>(DEFAULT_WEIGHTS);
@@ -167,109 +156,95 @@ const QuickRatingPage: React.FC = () => {
         return <PairwiseComparisonView onSubmit={handlePairwiseSubmit} onCancel={() => setView('rating')} />;
     }
 
+    function exportRating() {
+        const activeWeights = isWeighted ? weights : DEFAULT_WEIGHTS;
+        downloadCsv('catlx-quick-rating.csv', [
+            [t('quick_rating.title'), t('evaluator.raw_scores'), t('evaluator.weights')],
+            ...TLX_DIMENSIONS_INFO.map(({ id }) => [
+                t(`tlx_dimensions.${dimensionKey(id)}.title`), scores[id], activeWeights[id],
+            ]),
+            [t('evaluator.total_score'), totalWeightedScore.toFixed(2), ''],
+        ]);
+    }
+
     return (
-        <div className="space-y-6">
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                <div>
-                    <h1 className="text-2xl font-bold text-foreground">{t('quick_rating.title')}</h1>
-                    <p className="text-nasa-gray-400">{t('quick_rating.description')}</p>
-                </div>
-                <div className="flex items-center gap-4">
-                    <div className="text-right">
-                        <span className="text-sm text-nasa-gray-400 block">{t('evaluator.overall_workload')}</span>
-                        <span className="text-3xl font-bold" data-score-tone style={{ color: getScoreColor(totalWeightedScore) }}>
-                            {totalWeightedScore.toFixed(2)}
-                        </span>
-                        <Button onClick={() => downloadCsv('catlx-quick-rating.csv', [
-                            [t('quick_rating.title'), t('evaluator.raw_scores'), t('evaluator.weights')],
-                            ...TLX_DIMENSIONS_INFO.map(dim => [
-                                t(`tlx_dimensions.${getDimensionKey(dim.id)}.title`), scores[dim.id],
-                                (isWeighted ? weights : DEFAULT_WEIGHTS)[dim.id],
-                            ]),
-                            [t('evaluator.total_score'), totalWeightedScore.toFixed(2), ''],
-                        ])} variant="secondary" size="sm" className="mt-2">
-                            {t('quick_rating.export_csv')}
-                        </Button>
-                    </div>
-                </div>
-            </div>
+        <div className="w-full max-w-5xl space-y-4">
+            <header className="space-y-1">
+                <h1 className="text-2xl font-semibold tracking-tight text-foreground">{t('quick_rating.title')}</h1>
+                <p className="text-sm text-nasa-gray-400">{t('quick_rating.description')}</p>
+            </header>
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <div className="lg:col-span-2 space-y-6">
-                    <Card>
-                        <div className="grid grid-cols-1 gap-6">
-                            {TLX_DIMENSIONS_INFO.map(dim => (
-                                <TlxSlider
-                                    key={dim.id}
-                                    title={t(`tlx_dimensions.${getDimensionKey(dim.id)}.title`)}
-                                    description={t(`tlx_dimensions.${getDimensionKey(dim.id)}.description`)}
-                                    lowAnchor={t(`tlx_dimensions.${getDimensionKey(dim.id)}.low_anchor`)}
-                                    highAnchor={t(`tlx_dimensions.${getDimensionKey(dim.id)}.high_anchor`)}
-                                    value={scores[dim.id]}
-                                    onChange={(val) => handleScoreChange(dim.id, val)}
-                                    compact={true}
-                                />
-                            ))}
-                        </div>
-                    </Card>
-                </div>
+            <div className="grid items-start gap-3 lg:grid-cols-[minmax(0,1fr)_17rem]">
+                <fieldset className="grid min-w-0 gap-px overflow-hidden rounded-lg border border-separator bg-separator min-[320px]:grid-cols-2">
+                    <legend className="sr-only">{t('quick_rating.title')}</legend>
+                    {TLX_DIMENSIONS_INFO.map(({ id }) => {
+                        const key = `tlx_dimensions.${dimensionKey(id)}`;
+                        return (
+                            <ExpressTlxControl
+                                key={id}
+                                title={t(`${key}.title`)}
+                                lowAnchor={t(`${key}.low_anchor`)}
+                                highAnchor={t(`${key}.high_anchor`)}
+                                value={scores[id]}
+                                onChange={value => handleScoreChange(id, value)}
+                            />
+                        );
+                    })}
+                </fieldset>
 
-                <div className="space-y-6">
-                    <Card title={t('evaluator.weights')}>
-                        <div className="space-y-4">
-                            <div className="flex justify-between items-center">
-                                <span className="text-foreground font-medium">{isWeighted ? t('evaluator.weighted') : t('evaluator.unweighted')}</span>
-                                <ToggleSwitch
-                                    label=""
-                                    options={[
-                                        { value: 'unweighted', label: t('evaluator.unweighted') },
-                                        { value: 'weighted', label: t('evaluator.weighted') },
-                                    ]}
-                                    selectedValue={isWeighted ? 'weighted' : 'unweighted'}
-                                    onChange={(val) => setIsWeighted(val === 'weighted')}
-                                />
+                <section data-workspace-surface aria-labelledby="quick-rating-result"
+                    className="min-w-0 rounded-lg border border-separator bg-nasa-gray-800">
+                    <div className="flex flex-wrap items-center justify-between gap-2 p-3 lg:block lg:space-y-2.5">
+                        <div>
+                            <h2 id="quick-rating-result" className="text-sm font-medium text-nasa-gray-400">{t('evaluator.overall_workload')}</h2>
+                            <div className="mt-1 flex items-baseline gap-1.5">
+                                <output className="text-3xl font-semibold leading-none tracking-tight tabular-nums"
+                                    data-score-tone style={{ color: getScoreColor(totalWeightedScore) }}>
+                                    {totalWeightedScore.toFixed(2)}
+                                </output>
+                                <span className="text-xs text-nasa-gray-400">/ 100</span>
                             </div>
+                        </div>
+                        <Button onClick={exportRating} variant="secondary" size="sm">{t('quick_rating.export_csv')}</Button>
+                    </div>
 
-                            <PairwiseWeightsDisplay weights={isWeighted ? weights : DEFAULT_WEIGHTS} isWeighted={isWeighted} />
+                    <div className="space-y-2 border-t border-separator p-3">
+                        <ToggleSwitch
+                            label={t('evaluator.weights')}
+                            options={[
+                                { value: 'unweighted', label: t('evaluator.unweighted') },
+                                { value: 'weighted', label: t('evaluator.weighted') },
+                            ]}
+                            selectedValue={isWeighted ? 'weighted' : 'unweighted'}
+                            onChange={value => setIsWeighted(value === 'weighted')}
+                        />
 
-                            <Button
-                                onClick={() => setView('pairwise')}
-                                variant="secondary"
-                                className="w-full"
-                            >
+                        {isWeighted && (
+                            <dl className="space-y-1 rounded-md bg-nasa-gray-900 px-2.5 py-2 text-xs">
+                                {TLX_DIMENSIONS_INFO.map(({ id }) => (
+                                    <div key={id} className="flex items-baseline justify-between gap-2">
+                                        <dt className="text-nasa-gray-300">{t(`tlx_dimensions.${dimensionKey(id)}.title`)}</dt>
+                                        <dd className="font-semibold tabular-nums text-foreground">{weights[id]}</dd>
+                                    </div>
+                                ))}
+                            </dl>
+                        )}
+
+                        <div className="flex flex-wrap gap-2">
+                            <Button variant="secondary" size="sm" onClick={() => setView('pairwise')}>
                                 {t('evaluator.determine_weights')}
                             </Button>
-
                             {isWeighted && (
-                                <Button
-                                    onClick={() => {
-                                        setWeights(DEFAULT_WEIGHTS);
-                                        setIsWeighted(false);
-                                    }}
-                                    variant="danger"
-                                    className="w-full"
-                                >
+                                <Button variant="secondary" size="sm" onClick={() => {
+                                    setWeights(DEFAULT_WEIGHTS);
+                                    setIsWeighted(false);
+                                }}>
                                     {t('evaluator.reset_weights')}
                                 </Button>
                             )}
                         </div>
-                    </Card>
-
-                    <Card title={t('evaluator.summary')}>
-                        <div className="space-y-2">
-                            {TLX_DIMENSIONS_INFO.map(dim => (
-                                <div key={dim.id} className="flex justify-between text-sm">
-                                    <span className="text-nasa-gray-400">{t(`tlx_dimensions.${getDimensionKey(dim.id)}.title`)}</span>
-                                    <span className="font-mono font-semibold text-foreground">{scores[dim.id]}</span>
-                                </div>
-                            ))}
-                            <div className="pt-4 border-t border-nasa-gray-700 flex justify-between items-center mt-4">
-                                <span className="font-bold text-foreground">{t('evaluator.total_score')}</span>
-                                <span className="font-bold text-xl" data-score-tone style={{ color: getScoreColor(totalWeightedScore) }}>{totalWeightedScore.toFixed(2)}</span>
-                            </div>
-                        </div>
-                    </Card>
-                </div>
+                    </div>
+                </section>
             </div>
         </div>
     );

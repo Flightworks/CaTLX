@@ -167,6 +167,7 @@
 
 .workspace-icon-button { justify-content: center; width: 2.5rem; }
 .workspace-nav-link:hover, .workspace-icon-button:hover { background: rgb(var(--hover-surface)); color: rgb(var(--foreground)); }
+.workspace-nav-link[data-current-branch="true"] { color: var(--workspace-active-text); }
 .workspace-nav-link[aria-current="page"] { background: var(--workspace-active); color: var(--workspace-active-text); }
 .workspace-nav-link:focus-visible, .workspace-icon-button:focus-visible {
   outline: 2px solid var(--workspace-focus);

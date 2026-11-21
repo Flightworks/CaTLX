@@ -313,7 +313,7 @@ export function AssessmentRunner({ study, scenario, evaluatorId }: {
     }
 
     return (
-        <Card title={scenario?.name ?? t('projects.study_tasks')}>
+        <Card title={t(scenario ? 'projects.scenario_order' : 'projects.study_tasks')}>
             <div className="space-y-4">
                 <div className="flex flex-wrap items-center justify-between gap-3">
                     <p>{t('projects.progress', {

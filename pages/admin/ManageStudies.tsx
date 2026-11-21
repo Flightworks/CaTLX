@@ -6,6 +6,7 @@ import { Study, MTE, Evaluator } from '../../types';
 import Card from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
 import Modal from '../../components/ui/Modal';
+import { studyPath } from '../projectPaths';
 
 
 const ManageStudyMTEsModal: React.FC<{
@@ -178,9 +179,11 @@ const StudyForm: React.FC<{
 
 const ManageStudies: React.FC<{ projectId?: string; studyId?: string }> = ({ projectId, studyId }) => {
   const { t, i18n } = useTranslation();
-  const { studies, mtes, ratings, evaluators, addStudy, updateStudy, deleteStudy } = useData();
+  const { studies, mtes, ratings, evaluators, scenarios, addStudy, updateStudy, deleteStudy } = useData();
   const session = useSession();
   const selectedProjectId = projectId ?? session.selectedProjectId;
+  const showStudyList = Boolean(projectId && !studyId);
+  const Panel = showStudyList ? 'section' : Card;
     
   const [isStudyModalOpen, setIsStudyModalOpen] = useState(false);
   const [managingMtesForStudy, setManagingMtesForStudy] = useState<Study | null>(null);
@@ -216,27 +219,31 @@ const ManageStudies: React.FC<{ projectId?: string; studyId?: string }> = ({ pro
   }
 
   return (
-    <Card>
-      <div className="flex justify-between items-center mb-4">
-        <h2 className="text-xl font-bold">{t(studyId ? 'projects.study_settings' : 'admin.manage_studies')}</h2>
-        {!studyId && <Button onClick={() => { setEditingStudy(null); setIsStudyModalOpen(true); }}>{t('projects.new_study')}</Button>}
+    <Panel>
+      <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+        <h2 className="text-lg font-semibold">{t(studyId ? 'projects.study_settings' : showStudyList ? 'projects.studies' : 'admin.manage_studies')}</h2>
+        {!studyId && <Button size="sm" onClick={() => { setEditingStudy(null); setIsStudyModalOpen(true); }}>{t('projects.new_study')}</Button>}
       </div>
-      <div className="space-y-2">
+      <div className={showStudyList ? 'divide-y divide-separator overflow-hidden rounded-lg border border-separator bg-nasa-gray-800' : 'space-y-2'}>
         {studiesInProject.map((study) => {
           const studyMtes = study.mteIds.map(id => mtes.find(m => m.id === id)).filter((m): m is MTE => !!m);
-          const studyEvaluators = study.evaluatorIds.map(id => evaluators.find(e => e.id === id)).filter((e): e is Evaluator => !!e);
-          if (projectId && !studyId) {
+          if (showStudyList) {
+            const scenarioCount = (scenarios ?? []).filter(entry => entry.studyId === study.id && !entry.archived).length;
             return (
-              <Link key={study.id} className="flex flex-wrap justify-between items-center gap-3 rounded-md border border-separator px-4 py-3 hover:bg-hover-surface"
-                to={`/projects/${encodeURIComponent(projectId)}/studies/${encodeURIComponent(study.id)}`}>
-                <div>
-                  <h3 className="font-semibold text-lg">{study.name}</h3>
-                  <p className="text-sm text-nasa-gray-300">{t('projects.task_count', { count: studyMtes.length })}</p>
+              <Link key={study.id} className="flex items-center justify-between gap-3 px-3 py-2.5 hover:bg-hover-surface focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-accent-ink sm:px-4"
+                to={studyPath(study)}>
+                <div className="min-w-0">
+                  <h3 className="break-words text-sm font-semibold sm:text-base">{study.name}</h3>
+                  <p className="text-xs text-nasa-gray-300">
+                    {t('projects.task_count', { count: studyMtes.length })}
+                    {scenarioCount > 0 && ` · ${t('catalog.scenario_count', { count: scenarioCount })}`}
+                  </p>
                 </div>
-                <span className="text-sm underline">{t('projects.open_study')}</span>
+                <span aria-hidden="true" className="text-xl leading-none text-nasa-gray-400">›</span>
               </Link>
             );
           }
+          const studyEvaluators = study.evaluatorIds.map(id => evaluators.find(e => e.id === id)).filter((e): e is Evaluator => !!e);
           return (
             <div key={study.id} className="p-4 bg-nasa-gray-900 rounded-lg border border-nasa-gray-700">
               <div className="flex flex-col sm:flex-row justify-between items-start gap-2">
@@ -314,7 +321,7 @@ const ManageStudies: React.FC<{ projectId?: string; studyId?: string }> = ({ pro
             onClose={() => setManagingEvaluatorsForStudy(null)}
         />
       )}
-    </Card>
+    </Panel>
   );
 };
 

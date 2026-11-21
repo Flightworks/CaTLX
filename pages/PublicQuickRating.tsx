@@ -8,20 +8,20 @@ import { APP_ICON } from '../assets';
 export default function PublicQuickRating() {
   const { t } = useTranslation();
   return (
-    <div className="min-h-screen bg-nasa-gray-900">
-      <header className="bg-nasa-gray-800">
-        <div className="container mx-auto px-4 py-4 flex flex-wrap items-center justify-between gap-3">
-          <Link to="/" className="inline-flex items-center gap-2 font-bold">
-            <img src={APP_ICON} alt="" className="w-8 h-8 rounded-lg" /> CaTLX
+    <div className="workspace-shell min-h-screen">
+      <header className="border-b border-separator bg-nasa-gray-800">
+        <div className="mx-auto flex max-w-[68rem] flex-wrap items-center justify-between gap-x-3 gap-y-2 px-4 py-2.5 sm:px-6 lg:px-8">
+          <Link to="/" className="inline-flex items-center gap-2 text-sm font-semibold">
+            <img src={APP_ICON} alt="" className="size-7 rounded-lg" /> CaTLX
           </Link>
-          <div className="flex items-center gap-4">
-            <Link to="/login" className="underline">{t('login.cloud_title')}</Link>
+          <div className="flex items-center gap-2.5">
+            <Link to="/login" className="text-sm text-accent-ink underline">{t('login.cloud_title')}</Link>
             <LanguageSwitcher />
-          <ThemeSwitch />
+            <ThemeSwitch />
           </div>
         </div>
       </header>
-      <main className="container mx-auto p-4 sm:p-6 lg:p-8"><QuickRatingPage /></main>
+      <main className="mx-auto max-w-[68rem] p-4 sm:p-6 lg:p-8"><QuickRatingPage /></main>
     </div>
   );
 }

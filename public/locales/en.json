@@ -76,6 +76,8 @@
     "study_tasks": "Study tasks",
     "scenario": "Scenario",
     "scenarios": "Scenarios",
+    "scenarios_by_study": "Scenarios by study",
+    "scenario_scope": "A scenario sets the rating order for selected MTEs within a study.",
     "new_scenario": "New scenario",
     "edit_scenario": "Edit scenario",
     "scenario_name": "Scenario name",
