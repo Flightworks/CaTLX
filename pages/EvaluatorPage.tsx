@@ -120,11 +120,12 @@ const PairwiseComparisonView: React.FC<{
     );
 };
 
-function RatingForm({ study, scenario, evaluatorId, task, onClose }: {
+function RatingForm({ study, scenario, evaluatorId, task, submitLabel, onClose }: {
     study: Study;
     scenario?: Scenario;
     evaluatorId: string;
     task: MTE;
+    submitLabel: string;
     onClose: (saved?: boolean) => void;
 }) {
     const { t } = useTranslation();
@@ -206,7 +207,7 @@ function RatingForm({ study, scenario, evaluatorId, task, onClose }: {
                         )}
                         {isExpress || step === lastStep ? (
                             <Button type="submit" disabled={saving}>
-                                {t(saving ? 'evaluator.submitting' : 'projects.save_and_choose')}
+                                {t(saving ? 'evaluator.submitting' : submitLabel)}
                             </Button>
                         ) : (
                             <Button type="button" onClick={() => setStep(step + 1)}>
@@ -227,28 +228,47 @@ export function AssessmentRunner({ study, scenario, evaluatorId }: {
     const { mtes, ratings, pairwiseComparisons, addPairwiseComparison } = useData();
     const [taskId, setTaskId] = useState('');
     const [search, setSearch] = useState('');
-    const [filter, setFilter] = useState('all');
+    const [showCatalog, setShowCatalog] = useState(false);
     const [showWeights, setShowWeights] = useState(false);
     const [saved, setSaved] = useState(false);
     const comparison = pairwiseComparisons.find(entry => entry.studyId === study.id && entry.evaluatorId === evaluatorId);
     const context = { studyId: study.id, scenarioId: scenario?.id, evaluatorId };
     const task = mtes.find(entry => entry.id === taskId);
-    const assignedIds = new Set(scenario?.mteIds ?? study.mteIds);
+    const tasksById = new Map(mtes.map(entry => [entry.id, entry]));
+    const assigned = [...new Set(scenario?.mteIds ?? study.mteIds)]
+        .flatMap(id => tasksById.get(id) ?? []);
+    const assignedIds = new Set(assigned.map(entry => entry.id));
     const scopeRatings = ratings.filter(rating => rating.studyId === study.id &&
         rating.scenarioId === scenario?.id && rating.evaluatorId === evaluatorId);
     const completedIds = new Set(scopeRatings.map(rating => rating.mteId));
     const query = search.trim().toLocaleLowerCase();
-    const tasks = mtes.filter(entry => (
-        (!scenario?.archived || assignedIds.has(entry.id)) &&
-        (filter === 'all' || (filter === 'assigned' && assignedIds.has(entry.id)) ||
-            (filter === 'rated' && completedIds.has(entry.id))) &&
-        `${entry.refNumber} ${entry.name}`.toLocaleLowerCase().includes(query)
-    )).sort((a, b) => Number(assignedIds.has(b.id)) - Number(assignedIds.has(a.id)) ||
-        a.name.localeCompare(b.name));
+    const next = assigned.find(entry => !completedIds.has(entry.id));
+    const following = assigned.find(entry => entry.id !== taskId && !completedIds.has(entry.id));
+    const candidates = !scenario && showCatalog
+        ? mtes.filter(entry => !assignedIds.has(entry.id)).sort((a, b) => a.name.localeCompare(b.name))
+        : assigned;
+    const tasks = candidates.filter(entry => `${entry.refNumber} ${entry.name}`.toLocaleLowerCase().includes(query));
+
+    function openTask(id: string) {
+        setSaved(false);
+        setTaskId(id);
+    }
 
     if (task && !scenario?.archived) {
-        return <RatingForm study={study} scenario={scenario} evaluatorId={evaluatorId} task={task}
-            onClose={wasSaved => { setTaskId(''); setSaved(Boolean(wasSaved)); }} />;
+        const activeStep = scenario && task.id === next?.id;
+        const nextTask = activeStep ? following : undefined;
+        const submitLabel = activeStep
+            ? nextTask ? 'projects.save_and_next' : 'projects.finish_scenario'
+            : 'projects.save_and_choose';
+        return <RatingForm key={task.id} study={study} scenario={scenario} evaluatorId={evaluatorId}
+            task={task} submitLabel={submitLabel} onClose={wasSaved => {
+                setTaskId(wasSaved && nextTask ? nextTask.id : '');
+                setSaved(Boolean(wasSaved));
+                if (wasSaved && !scenario) {
+                    setShowCatalog(false);
+                    setSearch('');
+                }
+            }} />;
     }
     if (showWeights && !scenario?.archived) {
         return <PairwiseComparisonView
@@ -263,7 +283,7 @@ export function AssessmentRunner({ study, scenario, evaluatorId }: {
                     <p>{t('projects.progress', {
                         completed: [...assignedIds].filter(id => completedIds.has(id)).length, total: assignedIds.size,
                     })}</p>
-                    {!scenario?.archived && (
+                    {evaluatorId && !scenario?.archived && (
                         <Button variant="secondary" size="sm" onClick={() => setShowWeights(true)}>
                             {t('evaluator.determine_weights')}
                         </Button>
@@ -273,17 +293,27 @@ export function AssessmentRunner({ study, scenario, evaluatorId }: {
                     <PairwiseWeightsDisplay weights={comparison.weights} isWeighted />
                 )}
                 {saved && <p role="status" className="text-green-300">{t('projects.rating_saved')}</p>}
-                <div className="grid gap-3 sm:grid-cols-[1fr_auto]">
-                    <input type="search" aria-label={t('projects.search_tasks')} placeholder={t('projects.search_tasks')}
-                        className={fieldClass} value={search} onChange={e => setSearch(e.target.value)} />
-                    <select aria-label={t('projects.task_filter')} className={fieldClass} value={filter}
-                        onChange={e => setFilter(e.target.value)}>
-                        <option value="all">{t('projects.all_tasks')}</option>
-                        <option value="assigned">{t('projects.assigned_tasks')}</option>
-                        <option value="rated">{t('projects.rated_tasks')}</option>
-                    </select>
-                </div>
-                {tasks.map(entry => {
+                {!evaluatorId && <p>{t('projects.choose_evaluator')}</p>}
+                {scenario && evaluatorId && assigned.length > 0 && !scenario.archived && (
+                    next ? (
+                        <Button onClick={() => openTask(next.id)}>
+                            {t(completedIds.size ? 'projects.resume_scenario' : 'projects.start_scenario')}
+                        </Button>
+                    ) : <p className="text-green-300">{t('projects.scenario_complete')}</p>
+                )}
+                {!scenario && (
+                    <div className="flex flex-wrap items-center gap-2">
+                        <Button variant="secondary" size="sm" aria-pressed={showCatalog} onClick={() => {
+                            setShowCatalog(!showCatalog);
+                            setSearch('');
+                        }}>
+                            {t(showCatalog ? 'projects.study_tasks' : 'projects.open_catalog')}
+                        </Button>
+                        {showCatalog && <input type="search" aria-label={t('projects.search_tasks')} placeholder={t('projects.search_tasks')}
+                            className={fieldClass} value={search} onChange={e => setSearch(e.target.value)} />}
+                    </div>
+                )}
+                {tasks.map((entry, index) => {
                     const previous = latestRating(scopeRatings, { ...context, mteId: entry.id });
                     const weights = comparison?.isWeighted ? comparison.weights : DEFAULT_WEIGHTS;
                     const totalWeight = Object.values(weights).reduce((sum, weight) => sum + weight, 0);
@@ -292,19 +322,20 @@ export function AssessmentRunner({ study, scenario, evaluatorId }: {
                     return (
                         <div className="flex flex-wrap items-center justify-between rounded-md bg-nasa-gray-900 p-3 gap-2" key={entry.id}>
                             <div>
-                                <p className="font-semibold">{entry.refNumber && `[${entry.refNumber}] `}{entry.name}</p>
+                                <p className="font-semibold">{scenario && `${index + 1}. `}{entry.refNumber && `[${entry.refNumber}] `}{entry.name}</p>
                                 <p className="text-sm text-nasa-gray-300">
                                     {previous ? `${t('projects.rated')} · ${score?.toFixed(2) ?? '—'}`
                                         : t(assignedIds.has(entry.id) ? 'projects.to_rate' : 'projects.catalog_task')}
                                 </p>
                             </div>
-                            {!scenario?.archived && <Button size="sm" onClick={() => { setSaved(false); setTaskId(entry.id); }}>
+                            {!scenario?.archived && <Button size="sm" disabled={!evaluatorId || Boolean(scenario && !previous && entry.id !== next?.id)}
+                                onClick={() => openTask(entry.id)}>
                                 {t(previous ? 'projects.open_rating' : assignedIds.has(entry.id) ? 'evaluator.rate_task' : 'projects.add_and_rate')}
                             </Button>}
                         </div>
                     );
                 })}
-                {tasks.length === 0 && <p className="text-nasa-gray-300">{t('projects.no_matching_tasks')}</p>}
+                {tasks.length === 0 && <p className="text-nasa-gray-300">{t(scenario ? 'evaluator.no_mtes' : showCatalog ? 'projects.no_matching_tasks' : 'projects.study_tasks_empty')}</p>}
             </div>
         </Card>
     );

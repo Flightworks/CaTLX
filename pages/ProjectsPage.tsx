@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link, NavLink, Route, Routes, useParams } from 'react-router-dom';
+import { Link, Navigate, NavLink, Route, Routes, useParams, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useData } from '../contexts/AppContext';
 import type { Project, Scenario, Study } from '../types';
@@ -31,7 +31,7 @@ function Breadcrumbs({ project, study }: { project?: Project; study?: Study }) {
   const { t } = useTranslation();
   return (
     <nav aria-label={t('projects.path')} className="flex flex-wrap items-center gap-2 text-sm text-nasa-gray-300">
-      <Link className="underline" to="/projects">{t('projects.title')}</Link>
+      <Link className="underline" to="/projects?all=1">{t('projects.title')}</Link>
       {project && <><span aria-hidden="true">/</span><Link className="underline" to={projectPath(project.id)}>{project.name}</Link></>}
       {study && <><span aria-hidden="true">/</span><Link className="underline" to={studyPath(study)}>{study.name}</Link></>}
     </nav>
@@ -42,6 +42,10 @@ function ProjectList() {
   const { t } = useTranslation();
   const { projects, studies, addProject } = useData();
   const [creating, setCreating] = useState(false);
+  const [params] = useSearchParams();
+  if (projects.length === 1 && !params.has('all')) {
+    return <Navigate to={projectPath(projects[0].id)} replace />;
+  }
   return (
     <div className="space-y-5">
       <div className="flex flex-wrap justify-between items-center gap-3">
@@ -91,6 +95,7 @@ function ProjectOverview({ project }: { project: Project }) {
       {project.description && <p>{project.description}</p>}
       <nav className="flex flex-wrap gap-2">
         <NavLink end className={tabClass} to={path}>{t('projects.studies')}</NavLink>
+        <Link className="rounded-md px-3 py-2 hover:bg-nasa-gray-700" to="/projects/catalog">{t('admin.mte_catalog')}</Link>
         <NavLink className={tabClass} to={`${path}/evaluators`}>{t('admin.manage_evaluators')}</NavLink>
         <NavLink className={tabClass} to={`${path}/results`}>{t('projects.results')}</NavLink>
       </nav>
@@ -119,6 +124,17 @@ function ScenarioForm({ study, scenario, onClose }: { study: Study; scenario?: S
   const [error, setError] = useState(false);
   const used = new Set(scenario ? ratings.filter(rating => rating.scenarioId === scenario.id).map(rating => rating.mteId) : []);
 
+  const allowedIds = new Set([...study.mteIds, ...(scenario?.mteIds ?? [])]);
+  const tasksById = new Map(mtes.map(task => [task.id, task]));
+  const availableTasks = mtes.filter(task => allowedIds.has(task.id));
+  function moveTask(index: number, offset: number) {
+    setIds(current => {
+      const ordered = [...current];
+      [ordered[index], ordered[index + offset]] = [ordered[index + offset], ordered[index]];
+      return ordered;
+    });
+  }
+
   async function submit(event: React.FormEvent) {
     event.preventDefault();
     if (saving || !name.trim()) return;
@@ -145,7 +161,7 @@ function ScenarioForm({ study, scenario, onClose }: { study: Study; scenario?: S
           placeholder={t('projects.search_tasks')} className={inputClass} onChange={e => setSearch(e.target.value)} />
         <fieldset className="max-h-64 overflow-y-auto space-y-2">
           <legend className="sr-only">{t('admin.mte_catalog')}</legend>
-          {mtes.filter(task => `${task.refNumber} ${task.name}`.toLowerCase().includes(search.trim().toLowerCase()))
+          {availableTasks.filter(task => `${task.refNumber} ${task.name}`.toLowerCase().includes(search.trim().toLowerCase()))
             .map(task => (
               <label className="flex gap-3 items-center rounded-md bg-nasa-gray-900 p-2" key={task.id}>
                 <input type="checkbox" checked={ids.includes(task.id)} disabled={used.has(task.id)}
@@ -154,6 +170,25 @@ function ScenarioForm({ study, scenario, onClose }: { study: Study; scenario?: S
               </label>
             ))}
         </fieldset>
+        {!availableTasks.length && <Link className="underline" to={`${studyPath(study)}/settings`}>{t('projects.prepare_tasks')}</Link>}
+        {ids.length > 0 && (
+          <div>
+            <h3 className="font-semibold mb-2">{t('projects.scenario_order')}</h3>
+            <ol className="list-decimal pl-6 space-y-2">
+              {ids.map((id, index) => (
+                <li key={id} className="pl-1">
+                  <span>{tasksById.get(id)?.name ?? id}</span>
+                  <span className="ml-2 inline-flex gap-1">
+                    <Button type="button" size="sm" variant="secondary" disabled={index === 0}
+                      onClick={() => moveTask(index, -1)}>{t('projects.move_up')}</Button>
+                    <Button type="button" size="sm" variant="secondary" disabled={index === ids.length - 1}
+                      onClick={() => moveTask(index, 1)}>{t('projects.move_down')}</Button>
+                  </span>
+                </li>
+              ))}
+            </ol>
+          </div>
+        )}
         {error && <p role="alert" className="text-red-300">{t('evaluator.error_submitting')}</p>}
         <div className="flex justify-end gap-2">
           <Button type="button" variant="secondary" onClick={onClose} disabled={saving}>{t('evaluator.cancel')}</Button>
@@ -213,14 +248,13 @@ function StudyTasks({ study, evaluatorId }: { study: Study; evaluatorId: string 
   const scenario = scenarioId ? scenarios.find(entry => entry.id === scenarioId && entry.studyId === study.id) : undefined;
 
   if (scenarioId && !scenario) return <Card><p>{t('projects.not_found')}</p></Card>;
-  if (!evaluatorId) return <Card><p>{t('projects.choose_evaluator')}</p></Card>;
-
   return <AssessmentRunner key={`${scenario?.id ?? ''}/${evaluatorId}`} study={study} scenario={scenario} evaluatorId={evaluatorId} />;
 }
 
 function StudyOverview({ project, study }: { project: Project; study: Study }) {
   const { t } = useTranslation();
-  const { evaluators } = useData();
+  const { evaluators, scenarios = [] } = useData();
+  const activeScenarios = scenarios.filter(scenario => scenario.studyId === study.id && !scenario.archived);
   const [pickedEvaluator, setPickedEvaluator] = useState('');
   const available = evaluators.filter(evaluator => study.evaluatorIds.includes(evaluator.id));
   const evaluatorId = available.find(evaluator => evaluator.id === pickedEvaluator)?.id ??
@@ -252,7 +286,23 @@ function StudyOverview({ project, study }: { project: Project; study: Study }) {
         <Route path="results" element={<ViewStats projectId={project.id} studyId={study.id} />} />
         <Route path="settings" element={<ManageStudies projectId={project.id} studyId={study.id} />} />
         <Route path="scenarios" element={<Scenarios study={study} />} />
-        <Route index element={assessment} />
+        <Route index element={(
+          <div className="space-y-4">
+            {activeScenarios.length > 0 && (
+              <Card title={t('projects.scenarios')}>
+                <div className="flex flex-wrap gap-3">
+                  {activeScenarios.map(scenario => (
+                    <Link key={scenario.id} className="rounded-md bg-nasa-gray-700 px-4 py-2 hover:bg-nasa-light-blue"
+                      to={`${path}/scenarios/${encodeURIComponent(scenario.id)}`}>
+                      {scenario.name} · {t('projects.task_count', { count: scenario.mteIds.length })}
+                    </Link>
+                  ))}
+                </div>
+              </Card>
+            )}
+            {assessment}
+          </div>
+        )} />
         <Route path="scenarios/:scenarioId" element={assessment} />
         <Route path="*" element={<Card><p>{t('projects.not_found')}</p></Card>} />
       </Routes>

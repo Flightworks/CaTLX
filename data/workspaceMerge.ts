@@ -84,7 +84,10 @@ function invalidLinks(workspace: WorkspaceData) {
   for (const scenario of scenarios.values()) {
     const key = `scenarios:${scenario.id}`;
     if (!studies.has(scenario.studyId)) issues.push([key, `studies:${scenario.studyId}`]);
-    for (const id of scenario.mteIds) if (!tasks.has(id)) issues.push([key, `mtes:${id}`]);
+    for (const id of scenario.mteIds) {
+      if (!tasks.has(id)) issues.push([key, `mtes:${id}`]);
+      if (!studies.get(scenario.studyId)?.mteIds.includes(id)) issues.push([key, `studies:${scenario.studyId}`]);
+    }
   }
   for (const rating of workspace.ratings) {
     const key = `ratings:${rating.id}`;

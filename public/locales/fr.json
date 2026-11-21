@@ -42,7 +42,19 @@
     "add_on_save": "La tâche sera ajoutée à l’enregistrement de la cotation.",
     "save_and_choose": "Enregistrer et choisir une autre tâche",
     "no_matching_tasks": "Aucune tâche ne correspond.",
-    "all_contexts": "Tous les contextes"
+    "all_contexts": "Tous les contextes",
+    "open_study": "Ouvrir l’étude",
+    "open_catalog": "Ajouter depuis le catalogue",
+    "prepare_tasks": "Ajouter des MTE à l’étude",
+    "scenario_order": "Ordre des MTE dans le scénario",
+    "move_up": "Monter",
+    "move_down": "Descendre",
+    "save_and_next": "Enregistrer et passer à la MTE suivante",
+    "start_scenario": "Commencer le scénario",
+    "resume_scenario": "Reprendre le scénario",
+    "finish_scenario": "Enregistrer et terminer le scénario",
+    "scenario_complete": "Toutes les MTE de ce scénario sont cotées.",
+    "study_tasks_empty": "Ajoute une MTE du catalogue pour commencer à coter."
   },
   "offline": {
     "enable": "Activer le hors-ligne sur cet appareil",

@@ -169,9 +169,11 @@ export function createDataSource(data: WorkspaceData, commit: CommitWorkspace): 
       await commit(current => {
         const scenarios = current.scenarios ?? [];
         const original = scenarios.find(scenario => scenario.id === id);
-        if (!current.studies.some(study => study.id === input.studyId) ||
+        const study = current.studies.find(study => study.id === input.studyId);
+        if (!study ||
             (input.id && (!original || original.studyId !== input.studyId || original.archived)) ||
-            input.mteIds.some(taskId => !current.mtes.some(task => task.id === taskId))) {
+            input.mteIds.some(taskId => (!study.mteIds.includes(taskId) && !original?.mteIds.includes(taskId)) ||
+              !current.mtes.some(task => task.id === taskId))) {
           throw new Error('The study or its catalog changed. Reopen the scenario to continue.');
         }
         const usedTasks = current.ratings.filter(rating => rating.scenarioId === id)
@@ -197,7 +199,8 @@ export function createDataSource(data: WorkspaceData, commit: CommitWorkspace): 
         const scenario = current.scenarios?.find(candidate => candidate.id === input.scenarioId);
         if (!study || !study.evaluatorIds.includes(input.evaluatorId) ||
             !current.mtes.some(task => task.id === input.mteId) ||
-            (input.scenarioId && (!scenario || scenario.studyId !== study.id || scenario.archived))) {
+            (input.scenarioId && (!scenario || scenario.studyId !== study.id || scenario.archived ||
+              !scenario.mteIds.includes(input.mteId)))) {
           throw new Error('The assessment context changed. Reopen the task to continue.');
         }
         const previous = latestRating(current.ratings, input);
@@ -207,9 +210,6 @@ export function createDataSource(data: WorkspaceData, commit: CommitWorkspace): 
           studies: scenario ? current.studies : updateItem(current.studies, {
             ...study, mteIds: includeId(study.mteIds, input.mteId),
           }),
-          scenarios: scenario ? updateItem(current.scenarios ?? [], {
-            ...scenario, mteIds: includeId(scenario.mteIds, input.mteId),
-          }) : current.scenarios,
           ratings: previous ? updateItem(current.ratings, rating) : [...current.ratings, rating],
         };
       }, true);

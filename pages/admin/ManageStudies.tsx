@@ -13,7 +13,7 @@ const ManageStudyMTEsModal: React.FC<{
   study: Study;
   onClose: () => void;
 }> = ({ study, onClose }) => {
-  const { mtes, ratings, addMTEToStudy, removeMTEFromStudy } = useData();
+  const { mtes, ratings, scenarios = [], addMTEToStudy, removeMTEFromStudy } = useData();
   const [searchQuery, setSearchQuery] = useState('');
 
   const mtesInStudy = useMemo(() => {
@@ -69,7 +69,8 @@ const ManageStudyMTEsModal: React.FC<{
                   <p className="text-sm font-medium text-white">{mte.name}</p>
                   <p className="text-xs text-nasa-gray-400 font-mono">[{mte.refNumber}]</p>
                 </div>
-                <Button size="sm" variant="danger" disabled={ratings.some(rating => rating.studyId === study.id && !rating.scenarioId && rating.mteId === mte.id)}
+                <Button size="sm" variant="danger" disabled={ratings.some(rating => rating.studyId === study.id && rating.mteId === mte.id) ||
+                    scenarios.some(scenario => scenario.studyId === study.id && scenario.mteIds.includes(mte.id))}
                   onClick={() => removeMTEFromStudy(study.id, mte.id)}>Remove</Button>
               </div>
             ))}
@@ -221,13 +222,23 @@ const ManageStudies: React.FC<{ projectId?: string; studyId?: string }> = ({ pro
         {studiesInProject.map((study) => {
           const studyMtes = study.mteIds.map(id => mtes.find(m => m.id === id)).filter((m): m is MTE => !!m);
           const studyEvaluators = study.evaluatorIds.map(id => evaluators.find(e => e.id === id)).filter((e): e is Evaluator => !!e);
+          if (projectId && !studyId) {
+            return (
+              <Link key={study.id} className="flex flex-wrap justify-between items-center gap-3 p-4 rounded-lg bg-nasa-gray-900 hover:bg-nasa-gray-700"
+                to={`/projects/${encodeURIComponent(projectId)}/studies/${encodeURIComponent(study.id)}`}>
+                <div>
+                  <h3 className="font-semibold text-lg">{study.name}</h3>
+                  <p className="text-sm text-nasa-gray-300">{t('projects.task_count', { count: studyMtes.length })}</p>
+                </div>
+                <span className="text-sm underline">{t('projects.open_study')}</span>
+              </Link>
+            );
+          }
           return (
             <div key={study.id} className="p-4 bg-nasa-gray-900 rounded-lg border border-nasa-gray-700">
               <div className="flex flex-col sm:flex-row justify-between items-start gap-2">
                   <div>
-                      <h3 className="text-lg font-semibold text-white">{projectId && !studyId ? (
-                        <Link className="underline" to={`/projects/${encodeURIComponent(projectId)}/studies/${encodeURIComponent(study.id)}`}>{study.name}</Link>
-                      ) : study.name}</h3>
+                      <h3 className="text-lg font-semibold text-white">{study.name}</h3>
                       <p className="text-sm text-nasa-gray-300 font-medium">{new Date(study.date).toLocaleDateString()}</p>
                       <p className="text-sm text-nasa-gray-400 mt-1">{study.description}</p>
                   </div>

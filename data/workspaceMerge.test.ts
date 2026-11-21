@@ -8,12 +8,12 @@ function fixture(): WorkspaceData {
   return {
     ...emptyWorkspace,
     projects: [{ id: 'p', name: 'Project', description: '', ownerId: 'local-admin', memberIds: ['e'] }],
-    studies: [{ id: 's', projectId: 'p', name: 'Study', description: '', date: 0, mteIds: [], evaluatorIds: ['e'] }],
+    studies: [{ id: 's', projectId: 'p', name: 'Study', description: '', date: 0, mteIds: ['t'], evaluatorIds: ['e'] }],
     evaluators: [{ id: 'e', name: 'Evaluator', company: '', quality: '' }],
     mtes: [{ id: 't', name: 'Task', description: '', refNumber: 'T' }],
     scenarios: [
-      { id: 'a', studyId: 's', name: 'Approach', mteIds: [] },
-      { id: 'b', studyId: 's', name: 'Departure', mteIds: [] },
+      { id: 'a', studyId: 's', name: 'Approach', mteIds: ['t'] },
+      { id: 'b', studyId: 's', name: 'Departure', mteIds: ['t'] },
     ],
   };
 }
@@ -29,7 +29,7 @@ function modify(initial: WorkspaceData) {
 }
 
 describe('scenario ratings', () => {
-  it('attaches a catalog task atomically and keeps direct and scenario scores separate', async () => {
+  it('keeps direct and scenario scores separate', async () => {
     const { source, current } = modify(fixture());
     await source.saveRating(rating);
     await source.saveRating({ ...rating, scenarioId: 'a', comments: 'first scenario' });
@@ -41,6 +41,18 @@ describe('scenario ratings', () => {
     expect(current().ratings).toHaveLength(3);
     expect(current().ratings.find(entry => entry.scenarioId === 'a')?.comments).toBe('corrected');
     expect(current().ratings.find(entry => entry.scenarioId == null)?.comments).toBeUndefined();
+  });
+
+  it('rejects unassigned scenario tasks and still allows adding a task during direct study rating', async () => {
+    const base = fixture();
+    base.mtes.push({ id: 'other', name: 'Other task', description: '', refNumber: '' });
+    const { source, current } = modify(base);
+    await expect(source.saveScenario({ studyId: 's', name: 'Off scope', mteIds: ['other'] })).rejects.toThrow();
+    await expect(source.saveRating({ ...rating, scenarioId: 'a', mteId: 'other' })).rejects.toThrow();
+    expect(current().ratings).toEqual([]);
+    await source.saveRating({ ...rating, mteId: 'other' });
+    expect(current().studies[0].mteIds).toEqual(['t', 'other']);
+    expect(current().scenarios?.[0].mteIds).toEqual(['t']);
   });
 
   it('archives the scenario without removing its existing scores', async () => {
@@ -89,7 +101,7 @@ describe('offline workspace merge', () => {
     const merged = mergeWorkspace(base, current(), remote);
     expect(merged.payload.ratings).toEqual([]);
     expect(merged.conflicts).toHaveLength(1);
-    expect(merged.conflicts[0].keys).toEqual(expect.arrayContaining(['mtes:t', 'scenarios:a']));
+    expect(merged.conflicts[0].keys).toEqual(expect.arrayContaining(['mtes:t', 'ratings:rating/s/a/e/t']));
     const resolved = resolveWorkspaceConflict(base, current(), remote, merged.conflicts[0], 'local');
     expect(resolved).not.toBeNull();
     const result = mergeWorkspace(resolved.base, resolved.local, remote);

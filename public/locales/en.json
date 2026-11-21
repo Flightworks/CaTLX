@@ -42,7 +42,19 @@
     "add_on_save": "The task will be added when you save the rating.",
     "save_and_choose": "Save and choose another task",
     "no_matching_tasks": "No matching tasks.",
-    "all_contexts": "All contexts"
+    "all_contexts": "All contexts",
+    "open_study": "Open study",
+    "open_catalog": "Add from the catalog",
+    "prepare_tasks": "Add MTEs to the study",
+    "scenario_order": "MTE order in this scenario",
+    "move_up": "Move up",
+    "move_down": "Move down",
+    "save_and_next": "Save and go to the next MTE",
+    "start_scenario": "Start scenario",
+    "resume_scenario": "Resume scenario",
+    "finish_scenario": "Save and finish scenario",
+    "scenario_complete": "All MTEs in this scenario have been rated.",
+    "study_tasks_empty": "Add an MTE from the catalog to start rating."
   },
   "offline": {
     "enable": "Enable offline access on this device",
