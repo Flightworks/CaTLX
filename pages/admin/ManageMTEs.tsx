@@ -63,7 +63,7 @@ const MTEForm: React.FC<{
 
 
 const ManageMTEs: React.FC = () => {
-  const { mtes, addMte, updateMte, deleteMte } = useData();
+  const { mtes, ratings, addMte, updateMte, deleteMte } = useData();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingMte, setEditingMte] = useState<MTE | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
@@ -136,7 +136,8 @@ const ManageMTEs: React.FC = () => {
                 <td className="px-6 py-4 text-sm text-nasa-gray-300">{mte.description}</td>
                 <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-2">
                   <Button size="sm" variant="secondary" onClick={() => handleEdit(mte)}>Edit</Button>
-                  <Button size="sm" variant="danger" onClick={() => deleteMte(mte.id)}>Delete</Button>
+                  <Button size="sm" variant="danger" disabled={ratings.some(rating => rating.mteId === mte.id)}
+                    onClick={() => deleteMte(mte.id)}>Delete</Button>
                 </td>
               </tr>
             ))}

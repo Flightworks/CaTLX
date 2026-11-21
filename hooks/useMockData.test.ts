@@ -20,7 +20,7 @@ describe('useMockData hook', () => {
     const { result } = renderHook(() => useMockData());
     
     act(() => {
-      result.current.addEvaluator({ name: 'Test Evaluator', email: 'test@nasa.gov' });
+      result.current.addEvaluator({ name: 'Test Evaluator', quality: 'Test pilot', company: 'NASA' });
     });
 
     expect(result.current.evaluators.length).toBe(6);

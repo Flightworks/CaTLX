@@ -39,6 +39,14 @@ export interface Study {
   projectId: string;
 }
 
+export interface Scenario {
+  id: string;
+  studyId: string;
+  name: string;
+  mteIds: string[];
+  archived?: boolean;
+}
+
 export interface PairwiseComparison {
   evaluatorId: string;
   studyId: string;
@@ -51,6 +59,7 @@ export interface Rating {
   evaluatorId: string;
   studyId: string;
   mteId: string;
+  scenarioId?: string;
   scores: Record<TLXDimension, number>;
   timestamp: number;
   comments?: string;
@@ -77,6 +86,7 @@ export interface WorkspaceData {
   mtes: MTE[];
   ratings: Rating[];
   pairwiseComparisons: PairwiseComparison[];
+  scenarios?: Scenario[];
 }
 
 export interface IDataSource extends WorkspaceData {
@@ -99,6 +109,9 @@ export interface IDataSource extends WorkspaceData {
   removeMTEFromStudy: (studyId: string, mteId: string) => void;
   addEvaluatorToStudy: (studyId: string, evaluatorId: string) => void;
   removeEvaluatorFromStudy: (studyId: string, evaluatorId: string) => void;
+  saveScenario: (scenario: Omit<Scenario, 'id' | 'archived'> & { id?: string }) => Promise<void>;
+  archiveScenario: (id: string, archived: boolean) => Promise<void>;
+  saveRating: (rating: Omit<Rating, 'id' | 'timestamp'>) => Promise<void>;
   addRating: (rating: Omit<Rating, 'id' | 'timestamp'>) => Promise<void>;
   addPairwiseComparison: (comparison: PairwiseComparison) => void;
   hasPreviousRatingInStudy: (evaluatorId: string, studyId: string) => boolean;

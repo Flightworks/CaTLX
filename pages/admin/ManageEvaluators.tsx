@@ -63,9 +63,10 @@ const EvaluatorForm: React.FC<{
   );
 };
 
-const ManageEvaluators: React.FC = () => {
-  const { evaluators, projects, addEvaluator, updateEvaluator, deleteEvaluator, addMemberToProject } = useData();
-  const { selectedProjectId } = useSession();
+const ManageEvaluators: React.FC<{ projectId?: string }> = ({ projectId }) => {
+  const { evaluators, projects, ratings, addEvaluator, updateEvaluator, deleteEvaluator, addMemberToProject } = useData();
+  const session = useSession();
+  const selectedProjectId = projectId ?? session.selectedProjectId;
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingEvaluator, setEditingEvaluator] = useState<Evaluator | null>(null);
 
@@ -139,7 +140,8 @@ const ManageEvaluators: React.FC = () => {
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-nasa-gray-300">{evaluator.company}</td>
                 <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-2">
                   <Button size="sm" variant="secondary" onClick={() => handleEdit(evaluator)}>Edit</Button>
-                  <Button size="sm" variant="danger" onClick={() => deleteEvaluator(evaluator.id)}>Delete</Button>
+                  <Button size="sm" variant="danger" disabled={ratings.some(rating => rating.evaluatorId === evaluator.id)}
+                    onClick={() => deleteEvaluator(evaluator.id)}>Delete</Button>
                 </td>
               </tr>
             ))}

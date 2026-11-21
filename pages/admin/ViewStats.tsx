@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { useData, useSession } from '../../contexts/AppContext';
 import { ComputedTLXScore, TLXDimension } from '../../types';
 import { TLX_DIMENSIONS_INFO, DEFAULT_WEIGHTS } from '../../constants';
+import { downloadCsv as saveCsv } from '../../data/csv';
 import Card from '../../components/ui/Card';
 import Select from '../../components/ui/Select';
 import MteStatsCard from '../../components/admin/MteStatsCard';
@@ -21,15 +22,19 @@ export interface AggregatedMteStats {
   studyNames: string[];
 }
 
-const ViewStats: React.FC = () => {
+const ViewStats: React.FC<{ projectId?: string; studyId?: string }> = ({ projectId, studyId }) => {
   const { t } = useTranslation();
-  const { ratings, pairwiseComparisons, evaluators, studies, mtes } = useData();
-  const { selectedProjectId } = useSession();
-  const [filterStudyId, setFilterStudyId] = useState<string>('');
+  const { ratings, pairwiseComparisons, evaluators, studies, mtes, scenarios = [] } = useData();
+  const session = useSession();
+  const selectedProjectId = projectId ?? session.selectedProjectId;
+  const [selectedStudy, setFilterStudyId] = useState('');
+  const filterStudyId = studyId ?? selectedStudy;
+  const [filterScenario, setFilterScenario] = useState('');
   const [selectedMte, setSelectedMte] = useState<AggregatedMteStats | null>(null);
 
   useEffect(() => {
     setFilterStudyId('');
+    setFilterScenario('');
   }, [selectedProjectId]);
   
   const availableStudies = useMemo(() => {
@@ -38,12 +43,21 @@ const ViewStats: React.FC = () => {
       : studies;
   }, [selectedProjectId, studies]);
 
+  const availableScenarios = scenarios.filter(scenario =>
+    availableStudies.some(study => study.id === scenario.studyId) &&
+    (!filterStudyId || filterStudyId === scenario.studyId));
+  const includesTask = (studyId: string, mteId: string) =>
+    Boolean(studies.find(study => study.id === studyId)?.mteIds.includes(mteId)) ||
+    scenarios.some(scenario => scenario.studyId === studyId && scenario.mteIds.includes(mteId));
+
   const projectMteIds = useMemo(() => {
     if (!selectedProjectId) return new Set<string>(mtes.map(m => m.id));
     const ids = new Set<string>();
     availableStudies.forEach(study => study.mteIds.forEach(id => ids.add(id)));
+    scenarios.filter(scenario => availableStudies.some(study => study.id === scenario.studyId))
+      .forEach(scenario => scenario.mteIds.forEach(id => ids.add(id)));
     return ids;
-  }, [availableStudies, mtes, selectedProjectId]);
+  }, [availableStudies, mtes, scenarios, selectedProjectId]);
 
   type EnrichedComputedScore = ComputedTLXScore & {
     ratingId: string;
@@ -51,6 +65,7 @@ const ViewStats: React.FC = () => {
     mteRefNumber: string;
     projectId: string;
     evaluatorId: string;
+    scenarioName: string;
   };
 
   const filteredRatings = useMemo(() => {
@@ -59,9 +74,10 @@ const ViewStats: React.FC = () => {
       if (!study) return false;
       if (selectedProjectId && study.projectId !== selectedProjectId) return false;
       if (filterStudyId && rating.studyId !== filterStudyId) return false;
-      return true;
+      if (filterScenario === '$direct') return !rating.scenarioId;
+      return !filterScenario || rating.scenarioId === filterScenario;
     });
-  }, [filterStudyId, ratings, selectedProjectId, studies]);
+  }, [filterScenario, filterStudyId, ratings, selectedProjectId, studies]);
 
   const computedScores = useMemo<EnrichedComputedScore[]>(() => {
     return filteredRatings.map(rating => {
@@ -94,6 +110,7 @@ const ViewStats: React.FC = () => {
 
       return {
         ratingId: rating.id,
+        scenarioName: scenarios.find(scenario => scenario.id === rating.scenarioId)?.name ?? '',
         timestamp: rating.timestamp,
         evaluatorName: evaluator?.name || 'Unknown',
         studyName: study?.name || 'Unknown',
@@ -111,7 +128,7 @@ const ViewStats: React.FC = () => {
         evaluatorId: rating.evaluatorId,
       };
     });
-  }, [evaluators, filteredRatings, mtes, pairwiseComparisons, studies]);
+  }, [evaluators, filteredRatings, mtes, pairwiseComparisons, scenarios, studies]);
 
 
   const aggregatedMteData = useMemo<AggregatedMteStats[]>(() => {
@@ -125,9 +142,16 @@ const ViewStats: React.FC = () => {
       return acc;
     }, {} as Record<string, ComputedTLXScore[]>);
 
-    const mtesToDisplay = filterStudyId 
-        ? mtes.filter(mte => studies.find(s => s.id === filterStudyId)?.mteIds.includes(mte.id))
-        : mtes.filter(mte => projectMteIds.has(mte.id));
+    const scenario = scenarios.find(entry => entry.id === filterScenario);
+    const ratedIds = new Set(computedScores.map(score => score.mteId));
+    const mtesToDisplay = mtes.filter(mte => {
+        if (ratedIds.has(mte.id)) return true;
+        if (scenario) return scenario.mteIds.includes(mte.id);
+        if (filterScenario === '$direct') {
+            return availableStudies.some(study => (!filterStudyId || study.id === filterStudyId) && study.mteIds.includes(mte.id));
+        }
+        return filterStudyId ? includesTask(filterStudyId, mte.id) : projectMteIds.has(mte.id);
+    });
 
     return mtesToDisplay.map(mte => {
         const mteScores = scoresByMte[mte.id] || [];
@@ -141,7 +165,7 @@ const ViewStats: React.FC = () => {
                 avgOverallScore: 0,
                 stdDevOverallScore: 0,
                 avgRawScores: {} as Record<TLXDimension, number>,
-                studyNames: studies.filter(s => s.mteIds.includes(mte.id)).map(s => s.name)
+                studyNames: availableStudies.filter(study => includesTask(study.id, mte.id)).map(study => study.name)
             };
         }
 
@@ -173,7 +197,7 @@ const ViewStats: React.FC = () => {
             studyNames
         };
     }).sort((a,b) => a.mteName.localeCompare(b.mteName));
-  }, [computedScores, filterStudyId, mtes, projectMteIds, studies]);
+  }, [availableStudies, computedScores, filterScenario, filterStudyId, mtes, projectMteIds, scenarios, studies]);
 
   const downloadCsv = () => {
     if (computedScores.length === 0) {
@@ -184,6 +208,7 @@ const ViewStats: React.FC = () => {
       t('stats.csv_headers.rating_id'),
       t('stats.csv_headers.project_id'),
       t('stats.csv_headers.study'),
+      t('projects.scenario'),
       t('stats.csv_headers.mte_ref'),
       t('stats.csv_headers.mte_name'),
       t('stats.csv_headers.evaluator'),
@@ -201,6 +226,7 @@ const ViewStats: React.FC = () => {
         score.ratingId,
         score.projectId,
         score.studyName,
+        score.scenarioName,
         score.mteRefNumber,
         score.mteName,
         score.evaluatorName,
@@ -212,26 +238,10 @@ const ViewStats: React.FC = () => {
         score.comments || '',
       ];
 
-      return values.map(value => {
-        const str = value?.toString() ?? '';
-        if (str.includes(',') || str.includes('"') || str.includes('\n')) {
-          return `"${str.replace(/"/g, '""')}"`;
-        }
-        return str;
-      }).join(',');
+      return values;
     });
 
-    const csvContent = [headers.join(','), ...rows].join('\n');
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-
-    const link = document.createElement('a');
-    link.href = url;
-    link.setAttribute('download', `catlx-evaluations${selectedProjectId ? `-${selectedProjectId}` : ''}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
+    saveCsv(`catlx-evaluations${selectedProjectId ? `-${selectedProjectId}` : ''}.csv`, [headers, ...rows]);
   };
 
   return (
@@ -239,12 +249,27 @@ const ViewStats: React.FC = () => {
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <h2 className="text-2xl font-bold text-white">{t('stats.title')}</h2>
         <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto sm:items-center">
-          <div className="w-full sm:w-64">
-            <Select label={t('stats.filter_study')} id="study-filter" value={filterStudyId} onChange={(e) => setFilterStudyId(e.target.value)}>
+          {!studyId && <div className="w-full sm:w-64">
+            <Select label={t('stats.filter_study')} id="study-filter" value={filterStudyId} onChange={(e) => {
+              setFilterStudyId(e.target.value);
+              setFilterScenario('');
+            }}>
                 <option value="">{t('stats.all_studies')}</option>
                 {availableStudies.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
             </Select>
-          </div>
+          </div>}
+          {availableScenarios.length > 0 && <div className="w-full sm:w-64">
+            <Select label={t('projects.scenario')} id="scenario-filter" value={filterScenario}
+              onChange={e => { setFilterScenario(e.target.value); setSelectedMte(null); }}>
+              <option value="">{t('projects.all_contexts')}</option>
+              <option value="$direct">{t('projects.study_tasks')}</option>
+              {availableScenarios.map(scenario => (
+                <option key={scenario.id} value={scenario.id}>
+                  {filterStudyId ? scenario.name : `${availableStudies.find(study => study.id === scenario.studyId)?.name} / ${scenario.name}`}
+                </option>
+              ))}
+            </Select>
+          </div>}
           <Button onClick={downloadCsv} disabled={computedScores.length === 0}>
             {t('stats.export_csv')}
           </Button>

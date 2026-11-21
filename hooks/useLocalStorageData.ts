@@ -9,6 +9,7 @@ const keys = {
   mtes: 'catlx_mtes',
   ratings: 'catlx_ratings',
   pairwiseComparisons: 'catlx_pairwise_comparisons',
+  scenarios: 'catlx_scenarios',
 } satisfies Record<keyof WorkspaceData, string>;
 
 const collections = Object.keys(keys) as (keyof WorkspaceData)[];
@@ -32,7 +33,7 @@ export default function useLocalStorageData() {
   const source = createDataSource(data, change => {
     const next = change(current.current);
     for (const collection of collections) {
-      if (next[collection] !== current.current[collection]) {
+      if (next[collection] !== undefined && next[collection] !== current.current[collection]) {
         localStorage.setItem(keys[collection], JSON.stringify(next[collection]));
       }
     }

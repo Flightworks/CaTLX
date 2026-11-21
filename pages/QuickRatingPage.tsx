@@ -1,12 +1,13 @@
 
 import React, { useState, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { TLXDimension, ComputedTLXScore } from '../types';
+import { TLXDimension } from '../types';
 import { TLX_DIMENSIONS_INFO, PAIRWISE_COMBINATIONS, DEFAULT_WEIGHTS } from '../constants';
 import TlxSlider from '../components/ui/TlxSlider';
 import Button from '../components/ui/Button';
 import Card from '../components/ui/Card';
 import PairwiseWeightsDisplay from '../components/ui/PairwiseWeightsDisplay';
+import { downloadCsv } from '../data/csv';
 import ToggleSwitch from '../components/ui/ToggleSwitch';
 
 const initialScores = TLX_DIMENSIONS_INFO.reduce((acc, dim) => {
@@ -179,6 +180,16 @@ const QuickRatingPage: React.FC = () => {
                         <span className="text-3xl font-bold" style={{ color: getScoreColor(totalWeightedScore) }}>
                             {totalWeightedScore.toFixed(2)}
                         </span>
+                        <Button onClick={() => downloadCsv('catlx-quick-rating.csv', [
+                            [t('quick_rating.title'), t('evaluator.raw_scores'), t('evaluator.weights')],
+                            ...TLX_DIMENSIONS_INFO.map(dim => [
+                                t(`tlx_dimensions.${getDimensionKey(dim.id)}.title`), scores[dim.id],
+                                (isWeighted ? weights : DEFAULT_WEIGHTS)[dim.id],
+                            ]),
+                            [t('evaluator.total_score'), totalWeightedScore.toFixed(2), ''],
+                        ])} variant="secondary" size="sm" className="mt-2">
+                            {t('quick_rating.export_csv')}
+                        </Button>
                     </div>
                 </div>
             </div>

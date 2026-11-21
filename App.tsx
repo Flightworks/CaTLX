@@ -1,48 +1,18 @@
+import { lazy, Suspense } from 'react';
+import { HashRouter, Route, Routes } from 'react-router-dom';
+import PublicQuickRating from './pages/PublicQuickRating';
 
-import React, { Suspense } from 'react';
-import { HashRouter, Routes, Route, Navigate } from 'react-router-dom';
-// FIX: AppProvider was used but not imported, causing a 'Cannot find name' error.
-import { AppProvider, useAuth } from './contexts/AppContext';
-import LoginPage from './pages/LoginPage';
-import EvaluatorPage from './pages/EvaluatorPage';
-import QuickRatingPage from './pages/QuickRatingPage';
-import AdminDashboardPage from './pages/AdminDashboardPage';
-import Layout from './components/layout/Layout';
-import AboutPage from './pages/AboutPage';
-
-function AppRoutes() {
-  const { isLoggedIn } = useAuth();
-
-  return (
-    <HashRouter>
-      <Routes>
-        <Route path="/login" element={isLoggedIn ? <Navigate to="/evaluator" /> : <LoginPage />} />
-        <Route path="/*" element={
-          isLoggedIn ? (
-            <Layout>
-              <Routes>
-                <Route path="/evaluator" element={<EvaluatorPage />} />
-                <Route path="/quick-rating" element={<QuickRatingPage />} />
-                <Route path="/admin" element={<AdminDashboardPage />} />
-                <Route path="/about" element={<AboutPage />} />
-                <Route path="/" element={<Navigate to="/evaluator" />} />
-              </Routes>
-            </Layout>
-          ) : (
-            <Navigate to="/login" />
-          )
-        } />
-      </Routes>
-    </HashRouter>
-  );
-}
+const PrivateApp = lazy(() => import('./PrivateApp'));
 
 export default function App() {
   return (
-    <AppProvider>
-      <Suspense fallback="loading">
-        <AppRoutes />
+    <HashRouter>
+      <Suspense fallback={<p role="status">CaTLX…</p>}>
+        <Routes>
+          <Route path="/quick-rating" element={<PublicQuickRating />} />
+          <Route path="/*" element={<PrivateApp />} />
+        </Routes>
       </Suspense>
-    </AppProvider>
+    </HashRouter>
   );
 }

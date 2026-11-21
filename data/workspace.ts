@@ -1,4 +1,4 @@
-import type { IDataSource, WorkspaceData } from '../types';
+import type { IDataSource, Rating, WorkspaceData } from '../types';
 
 export const emptyWorkspace: WorkspaceData = {
   projects: [],
@@ -7,6 +7,7 @@ export const emptyWorkspace: WorkspaceData = {
   mtes: [],
   ratings: [],
   pairwiseComparisons: [],
+  scenarios: [],
 };
 
 export type WorkspaceChange = (data: WorkspaceData) => WorkspaceData;
@@ -30,9 +31,22 @@ function includeId(ids: string[], id: string): string[] {
   return ids.includes(id) ? ids : [...ids, id];
 }
 
+export function ratingContext(rating: Pick<Rating, 'studyId' | 'scenarioId' | 'evaluatorId' | 'mteId'>): string {
+  return [rating.studyId, rating.scenarioId ?? '', rating.evaluatorId, rating.mteId]
+    .map(encodeURIComponent).join('/');
+}
+
+export function latestRating(ratings: Rating[], context: Parameters<typeof ratingContext>[0]) {
+  const key = ratingContext(context);
+  return ratings.reduce<Rating | undefined>((latest, candidate) =>
+    ratingContext(candidate) === key && (!latest || candidate.timestamp >= latest.timestamp)
+      ? candidate : latest, undefined);
+}
+
 export function createDataSource(data: WorkspaceData, commit: CommitWorkspace): IDataSource {
   return {
     ...data,
+    scenarios: data.scenarios ?? [],
     addProject(project, ownerId) {
       const newProject = { ...project, id: newId(), ownerId, memberIds: [ownerId] };
       commit(current => ({ ...current, projects: [...current.projects, newProject] }));
@@ -45,6 +59,7 @@ export function createDataSource(data: WorkspaceData, commit: CommitWorkspace): 
         ...current,
         projects: removeItem(current.projects, id),
         studies: current.studies.filter(study => study.projectId !== id),
+        scenarios: (current.scenarios ?? []).filter(scenario => current.studies.some(study => study.id === scenario.studyId && study.projectId !== id)),
       }));
     },
     addMemberToProject(projectId, evaluatorId) {
@@ -93,7 +108,8 @@ export function createDataSource(data: WorkspaceData, commit: CommitWorkspace): 
       commit(current => ({ ...current, studies: updateItem(current.studies, study) }));
     },
     deleteStudy(id) {
-      commit(current => ({ ...current, studies: removeItem(current.studies, id) }));
+      commit(current => ({ ...current, studies: removeItem(current.studies, id),
+        scenarios: (current.scenarios ?? []).filter(scenario => scenario.studyId !== id) }));
     },
     addMte(mte) {
       const newMte = { ...mte, id: newId(), refNumber: mte.refNumber || '' };
@@ -107,6 +123,9 @@ export function createDataSource(data: WorkspaceData, commit: CommitWorkspace): 
       commit(current => ({
         ...current,
         mtes: removeItem(current.mtes, id),
+        scenarios: (current.scenarios ?? []).map(scenario => ({
+          ...scenario, mteIds: scenario.mteIds.filter(mteId => mteId !== id),
+        })),
         studies: current.studies.map(study => ({
           ...study,
           mteIds: study.mteIds.filter(mteId => mteId !== id),
@@ -144,6 +163,56 @@ export function createDataSource(data: WorkspaceData, commit: CommitWorkspace): 
           ? { ...study, evaluatorIds: study.evaluatorIds.filter(id => id !== evaluatorId) }
           : study),
       }));
+    },
+    async saveScenario(input) {
+      const id = input.id ?? newId();
+      await commit(current => {
+        const scenarios = current.scenarios ?? [];
+        const original = scenarios.find(scenario => scenario.id === id);
+        if (!current.studies.some(study => study.id === input.studyId) ||
+            (input.id && (!original || original.studyId !== input.studyId || original.archived)) ||
+            input.mteIds.some(taskId => !current.mtes.some(task => task.id === taskId))) {
+          throw new Error('The study or its catalog changed. Reopen the scenario to continue.');
+        }
+        const usedTasks = current.ratings.filter(rating => rating.scenarioId === id)
+          .map(rating => rating.mteId);
+        const scenario = {
+          ...input, id, archived: original?.archived,
+          mteIds: [...new Set([...input.mteIds, ...usedTasks])],
+        };
+        return { ...current, scenarios: original ? updateItem(scenarios, scenario) : [...scenarios, scenario] };
+      }, true);
+    },
+    async archiveScenario(id, archived) {
+      await commit(current => ({
+        ...current,
+        scenarios: (current.scenarios ?? []).map(scenario =>
+          scenario.id === id ? { ...scenario, archived } : scenario),
+      }), true);
+    },
+    async saveRating(input) {
+      const timestamp = Date.now();
+      await commit(current => {
+        const study = current.studies.find(candidate => candidate.id === input.studyId);
+        const scenario = current.scenarios?.find(candidate => candidate.id === input.scenarioId);
+        if (!study || !study.evaluatorIds.includes(input.evaluatorId) ||
+            !current.mtes.some(task => task.id === input.mteId) ||
+            (input.scenarioId && (!scenario || scenario.studyId !== study.id || scenario.archived))) {
+          throw new Error('The assessment context changed. Reopen the task to continue.');
+        }
+        const previous = latestRating(current.ratings, input);
+        const rating = { ...input, id: previous?.id ?? `rating/${ratingContext(input)}`, timestamp };
+        return {
+          ...current,
+          studies: scenario ? current.studies : updateItem(current.studies, {
+            ...study, mteIds: includeId(study.mteIds, input.mteId),
+          }),
+          scenarios: scenario ? updateItem(current.scenarios ?? [], {
+            ...scenario, mteIds: includeId(scenario.mteIds, input.mteId),
+          }) : current.scenarios,
+          ratings: previous ? updateItem(current.ratings, rating) : [...current.ratings, rating],
+        };
+      }, true);
     },
     async addRating(rating) {
       const newRating = { ...rating, id: newId(), timestamp: Date.now() };

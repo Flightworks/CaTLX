@@ -135,6 +135,9 @@ const mockDataSource: IDataSource = {
   addEvaluatorToStudy: vi.fn(),
   removeEvaluatorFromStudy: vi.fn(),
   addRating: vi.fn(),
+  saveRating: vi.fn(),
+  saveScenario: vi.fn(),
+  archiveScenario: vi.fn(),
   addPairwiseComparison: vi.fn(),
   hasPreviousRatingInStudy: vi.fn(),
 };
@@ -178,7 +181,7 @@ describe('ViewStats Component Logic and Display', () => {
     const mte1Card = mte1HeadingCandidates.find(element => element.tagName === 'H3');
     expect(mte1Card).toBeDefined();
     // Find the parent Card element to scope the queries
-    const mte1Container = mte1Card.closest('[class*="bg-nasa-gray-900"]');
+    const mte1Container = mte1Card.closest<HTMLElement>('[class*="bg-nasa-gray-900"]');
     expect(mte1Container).not.toBeNull();
 
     // Check number of evaluations
@@ -233,7 +236,7 @@ describe('ViewStats Component Logic and Display', () => {
     const mte3HeadingCandidates = await screen.findAllByText(/EVA Simulation/i);
     const mte3Card = mte3HeadingCandidates.find(element => element.tagName === 'H3');
     expect(mte3Card).toBeDefined();
-    const mte3Container = mte3Card.closest('[class*="bg-nasa-gray-900"]');
+    const mte3Container = mte3Card.closest<HTMLElement>('[class*="bg-nasa-gray-900"]');
     expect(mte3Container).not.toBeNull();
     
     // Check for 0 evaluations and the specific message
@@ -308,7 +311,7 @@ describe('ViewStats Component Logic and Display', () => {
     const weightedCard = headingCandidates.find(element => element.tagName === 'H3');
     expect(weightedCard).toBeDefined();
 
-    const container = weightedCard!.closest('[class*="bg-nasa-gray-900"]');
+    const container = weightedCard!.closest<HTMLElement>('[class*="bg-nasa-gray-900"]');
     expect(container).not.toBeNull();
 
     // Weighted workloads for the two ratings: 45 and 40 -> mean 42.5
@@ -321,12 +324,12 @@ describe('ViewStats Component Logic and Display', () => {
     expect(within(container!).getByText(/±\s?2\.5\sSD/)).toBeInTheDocument();
 
     // Raw averages should be displayed (e.g., Performance average is 60.0)
-    const performanceRow = within(container!).getByText(/Performance/i).closest('li');
+    const performanceRow = within(container!).getByText(/Performance/i).closest<HTMLElement>('li');
     expect(performanceRow).not.toBeNull();
     expect(within(performanceRow!).getByText('60.0')).toBeInTheDocument();
 
     // Mental Demand average should be 40.0
-    const mentalRow = within(container!).getByText(/Mental Demand/i).closest('li');
+    const mentalRow = within(container!).getByText(/Mental Demand/i).closest<HTMLElement>('li');
     expect(mentalRow).not.toBeNull();
     expect(within(mentalRow!).getByText('40.0')).toBeInTheDocument();
   });

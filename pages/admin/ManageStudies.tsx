@@ -1,4 +1,6 @@
 import React, { useState, useMemo } from 'react';
+import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useData, useSession } from '../../contexts/AppContext';
 import { Study, MTE, Evaluator } from '../../types';
 import Card from '../../components/ui/Card';
@@ -11,7 +13,7 @@ const ManageStudyMTEsModal: React.FC<{
   study: Study;
   onClose: () => void;
 }> = ({ study, onClose }) => {
-  const { mtes, addMTEToStudy, removeMTEFromStudy } = useData();
+  const { mtes, ratings, addMTEToStudy, removeMTEFromStudy } = useData();
   const [searchQuery, setSearchQuery] = useState('');
 
   const mtesInStudy = useMemo(() => {
@@ -67,7 +69,8 @@ const ManageStudyMTEsModal: React.FC<{
                   <p className="text-sm font-medium text-white">{mte.name}</p>
                   <p className="text-xs text-nasa-gray-400 font-mono">[{mte.refNumber}]</p>
                 </div>
-                <Button size="sm" variant="danger" onClick={() => removeMTEFromStudy(study.id, mte.id)}>Remove</Button>
+                <Button size="sm" variant="danger" disabled={ratings.some(rating => rating.studyId === study.id && !rating.scenarioId && rating.mteId === mte.id)}
+                  onClick={() => removeMTEFromStudy(study.id, mte.id)}>Remove</Button>
               </div>
             ))}
             {mtesInStudy.length === 0 && <p className="text-sm text-nasa-gray-500 text-center py-4">No MTEs have been added to this study.</p>}
@@ -168,9 +171,11 @@ const StudyForm: React.FC<{
 };
 
 
-const ManageStudies: React.FC = () => {
-  const { studies, mtes, evaluators, addStudy, updateStudy, deleteStudy } = useData();
-  const { selectedProjectId } = useSession();
+const ManageStudies: React.FC<{ projectId?: string; studyId?: string }> = ({ projectId, studyId }) => {
+  const { t } = useTranslation();
+  const { studies, mtes, ratings, evaluators, addStudy, updateStudy, deleteStudy } = useData();
+  const session = useSession();
+  const selectedProjectId = projectId ?? session.selectedProjectId;
     
   const [isStudyModalOpen, setIsStudyModalOpen] = useState(false);
   const [managingMtesForStudy, setManagingMtesForStudy] = useState<Study | null>(null);
@@ -180,9 +185,9 @@ const ManageStudies: React.FC = () => {
   const studiesInProject = useMemo(() => {
     if (!selectedProjectId) return [];
     return studies
-        .filter(s => s.projectId === selectedProjectId)
+        .filter(s => s.projectId === selectedProjectId && (!studyId || s.id === studyId))
         .sort((a, b) => b.date - a.date);
-  }, [studies, selectedProjectId]);
+  }, [studies, selectedProjectId, studyId]);
 
   const handleSaveStudy = (study: Omit<Study, 'id' | 'mteIds' | 'evaluatorIds'> | Study) => {
     if ('id' in study) {
@@ -208,8 +213,8 @@ const ManageStudies: React.FC = () => {
   return (
     <Card>
       <div className="flex justify-between items-center mb-4">
-        <h2 className="text-xl font-bold">Manage Studies</h2>
-        <Button onClick={() => { setEditingStudy(null); setIsStudyModalOpen(true); }}>Add New Study</Button>
+        <h2 className="text-xl font-bold">{t(studyId ? 'projects.study_settings' : 'admin.manage_studies')}</h2>
+        {!studyId && <Button onClick={() => { setEditingStudy(null); setIsStudyModalOpen(true); }}>{t('projects.new_study')}</Button>}
       </div>
       <div className="space-y-6">
         {studiesInProject.map((study) => {
@@ -219,13 +224,16 @@ const ManageStudies: React.FC = () => {
             <div key={study.id} className="p-4 bg-nasa-gray-900 rounded-lg border border-nasa-gray-700">
               <div className="flex flex-col sm:flex-row justify-between items-start gap-2">
                   <div>
-                      <h3 className="text-lg font-semibold text-white">{study.name}</h3>
+                      <h3 className="text-lg font-semibold text-white">{projectId && !studyId ? (
+                        <Link className="underline" to={`/projects/${encodeURIComponent(projectId)}/studies/${encodeURIComponent(study.id)}`}>{study.name}</Link>
+                      ) : study.name}</h3>
                       <p className="text-sm text-nasa-gray-300 font-medium">{new Date(study.date).toLocaleDateString()}</p>
                       <p className="text-sm text-nasa-gray-400 mt-1">{study.description}</p>
                   </div>
                   <div className="flex-shrink-0 flex flex-wrap items-center gap-2">
                       <Button size="sm" variant="secondary" onClick={() => { setEditingStudy(study); setIsStudyModalOpen(true); }}>Edit Info</Button>
-                      <Button size="sm" variant="danger" onClick={() => deleteStudy(study.id)}>Delete</Button>
+                      <Button size="sm" variant="danger" disabled={ratings.some(rating => rating.studyId === study.id)}
+                        onClick={() => deleteStudy(study.id)}>Delete</Button>
                   </div>
               </div>
               
@@ -273,14 +281,14 @@ const ManageStudies: React.FC = () => {
 
       {managingMtesForStudy && (
         <ManageStudyMTEsModal 
-            study={managingMtesForStudy}
+            study={studies.find(s => s.id === managingMtesForStudy.id) ?? managingMtesForStudy}
             onClose={() => setManagingMtesForStudy(null)}
         />
       )}
 
       {managingEvaluatorsForStudy && (
         <ManageStudyEvaluatorsModal
-            study={managingEvaluatorsForStudy}
+            study={studies.find(s => s.id === managingEvaluatorsForStudy.id) ?? managingEvaluatorsForStudy}
             onClose={() => setManagingEvaluatorsForStudy(null)}
         />
       )}

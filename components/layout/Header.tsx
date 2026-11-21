@@ -47,8 +47,8 @@ const Header: React.FC = () => {
             </div>
             <nav className="hidden md:block ml-10">
               <div className="flex items-center space-x-4">
-                <NavLink to="/evaluator" className={navLinkClass}>
-                  {t('header.evaluations')}
+                <NavLink to="/projects" className={navLinkClass}>
+                  {t('projects.title')}
                 </NavLink>
                 <NavLink to="/quick-rating" className={navLinkClass}>
                   {t('header.quick_rating', 'Quick Rating')}
@@ -88,7 +88,7 @@ const Header: React.FC = () => {
       {isMenuOpen && (
         <div className="md:hidden" id="mobile-menu">
           <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3">
-            <NavLink to="/evaluator" className={mobileNavLinkClass} onClick={() => setIsMenuOpen(false)}>{t('header.evaluations')}</NavLink>
+            <NavLink to="/projects" className={mobileNavLinkClass} onClick={() => setIsMenuOpen(false)}>{t('projects.title')}</NavLink>
             <NavLink to="/quick-rating" className={mobileNavLinkClass} onClick={() => setIsMenuOpen(false)}>{t('header.quick_rating', 'Quick Rating')}</NavLink>
             <NavLink to="/admin" className={mobileNavLinkClass} onClick={() => setIsMenuOpen(false)}>{t('header.admin_dashboard')}</NavLink>
             <NavLink to="/about" className={mobileNavLinkClass} onClick={() => setIsMenuOpen(false)}>{t('header.about')}</NavLink>

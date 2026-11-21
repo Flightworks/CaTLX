@@ -25,7 +25,7 @@ const LoginPage: React.FC = () => {
 
   const handleLogin = (mode: 'demo' | 'local') => {
     login(mode);
-    navigate('/evaluator');
+    navigate('/projects');
   };
 
   const handleGoogleLogin = async () => {
@@ -78,6 +78,9 @@ const LoginPage: React.FC = () => {
                 </Button>
               </>
             )}
+            <Button onClick={() => navigate('/quick-rating')} variant="secondary" className="w-full">
+              {t('quick_rating.title')}
+            </Button>
             {cloudError && <p role="alert" className="text-left text-red-300">{t(`cloud.${cloudError}`)}</p>}
           </div>
         </div>

@@ -32,6 +32,8 @@ const environment = import.meta.env.VITE_CATLX_ENV as Deployment | undefined;
 
 export const cloudConfig = import.meta.env.MODE !== 'github-pages' && url && publicKey && environment ? {
   environment,
+  offlineScope: `${url}|${environment}`,
+  storageKey: `sb-${new URL(url).hostname.split('.')[0]}-auth-token`,
   siteUrl: import.meta.env.VITE_CATLX_SITE_URL,
   client: createClient<Database>(url, publicKey, {
     auth: { flowType: 'pkce' },

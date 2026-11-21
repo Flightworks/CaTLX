@@ -10,8 +10,9 @@ const initI18n = async () => {
     .use(LanguageDetector)
     .use(initReactI18next)
     .init({
-      debug: true,
       fallbackLng: 'en',
+      supportedLngs: ['en', 'fr'],
+      load: 'languageOnly',
       defaultNS: 'translation',
       ns: ['translation'],
       interpolation: {

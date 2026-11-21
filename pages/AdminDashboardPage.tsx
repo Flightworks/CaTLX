@@ -14,22 +14,24 @@ import { Project } from '../types';
 
 type AdminTab = 'stats' | 'evaluators' | 'studies' | 'mtes';
 
-const ProjectForm: React.FC<{
+export const ProjectForm: React.FC<{
+  project?: Project;
   onSave: (project: Omit<Project, 'id' | 'ownerId' | 'memberIds'>) => void;
   onCancel: () => void;
-}> = ({ onSave, onCancel }) => {
-  const [name, setName] = useState('');
-  const [description, setDescription] = useState('');
+}> = ({ project, onSave, onCancel }) => {
+  const { t } = useTranslation();
+  const [name, setName] = useState(project?.name ?? '');
+  const [description, setDescription] = useState(project?.description ?? '');
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onSave({ name, description });
+    if (name.trim()) onSave({ name: name.trim(), description: description.trim() });
   };
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <div>
-        <label htmlFor="project-name" className="block text-sm font-medium text-nasa-gray-300">Project Name</label>
+        <label htmlFor="project-name" className="block text-sm font-medium text-nasa-gray-300">{t('projects.project_name')}</label>
         <input
           type="text"
           id="project-name"
@@ -40,19 +42,18 @@ const ProjectForm: React.FC<{
         />
       </div>
       <div>
-        <label htmlFor="project-desc" className="block text-sm font-medium text-nasa-gray-300">Description</label>
+        <label htmlFor="project-desc" className="block text-sm font-medium text-nasa-gray-300">{t('evaluator.description')}</label>
         <textarea
           id="project-desc"
           value={description}
           onChange={(e) => setDescription(e.target.value)}
           rows={3}
           className="mt-1 block w-full bg-nasa-gray-700 border-nasa-gray-600 rounded-md shadow-sm focus:ring-nasa-blue focus:border-nasa-blue text-white"
-          required
         />
       </div>
       <div className="flex justify-end space-x-2">
-        <Button type="button" variant="secondary" onClick={onCancel}>Cancel</Button>
-        <Button type="submit">Create Project</Button>
+        <Button type="button" variant="secondary" onClick={onCancel}>{t('evaluator.cancel')}</Button>
+        <Button type="submit">{t(project ? 'evaluator.save_changes' : 'projects.new_project')}</Button>
       </div>
     </form>
   );

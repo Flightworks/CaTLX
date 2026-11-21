@@ -1,6 +1,6 @@
 # CaTLX
 
-CaTLX sert à créer des études et à recueillir des évaluations de charge de travail NASA TLX. En hébergement Cloudflare Pages, la connexion Google est obligatoire et Supabase conserve les données de l’espace. Le lancement local permet aussi d’ouvrir les modes Démo et Local.
+CaTLX sert à créer des études et à recueillir des évaluations de charge de travail NASA TLX. En hébergement Cloudflare Pages, Google protège l’espace privé synchronisé avec Supabase. La cotation rapide (`/#/quick-rating`) est accessible sans compte. Le lancement local permet aussi d’ouvrir les modes Démo et Local.
 
 ## Lancement local
 
@@ -12,6 +12,12 @@ npm run dev
 ```
 
 Ouvrir [http://localhost:3000](http://localhost:3000). Avec une configuration Supabase dans `.env.local`, Vite lance le mode Google. Les paramètres sont listés dans [.env.example](.env.example). Les données des modes Local et Démo restent isolées dans leur contexte d’origine. Le portage démarre avec un espace Supabase vide.
+
+## Cotation et accès hors ligne
+
+Depuis **Projets**, ouvre une étude, choisis son évaluateur et cote les tâches de l’étude ou d’un scénario. La recherche porte sur le nom et la référence MTE. **Ajouter et coter** associe une tâche du catalogue lors de l’enregistrement. Une même tâche peut être cotée séparément dans plusieurs scénarios.
+
+Le Quick Rating reste accessible hors ligne après le premier chargement complet de la PWA. Pour emporter l’espace privé, connecte-toi à Google en ligne et choisis **Activer le hors-ligne sur cet appareil**. La phrase secrète permet d’ouvrir la copie chiffrée sur cet appareil. CaTLX conserve les modifications sur cet appareil, puis les synchronise après reconnexion. En cas de conflit, choisis la version à garder. Une déconnexion efface la copie et les changements qui n’ont pas été synchronisés.
 
 ## Préproduction
 
