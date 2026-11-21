@@ -51,7 +51,7 @@ function ProjectList() {
       <div className="flex flex-wrap justify-between items-center gap-3">
         <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">{t('projects.title')}</h1>
         <div className="flex gap-3 items-center">
-          <Link className="underline" to="/projects/catalog">{t('admin.mte_catalog')}</Link>
+          <Link className="underline md:hidden" to="/projects/catalog">{t('admin.mte_catalog')}</Link>
           <Button onClick={() => setCreating(true)}>{t('projects.new_project')}</Button>
         </div>
       </div>
@@ -93,7 +93,7 @@ function ProjectOverview({ project }: { project: Project }) {
         <Button variant="secondary" onClick={() => setEditing(true)}>{t('projects.edit_project')}</Button>
       </div>
       {project.description && <p>{project.description}</p>}
-      <nav className="flex flex-wrap gap-x-2 border-b border-separator">
+      <nav className="flex flex-wrap gap-x-2 border-b border-separator md:hidden">
         <NavLink end className={tabClass} to={path}>{t('projects.studies')}</NavLink>
         <Link className="rounded-md px-3 py-2 hover:bg-nasa-gray-700" to="/projects/catalog">{t('admin.mte_catalog')}</Link>
         <NavLink className={tabClass} to={`${path}/evaluators`}>{t('admin.manage_evaluators')}</NavLink>
@@ -281,7 +281,7 @@ function StudyOverview({ project, study }: { project: Project; study: Study }) {
     <div className="space-y-5">
       <Breadcrumbs project={project} study={study} />
       <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">{study.name}</h1>
-      <nav className="flex flex-wrap gap-x-2 border-b border-separator">
+      <nav className="flex flex-wrap gap-x-2 border-b border-separator md:hidden">
         <NavLink end className={tabClass} to={path}>{t('projects.study_tasks')}</NavLink>
         <NavLink className={tabClass} to={`${path}/scenarios`}>{t('projects.scenarios')}</NavLink>
         <NavLink className={tabClass} to={`${path}/results`}>{t('projects.results')}</NavLink>
