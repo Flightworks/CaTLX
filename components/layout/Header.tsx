@@ -9,6 +9,8 @@ import { APP_ICON } from '../../assets';
 const projectLink = { to: '/projects', label: 'projects.title', path: 'M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z' };
 const catalogLink = { to: '/projects/catalog', label: 'admin.mte_catalog', path: 'M4 6h16v14H4zM4 6l2-3h12l2 3m-10 5h4' };
 
+const scenarioIcon = 'M6 9v6m0-6a3 3 0 1 0 0-6 3 3 0 0 0 0 6zm0 12a3 3 0 1 0 0-6 3 3 0 0 0 0 6zm0-6c7 0 12-1 12-6m0 0a3 3 0 1 0 0-6 3 3 0 0 0 0 6z';
+
 const links = [
   { to: '/workspace/quick-rating', label: 'quick_rating.title', path: 'M3 13h4l3-8 4 14 3-6h4' },
   { to: '/admin', label: 'header.administration', path: 'M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h6v6h-6z' },
@@ -48,12 +50,14 @@ function Navigation({ close, collapsed = false, toggle }: { close?: () => void; 
   const studyPath = study ? `${projectPath}/studies/${encodeURIComponent(study.id)}` : '';
   const projectLinks: NavigationItem[] = [
     { to: projectPath, label: 'projects.studies', path: 'M7 4h10v14H7zM4 7v14h10M10 8h4m-4 4h4', end: true },
+    { ...catalogLink, to: `${projectPath}/catalog` },
     { to: `${projectPath}/evaluators`, label: 'header.evaluators', path: 'M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2m20 0v-2a4 4 0 0 0-3-4M9 3a4 4 0 1 0 0 8 4 4 0 0 0 0-8m8 0a4 4 0 0 1 0 8' },
+    { to: `${projectPath}/scenarios`, label: 'projects.scenarios', path: 'M3 4h6v5H3zM15 10h6v5h-6zM3 16h6v5H3zM6 9v7m0-4h9' },
     { to: `${projectPath}/results`, label: 'header.project_results', path: 'M3 4v16h18M8 16v-4m5 4V7m5 9v-6' },
   ];
   const studyLinks: NavigationItem[] = [
     { to: studyPath, label: 'projects.study_tasks', path: 'M5 4h14v16H5zM8 8h.01m3 0h5m-8 4h.01m3 0h5m-8 4h.01m3 0h5', end: true },
-    { to: `${studyPath}/scenarios`, label: 'projects.scenarios', path: 'M6 9v6m0-6a3 3 0 1 0 0-6 3 3 0 0 0 0 6zm0 12a3 3 0 1 0 0-6 3 3 0 0 0 0 6zm0-6c7 0 12-1 12-6m0 0a3 3 0 1 0 0-6 3 3 0 0 0 0 6z' },
+    { to: `${studyPath}/scenarios`, label: 'header.study_scenarios', path: scenarioIcon },
     { to: `${studyPath}/results`, label: 'header.study_results', path: 'M3 4v16h18M7 15l4-4 3 2 5-6' },
     { to: `${studyPath}/settings`, label: 'projects.study_settings', path: 'M4 7h4m4 0h8M4 17h8m4 0h4M8 4v6m8 4v6' },
   ];
@@ -106,8 +110,7 @@ function Navigation({ close, collapsed = false, toggle }: { close?: () => void; 
       <nav id={toggle ? 'workspace-desktop-navigation' : undefined} aria-label={t('header.main_navigation')}
         className="flex-1 space-y-1 px-2.5 pb-3">
         {renderLink({ ...projectLink, end: true })}
-        {renderLink(catalogLink, true)}
-        {project && renderSection(project.name, projectLinks)}
+        {project ? renderSection(project.name, projectLinks) : renderLink(catalogLink, true)}
         {study && renderSection(study.name, studyLinks)}
         <div className="workspace-nav-section">
           {links.map(item => renderLink(item))}

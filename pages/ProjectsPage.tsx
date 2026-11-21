@@ -95,13 +95,16 @@ function ProjectOverview({ project }: { project: Project }) {
       {project.description && <p>{project.description}</p>}
       <nav className="flex flex-wrap gap-x-2 border-b border-separator md:hidden">
         <NavLink end className={tabClass} to={path}>{t('projects.studies')}</NavLink>
-        <Link className="rounded-md px-3 py-2 hover:bg-nasa-gray-700" to="/projects/catalog">{t('admin.mte_catalog')}</Link>
-        <NavLink className={tabClass} to={`${path}/evaluators`}>{t('admin.manage_evaluators')}</NavLink>
+        <NavLink className={tabClass} to={`${path}/catalog`}>{t('admin.mte_catalog')}</NavLink>
+        <NavLink className={tabClass} to={`${path}/evaluators`}>{t('header.evaluators')}</NavLink>
+        <NavLink className={tabClass} to={`${path}/scenarios`}>{t('projects.scenarios')}</NavLink>
         <NavLink className={tabClass} to={`${path}/results`}>{t('projects.results')}</NavLink>
       </nav>
       <Routes>
         <Route index element={<ManageStudies projectId={project.id} />} />
+        <Route path="catalog" element={<ManageMTEs projectId={project.id} />} />
         <Route path="evaluators" element={<ManageEvaluators projectId={project.id} />} />
+        <Route path="scenarios" element={<ProjectScenarios projectId={project.id} />} />
         <Route path="results" element={<ViewStats projectId={project.id} />} />
       </Routes>
       {editing && <Modal isOpen onClose={() => setEditing(false)} title={t('projects.edit_project')}>
@@ -199,17 +202,38 @@ function ScenarioForm({ study, scenario, onClose }: { study: Study; scenario?: S
   );
 }
 
-function Scenarios({ study }: { study: Study }) {
+function ProjectScenarios({ projectId }: { projectId: string }) {
+  const { t } = useTranslation();
+  const { studies } = useData();
+  const projectStudies = studies.filter(study => study.projectId === projectId);
+
+  return (
+    <section className="space-y-4">
+      <h2 className="text-xl font-bold">{t('projects.scenarios')}</h2>
+      {projectStudies.length ? projectStudies.map(study => (
+        <Scenarios key={study.id} study={study} title={study.name} />
+      )) : <Card><p>{t('study_settings.no_studies')}</p></Card>}
+    </section>
+  );
+}
+
+function Scenarios({ study, title }: { study: Study; title?: string }) {
   const { t } = useTranslation();
   const { scenarios = [], archiveScenario } = useData();
   const [editor, setEditor] = useState<{ scenario?: Scenario } | null>(null);
   const [error, setError] = useState(false);
   const entries = scenarios.filter(scenario => scenario.studyId === study.id);
-  if (editor) return <ScenarioForm study={study} scenario={editor.scenario} onClose={() => setEditor(null)} />;
+  if (editor) return (
+    <div className="space-y-2">
+      {title && <h3 className="font-semibold">{title}</h3>}
+      <ScenarioForm study={study} scenario={editor.scenario} onClose={() => setEditor(null)} />
+    </div>
+  );
+  const Heading = title ? 'h3' : 'h2';
   return (
     <Card>
       <div className="flex flex-wrap items-center gap-3 justify-between mb-4">
-        <h2 className="text-xl font-bold">{t('projects.scenarios')}</h2>
+        <Heading className={title ? "font-semibold" : "text-xl font-bold"}>{title ?? t('projects.scenarios')}</Heading>
         <Button onClick={() => setEditor({})}>{t('projects.new_scenario')}</Button>
       </div>
       {error && <p role="alert" className="text-danger-ink">{t('evaluator.error_submitting')}</p>}

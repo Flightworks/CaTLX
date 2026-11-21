@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react';
+import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useData } from '../../contexts/AppContext';
 import { MTE } from '../../types';
@@ -63,23 +64,29 @@ const MTEForm: React.FC<{
 };
 
 
-const ManageMTEs: React.FC = () => {
+const ManageMTEs: React.FC<{ projectId?: string }> = ({ projectId }) => {
   const { t } = useTranslation();
-  const { mtes, ratings, addMte, updateMte, deleteMte } = useData();
+  const { mtes, studies, ratings, addMte, updateMte, deleteMte } = useData();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingMte, setEditingMte] = useState<MTE | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
 
+  const catalog = useMemo(() => {
+    if (!projectId) return mtes;
+    const assignedIds = new Set(studies.filter(study => study.projectId === projectId).flatMap(study => study.mteIds));
+    return mtes.filter(mte => assignedIds.has(mte.id));
+  }, [mtes, projectId, studies]);
+
   const filteredMtes = useMemo(() => {
     if (!searchQuery) {
-      return mtes;
+      return catalog;
     }
     const lowercasedQuery = searchQuery.toLowerCase();
-    return mtes.filter(mte =>
+    return catalog.filter(mte =>
       mte.name.toLowerCase().includes(lowercasedQuery) ||
       mte.refNumber.toLowerCase().includes(lowercasedQuery)
     );
-  }, [mtes, searchQuery]);
+  }, [catalog, searchQuery]);
 
   const handleSave = (mte: (Omit<MTE, 'id' | 'refNumber'> & { refNumber?: string }) | MTE) => {
     if ('id' in mte) {
@@ -105,7 +112,9 @@ const ManageMTEs: React.FC = () => {
     <Card>
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-4">
         <h2 className="text-xl font-bold">{t('admin.mte_catalog')}</h2>
-        <Button onClick={handleAddNew} className="w-full sm:w-auto">{t('catalog.new')}</Button>
+        {projectId ? (
+          <Link to="/projects/catalog" className="text-sm text-accent-ink underline">{t('catalog.open_global')}</Link>
+        ) : <Button onClick={handleAddNew} className="w-full sm:w-auto">{t('catalog.new')}</Button>}
       </div>
 
       <div className="mb-4">
@@ -127,7 +136,7 @@ const ManageMTEs: React.FC = () => {
               <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-nasa-gray-300 uppercase tracking-wider w-24">{t('catalog.reference')}</th>
               <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-nasa-gray-300 uppercase tracking-wider">{t('evaluator.name')}</th>
               <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-nasa-gray-300 uppercase tracking-wider">{t('evaluator.description')}</th>
-              <th scope="col" className="relative px-6 py-3"><span className="sr-only">{t('common.actions')}</span></th>
+              {!projectId && <th scope="col" className="relative px-6 py-3"><span className="sr-only">{t('common.actions')}</span></th>}
             </tr>
           </thead>
           <tbody className="bg-nasa-gray-900 divide-y divide-nasa-gray-700">
@@ -136,21 +145,21 @@ const ManageMTEs: React.FC = () => {
                 <td className="px-6 py-4 whitespace-nowrap text-sm font-mono text-nasa-gray-400">{mte.refNumber}</td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-foreground">{mte.name}</td>
                 <td className="px-6 py-4 text-sm text-nasa-gray-300">{mte.description}</td>
-                <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-2">
+                {!projectId && <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-2">
                   <Button size="sm" variant="secondary" onClick={() => handleEdit(mte)}>{t('common.edit')}</Button>
                   <Button size="sm" variant="danger" disabled={ratings.some(rating => rating.mteId === mte.id)}
                     onClick={() => deleteMte(mte.id)}>{t('common.delete')}</Button>
-                </td>
+                </td>}
               </tr>
             ))}
-             {mtes.length === 0 && (
+             {catalog.length === 0 && (
                 <tr>
-                    <td colSpan={4} className="text-center py-10 text-nasa-gray-500">{t('catalog.empty')}</td>
+                    <td colSpan={projectId ? 3 : 4} className="text-center py-10 text-nasa-gray-500">{t(projectId ? 'catalog.project_empty' : 'catalog.empty')}</td>
                 </tr>
             )}
-            {mtes.length > 0 && filteredMtes.length === 0 && (
+            {catalog.length > 0 && filteredMtes.length === 0 && (
               <tr>
-                <td colSpan={4} className="text-center py-10 text-nasa-gray-500">
+                <td colSpan={projectId ? 3 : 4} className="text-center py-10 text-nasa-gray-500">
                   {t('catalog.no_results', { query: searchQuery })}
                 </td>
               </tr>

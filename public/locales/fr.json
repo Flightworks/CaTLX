@@ -34,6 +34,8 @@
     "save": "Enregistrer la MTE",
     "reference": "Réf.",
     "empty": "Aucune MTE dans le catalogue.",
+    "project_empty": "Les MTE apparaîtront ici dès qu’elles seront ajoutées à une étude du projet.",
+    "open_global": "Ouvrir le catalogue MTE global",
     "no_results": "Aucune MTE ne correspond à « {{query}} »."
   },
   "people": {
@@ -185,6 +187,7 @@
     "evaluators": "Évaluateurs",
     "project_results": "Résultats du projet",
     "study_results": "Résultats de l’étude",
+    "study_scenarios": "Scénarios de l’étude",
     "evaluations": "Évaluations",
     "admin_dashboard": "Tableau de bord administrateur",
     "about": "À propos",

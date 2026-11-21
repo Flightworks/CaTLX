@@ -34,6 +34,8 @@
     "save": "Save MTE",
     "reference": "Ref #",
     "empty": "No MTEs in the catalog yet.",
+    "project_empty": "MTEs will appear here once they are added to a study in this project.",
+    "open_global": "Open the global MTE catalog",
     "no_results": "No MTEs match “{{query}}”."
   },
   "people": {
@@ -185,6 +187,7 @@
     "evaluators": "Evaluators",
     "project_results": "Project results",
     "study_results": "Study results",
+    "study_scenarios": "Study scenarios",
     "evaluations": "Evaluations",
     "admin_dashboard": "Admin Dashboard",
     "about": "About",
