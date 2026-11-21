@@ -2,6 +2,8 @@
 
 CaTLX sert à créer des études et à recueillir des évaluations de charge de travail NASA TLX. En hébergement Cloudflare Pages, Google protège l’espace privé synchronisé avec Supabase. La cotation rapide (`/#/quick-rating`) est accessible sans compte. Le lancement local permet aussi d’ouvrir les modes Démo et Local.
 
+Voir la [feuille de route](ROADMAP.md) pour les priorités et les évolutions prévues.
+
 ## Lancement local
 
 Avec Node.js 22 ou une version LTS plus récente.
