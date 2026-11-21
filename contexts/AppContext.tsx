@@ -21,6 +21,9 @@ interface AuthContextType {
   logout: () => void;
   signInWithGoogle?: () => Promise<void>;
   cloudError?: CloudError;
+  continueOnline?: () => Promise<void>;
+  checkingOnlineAccess?: boolean;
+  offlineUnlock?: { activate: () => void; busy: boolean; error: string | null };
   offlineEnrollment?: { activate: () => void; busy: boolean; error: string | null };
 }
 
@@ -79,12 +82,13 @@ function OfflineAppProvider({ children }: { children: ReactNode }) {
   );
 }
 
-function CloudWorkspaceProvider({ config, initial, auth, ownerId, onEnroll, onDenied, children }: {
+function CloudWorkspaceProvider({ config, initial, auth, ownerId, onEnroll, onOpenOfflineCopy, onDenied, children }: {
   config: CloudConfig;
   initial: LoadedWorkspace;
   auth: AuthContextType;
   ownerId: string;
   onEnroll: (vault: OfflineVault) => void;
+  onOpenOfflineCopy?: () => void;
   onDenied: () => void;
   children: ReactNode;
 }) {
@@ -132,12 +136,18 @@ function CloudWorkspaceProvider({ config, initial, auth, ownerId, onEnroll, onDe
   return (
     <AuthContext.Provider value={{
       ...auth, logout,
-      offlineEnrollment: status === 'idle' && online
+      offlineEnrollment: !onOpenOfflineCopy && status === 'idle' && online
         ? { activate: () => void enroll(), busy: enrolling, error: enrollmentFailed }
         : undefined,
     }}>
       {config.environment === 'preprod' && (
         <p className="border-b border-separator bg-nasa-gray-800 px-4 py-1 text-center text-xs text-accent-ink">{t('cloud.preprod')}</p>
+      )}
+      {onOpenOfflineCopy && (
+        <div className="flex flex-wrap items-center justify-between gap-2 bg-nasa-gray-800 px-4 py-2 text-sm">
+          <p>{t('offline.copy_locked')}</p>
+          <Button size="sm" variant="secondary" disabled={status !== 'idle'} onClick={onOpenOfflineCopy}>{t('offline.open_copy')}</Button>
+        </div>
       )}
       {auth.cloudError === 'signout_failed' && (
         <p role="alert" className="bg-nasa-gray-700 px-4 py-2 text-center">{t('cloud.signout_failed')}</p>
@@ -287,6 +297,11 @@ function CloudAppProvider({ config, children }: { config: CloudConfig; children:
   const [deviceError, setDeviceError] = useState<string | null>(null);
   const [deniedOwner, setDeniedOwner] = useState<string | null>(null);
   const [online, setOnline] = useState(navigator.onLine);
+  const onlinePreferenceKey = `catlx-online-only:${config.offlineScope}`;
+  const [preferOnline, setPreferOnline] = useState(() => {
+    try { return sessionStorage.getItem(onlinePreferenceKey) === 'true'; } catch { return false; }
+  });
+  const [accessAttempt, setAccessAttempt] = useState(0);
   const signingOut = useRef(false);
   const [authError, setAuthError] = useState<CloudError | undefined>(() => {
     const query = new URLSearchParams(window.location.search);
@@ -308,21 +323,39 @@ function CloudAppProvider({ config, children }: { config: CloudConfig; children:
     }
 
     const controller = new AbortController();
+    let cancelled = false;
+    const timeout = window.setTimeout(() => controller.abort(), 12_000);
     void (async () => {
       try {
         const { data, error } = await loadWorkspace(config, controller.signal);
-        if (controller.signal.aborted) return;
+        if (cancelled) return;
         if (error) {
           setAccess({ userId, error: error.code === '42501' ? 'access_denied' : 'load_failed' });
         } else {
           setAccess(data ? { userId, workspace: data } : { userId, error: 'access_denied' });
         }
       } catch {
-        if (!controller.signal.aborted) setAccess({ userId, error: 'load_failed' });
+        if (!cancelled) setAccess({ userId, error: 'load_failed' });
+      } finally {
+        window.clearTimeout(timeout);
       }
     })();
-    return () => controller.abort();
-  }, [config, userId]);
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timeout);
+      controller.abort();
+    };
+  }, [config, userId, accessAttempt]);
+
+  function selectOnline(preferred: boolean) {
+    setPreferOnline(preferred);
+    try {
+      if (preferred) sessionStorage.setItem(onlinePreferenceKey, 'true');
+      else sessionStorage.removeItem(onlinePreferenceKey);
+    } catch {
+      // The choice still applies until this page is reloaded.
+    }
+  }
 
   useEffect(() => {
     let cancelled = false;
@@ -386,12 +419,12 @@ function CloudAppProvider({ config, children }: { config: CloudConfig; children:
     }
   };
 
-  const logout = () => {
+  const logout = (forgetCopy = false) => {
     if (signingOut.current) return;
     signingOut.current = true;
     void (async () => {
       try {
-        if (record) {
+        if (forgetCopy && record) {
           const latest = await readOfflineCopy(config.offlineScope);
           if (latest) await forgetOfflineCopy(latest);
           setVault(null);
@@ -401,9 +434,10 @@ function CloudAppProvider({ config, children }: { config: CloudConfig; children:
         }
         if (navigator.onLine) {
           const { error } = await config.client.auth.signOut({ scope: 'local' });
-          if (error && !record) throw error;
+          if (error && !forgetCopy) throw error;
         }
-        if (record || !navigator.onLine) {
+        selectOnline(false);
+        if (forgetCopy || !navigator.onLine) {
           localStorage.removeItem(config.storageKey);
           localStorage.removeItem(`${config.storageKey}-code-verifier`);
           window.location.hash = '/login';
@@ -425,7 +459,7 @@ function CloudAppProvider({ config, children }: { config: CloudConfig; children:
     isLoggedIn: false,
     mode: 'cloud',
     login: () => {},
-    logout: () => { if (!record || window.confirm(t('offline.logout_confirm'))) logout(); },
+    logout: () => logout(),
     signInWithGoogle,
     cloudError: authError ?? (access?.userId === userId ? access?.error : undefined),
   };
@@ -435,61 +469,78 @@ function CloudAppProvider({ config, children }: { config: CloudConfig; children:
     return <p role="status" className="p-8 text-center">{t('cloud.checking_access')}</p>;
   }
 
-  if (compatibleRecord) {
-    if (vault?.record.ownerId === compatibleRecord.ownerId) {
-      return (
-        <EnrolledWorkspace key={vault.record.credentialId ? 'device' : 'legacy'} config={config}
-          vault={vault} canSync={userId === compatibleRecord.ownerId}
-          auth={{ ...auth, isLoggedIn: true }} onConverted={entry => {
-            setRecord(entry.record);
-            setVault(entry);
-          }}
-          lock={() => { setVault(null); setUnlocking(false); }} forgetAndLogout={logout} onDenied={onDenied}>
-          {children}
-        </EnrolledWorkspace>
-      );
-    }
-
+  if (compatibleRecord && vault?.record.ownerId === compatibleRecord.ownerId) {
     return (
-      <AuthContext.Provider value={auth}>
-        <div className="container mx-auto px-4 pt-6 text-center">
-          <Button disabled={deviceBusy} onClick={async () => {
-            if (!compatibleRecord.credentialId) {
-              setUnlocking(true);
-              return;
-            }
-            setDeviceBusy(true);
-            setDeviceError(null);
-            try {
-              setVault(await unlockWithDevice(compatibleRecord));
-            } catch (error) {
-              setDeviceError(error instanceof DeviceUnlockUnavailable ? 'offline.device_unavailable' : 'offline.device_failed');
-            } finally {
-              setDeviceBusy(false);
-            }
-          }}>{t('offline.unlock')}</Button>
-          {deviceError && <p role="alert" className="mt-2 text-danger-ink">{t(deviceError)}</p>}
-        </div>
-        {unlocking && !compatibleRecord.credentialId && <OfflinePassphrase onClose={() => setUnlocking(false)} submit={async phrase => {
-          const latest = await readOfflineCopy(config.offlineScope);
-          if (!latest || latest.ownerId !== compatibleRecord.ownerId) throw new Error('Offline copy changed');
-          setVault(await unlockLegacyCopy(latest, phrase));
-          setUnlocking(false);
-        }} />}
+      <EnrolledWorkspace key={vault.record.credentialId ? 'device' : 'legacy'} config={config}
+        vault={vault} canSync={userId === compatibleRecord.ownerId}
+        auth={{ ...auth, isLoggedIn: true }} onConverted={entry => {
+          setRecord(entry.record);
+          setVault(entry);
+        }}
+        lock={() => { selectOnline(false); setVault(null); setUnlocking(false); }}
+        forgetAndLogout={() => logout(true)} onDenied={onDenied}>
         {children}
-      </AuthContext.Provider>
+      </EnrolledWorkspace>
     );
   }
 
-  if (workspace && userId) {
+  if (workspace && userId && (preferOnline || !compatibleRecord)) {
     return (
       <CloudWorkspaceProvider key={userId} config={config} auth={{ ...auth, isLoggedIn: true }}
-        initial={workspace} ownerId={userId} onDenied={onDenied} onEnroll={entry => {
+        initial={workspace} ownerId={userId} onDenied={onDenied}
+        onOpenOfflineCopy={compatibleRecord ? () => selectOnline(false) : undefined} onEnroll={entry => {
           setRecord(entry.record);
           setVault(entry);
         }}>
         {children}
       </CloudWorkspaceProvider>
+    );
+  }
+
+  if (compatibleRecord) {
+    const openOfflineCopy = async () => {
+      if (!compatibleRecord.credentialId) {
+        setUnlocking(true);
+        return;
+      }
+      setDeviceBusy(true);
+      setDeviceError(null);
+      try {
+        const unlocked = await unlockWithDevice(compatibleRecord);
+        selectOnline(false);
+        setVault(unlocked);
+      } catch (error) {
+        setDeviceError(error instanceof DeviceUnlockUnavailable ? 'offline.device_unavailable' : 'offline.device_failed');
+      } finally {
+        setDeviceBusy(false);
+      }
+    };
+    const continueOnline = async () => {
+      selectOnline(true);
+      if (!userId) await signInWithGoogle();
+      else {
+        setAccess(null);
+        setAccessAttempt(attempt => attempt + 1);
+      }
+    };
+
+    return (
+      <AuthContext.Provider value={{
+        ...auth,
+        continueOnline: online ? continueOnline : undefined,
+        checkingOnlineAccess: preferOnline && !!userId && access?.userId !== userId,
+        offlineUnlock: { activate: () => void openOfflineCopy(), busy: deviceBusy, error: deviceError },
+      }}>
+        {unlocking && !compatibleRecord.credentialId && <OfflinePassphrase onClose={() => setUnlocking(false)} submit={async phrase => {
+          const latest = await readOfflineCopy(config.offlineScope);
+          if (!latest || latest.ownerId !== compatibleRecord.ownerId) throw new Error('Offline copy changed');
+          const unlocked = await unlockLegacyCopy(latest, phrase);
+          selectOnline(false);
+          setVault(unlocked);
+          setUnlocking(false);
+        }} />}
+        {children}
+      </AuthContext.Provider>
     );
   }
 

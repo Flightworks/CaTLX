@@ -19,7 +19,7 @@ const GoogleIcon = () => (
 );
 
 const LoginPage: React.FC = () => {
-  const { login, signInWithGoogle, cloudError } = useAuth();
+  const { mode, login, signInWithGoogle, cloudError, continueOnline, checkingOnlineAccess, offlineUnlock } = useAuth();
   const [connecting, setConnecting] = useState(false);
   const navigate = useNavigate();
   const { t } = useTranslation();
@@ -32,7 +32,7 @@ const LoginPage: React.FC = () => {
   const handleGoogleLogin = async () => {
     setConnecting(true);
     try {
-      await signInWithGoogle?.();
+      await (continueOnline ?? signInWithGoogle)?.();
     } finally {
       setConnecting(false);
     }
@@ -50,19 +50,36 @@ const LoginPage: React.FC = () => {
         </div>
         <div className="bg-nasa-gray-800 p-8 rounded-lg shadow-2xl">
           <h2 className="text-2xl font-semibold text-foreground mb-8">
-            {t(signInWithGoogle ? 'login.cloud_title' : 'login.choose_mode')}
+            {t(mode === 'cloud' ? 'login.cloud_title' : 'login.choose_mode')}
           </h2>
           <div className="space-y-4">
-            {signInWithGoogle ? (
-              <Button onClick={() => void handleGoogleLogin()} disabled={connecting} variant="secondary" className="w-full !justify-start !p-4 text-left">
-                <div className="flex items-center">
-                  <GoogleIcon />
-                  <div className="flex flex-col">
-                    <span className="font-bold text-base">{t(connecting ? 'cloud.checking_access' : 'login.cloud_login')}</span>
-                    <span className="text-sm font-normal text-nasa-gray-300">{t('login.cloud_login_desc')}</span>
+            {mode === 'cloud' ? (
+              <>
+                {(!offlineUnlock || continueOnline) && (
+                  <Button onClick={() => void handleGoogleLogin()} disabled={connecting || checkingOnlineAccess || offlineUnlock?.busy}
+                    variant="secondary" className="w-full !justify-start !p-4 text-left">
+                    <div className="flex items-center">
+                      <GoogleIcon />
+                      <div className="flex flex-col">
+                        <span className="font-bold text-base">
+                          {t(connecting || checkingOnlineAccess ? 'cloud.checking_access' : continueOnline ? 'offline.continue_online' : 'login.cloud_login')}
+                        </span>
+                        <span className="text-sm font-normal text-nasa-gray-300">
+                          {t(offlineUnlock ? 'offline.continue_online_hint' : 'login.cloud_login_desc')}
+                        </span>
+                      </div>
+                    </div>
+                  </Button>
+                )}
+                {offlineUnlock && (
+                  <div className="space-y-2">
+                    <Button onClick={offlineUnlock.activate} disabled={offlineUnlock.busy || connecting} variant="secondary" className="w-full">
+                      {t('offline.unlock')}
+                    </Button>
+                    {offlineUnlock.error && <p role="alert" className="text-left text-danger-ink">{t(offlineUnlock.error)}</p>}
                   </div>
-                </div>
-              </Button>
+                )}
+              </>
             ) : (
               <>
                 <Button onClick={() => handleLogin('demo')} className="w-full !justify-start !p-4 text-left">
