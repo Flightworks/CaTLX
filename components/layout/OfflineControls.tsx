@@ -7,8 +7,8 @@ import type { WorkspaceConflict } from '../../data/workspaceMerge';
 
 const inputClass = 'w-full rounded-md bg-nasa-gray-900 border border-nasa-gray-600 p-2 text-foreground';
 
-export function OfflineStatus({ online, hasPending, lastSyncedAt }: {
-  online: boolean; hasPending: boolean; lastSyncedAt?: number;
+export function OfflineStatus({ online, inSync, hasPending, lastSyncedAt }: {
+  online: boolean; inSync: boolean; hasPending: boolean; lastSyncedAt?: number;
 }) {
   const { t, i18n } = useTranslation();
   const [now, setNow] = useState(Date.now);
@@ -37,6 +37,7 @@ export function OfflineStatus({ online, hasPending, lastSyncedAt }: {
 
   return (
     <p role="status" className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
+      {inSync && <strong className="text-success-ink">{t('offline.online_now')}</strong>}
       {!online && <>
         <strong className="text-warning-ink">{t('offline.offline_now')}</strong>
         <span>{t('offline.local_work')}</span>

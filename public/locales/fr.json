@@ -134,6 +134,8 @@
     "syncing": "Synchronisation en cours…",
     "unreachable": "Le serveur est temporairement inaccessible.",
     "sync_now": "Synchroniser",
+    "sync_options": "Options de synchronisation",
+    "online_now": "En ligne",
     "offline_now": "Hors ligne",
     "conflicts": "Des modifications se contredisent. Choisissez la version à garder pour chaque élément.",
     "local": "Sur cet appareil",

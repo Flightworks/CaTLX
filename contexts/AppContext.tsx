@@ -209,6 +209,24 @@ function EnrolledWorkspace({ config, vault, canSync, auth, lock, forgetAndLogout
   const lockedByOtherTab = status === 'local_conflict';
   const canReachServer = online && status !== 'unreachable';
   const notice = status === 'ready' || status === 'pending' ? null : status;
+  const compactActions = online && canSync && !hasPending && (status === 'ready' || status === 'syncing');
+  const actions = (
+    <div className="flex flex-wrap gap-2">
+      {!vault.record.credentialId && !lockedByOtherTab && (
+        <Button size="sm" variant="secondary" disabled={converting} onClick={() => void convert()}>
+          {t('offline.convert_device')}
+        </Button>
+      )}
+      {online && !lockedByOtherTab && (canSync
+        ? <Button size="sm" variant="secondary" disabled={status === 'syncing'} onClick={synchronize}>
+            {t('offline.sync_now')}
+          </Button>
+        : <Button size="sm" variant="secondary" onClick={() => void auth.signInWithGoogle?.()}>
+            {t('offline.reconnect')}
+          </Button>)}
+      <Button size="sm" variant="secondary" onClick={() => leaveWorkspace(lock)}>{t('offline.lock')}</Button>
+    </div>
+  );
 
   return (
     <AuthContext.Provider value={{ ...auth, logout: () => setConfirmLogout(true) }}>
@@ -220,24 +238,20 @@ function EnrolledWorkspace({ config, vault, canSync, auth, lock, forgetAndLogout
       <div className={canReachServer ? 'bg-nasa-gray-800' : 'bg-warning-surface'}>
         <div className="container mx-auto px-4 py-2 flex flex-wrap items-center justify-between gap-3">
           <div className="text-sm">
-            <OfflineStatus online={canReachServer} hasPending={hasPending} lastSyncedAt={lastSyncedAt} />
+            <OfflineStatus online={canReachServer} inSync={compactActions && status === 'ready'}
+              hasPending={hasPending} lastSyncedAt={lastSyncedAt} />
             {notice && <p role="status" className="text-nasa-gray-300">{t(`offline.${notice}`)}</p>}
           </div>
-          <div className="flex flex-wrap gap-2">
-            {!vault.record.credentialId && !lockedByOtherTab && (
-              <Button size="sm" variant="secondary" disabled={converting} onClick={() => void convert()}>
-                {t('offline.convert_device')}
-              </Button>
-            )}
-            {online && !lockedByOtherTab && (canSync
-              ? <Button size="sm" variant="secondary" disabled={status === 'syncing'} onClick={synchronize}>
-                  {t('offline.sync_now')}
-                </Button>
-              : <Button size="sm" variant="secondary" onClick={() => void auth.signInWithGoogle?.()}>
-                  {t('offline.reconnect')}
-                </Button>)}
-            <Button size="sm" variant="secondary" onClick={() => leaveWorkspace(lock)}>{t('offline.lock')}</Button>
-          </div>
+          {compactActions ? (
+            <details className="relative text-sm">
+              <summary className="cursor-pointer rounded px-2 py-1 text-nasa-gray-300 hover:bg-hover-surface">
+                {t('offline.sync_options')}
+              </summary>
+              <div className="mt-2 rounded-lg border border-separator bg-nasa-gray-800 p-2 sm:absolute sm:right-0 sm:z-20 sm:w-max sm:shadow-md">
+                {actions}
+              </div>
+            </details>
+          ) : actions}
         </div>
       </div>
       {auth.cloudError === 'signout_failed' && (

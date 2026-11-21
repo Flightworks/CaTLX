@@ -134,6 +134,8 @@
     "syncing": "Syncing…",
     "unreachable": "The server is temporarily unreachable.",
     "sync_now": "Sync now",
+    "sync_options": "Sync options",
+    "online_now": "Online",
     "offline_now": "Offline",
     "conflicts": "Some changes conflict. Choose which version to keep for each item.",
     "local": "On this device",
