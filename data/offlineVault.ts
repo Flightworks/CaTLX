@@ -5,6 +5,7 @@ import type { WorkspaceData } from '../types';
 export type OfflineDocument = {
   base: LoadedWorkspace;
   local: WorkspaceData;
+  lastSyncedAt?: number;
 };
 
 type OfflineRecord = {
@@ -116,7 +117,7 @@ type DeviceSetup = { credentialId: Uint8Array<ArrayBuffer>; salt: Uint8Array<Arr
 
 export function createOfflineCopy(scope: string, ownerId: string, device: DeviceSetup, base: LoadedWorkspace) {
   const { credentialId, salt, key } = device;
-  return persist({ scope, ownerId, salt, credentialId }, key, { base, local: base.payload });
+  return persist({ scope, ownerId, salt, credentialId }, key, { base, local: base.payload, lastSyncedAt: Date.now() });
 }
 
 async function decryptCopy(record: OfflineRecord, key: CryptoKey): Promise<OfflineVault> {

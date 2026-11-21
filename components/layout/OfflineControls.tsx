@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import Button from '../ui/Button';
 import Modal from '../ui/Modal';
@@ -6,6 +6,84 @@ import { TLX_DIMENSIONS_INFO } from '../../constants';
 import type { WorkspaceConflict } from '../../data/workspaceMerge';
 
 const inputClass = 'w-full rounded-md bg-nasa-gray-900 border border-nasa-gray-600 p-2 text-foreground';
+
+export function OfflineStatus({ online, hasPending, lastSyncedAt }: {
+  online: boolean; hasPending: boolean; lastSyncedAt?: number;
+}) {
+  const { t, i18n } = useTranslation();
+  const [now, setNow] = useState(Date.now);
+  useEffect(() => {
+    const timer = window.setInterval(() => setNow(Date.now()), 30_000);
+    return () => window.clearInterval(timer);
+  }, []);
+
+  const language = i18n.resolvedLanguage;
+  let syncTime;
+  if (lastSyncedAt !== undefined) {
+    const minutes = Math.floor(Math.max(0, now - lastSyncedAt) / 60_000);
+    const relative = new Intl.RelativeTimeFormat(language);
+    const elapsed = minutes < 1 ? t('offline.sync_just_now')
+      : minutes < 60 ? relative.format(-minutes, 'minute')
+        : minutes < 1_440 ? relative.format(-Math.floor(minutes / 60), 'hour')
+          : relative.format(-Math.floor(minutes / 1_440), 'day');
+    syncTime = (
+      <time dateTime={new Date(lastSyncedAt).toISOString()} title={new Intl.DateTimeFormat(language, {
+        dateStyle: 'medium', timeStyle: 'short',
+      }).format(lastSyncedAt)}>
+        {t('offline.last_sync', { elapsed })}
+      </time>
+    );
+  }
+
+  return (
+    <p role="status" className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
+      {!online && <>
+        <strong className="text-warning-ink">{t('offline.offline_now')}</strong>
+        <span>{t('offline.local_work')}</span>
+      </>}
+      <span className="text-nasa-gray-300">{syncTime ?? t('offline.sync_unknown')}</span>
+      {hasPending && <span className="font-medium">{t('offline.pending')}</span>}
+    </p>
+  );
+}
+
+export function OfflineLogoutDialog({ open, hasPending, onClose, onLock, onForget }: {
+  open: boolean; hasPending: boolean; onClose: () => void; onLock: () => void; onForget: () => void;
+}) {
+  const { t } = useTranslation();
+  const dialogRef = useRef<HTMLDialogElement>(null);
+  const cancelRef = useRef<HTMLButtonElement>(null);
+  const titleId = useId();
+  const descriptionId = useId();
+
+  useEffect(() => {
+    const dialog = dialogRef.current;
+    if (open && dialog && !dialog.open) {
+      dialog.showModal();
+      cancelRef.current?.focus();
+    }
+    if (!open && dialog?.open) dialog.close();
+  }, [open]);
+
+  return (
+    <dialog ref={dialogRef} aria-labelledby={titleId} aria-describedby={descriptionId} onClose={onClose}
+      className="m-auto max-h-[90dvh] w-[calc(100%-2rem)] max-w-lg overflow-auto rounded-xl border border-separator bg-nasa-gray-800 p-5 text-foreground shadow-xl backdrop:bg-black/60 sm:p-6">
+      <h2 id={titleId} className="text-xl font-semibold">{t('offline.logout_title')}</h2>
+      <div id={descriptionId} className="mt-3 space-y-2 text-sm text-nasa-gray-200">
+        <p>{t('offline.logout_copy')}</p>
+        {hasPending && <p className="font-medium text-danger-ink">{t('offline.logout_pending')}</p>}
+      </div>
+      <div className="mt-5 flex flex-wrap items-center justify-end gap-2">
+        <button ref={cancelRef} type="button" onClick={onClose}
+          className="rounded-md px-3 py-1 text-sm font-medium hover:bg-hover-surface focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent-ink">
+          {t('evaluator.cancel')}
+        </button>
+        <Button type="button" size="sm" variant="secondary" onClick={onLock}>{t('offline.logout_keep')}</Button>
+        <Button type="button" size="sm" variant="danger" onClick={onForget}>{t('offline.logout_forget')}</Button>
+      </div>
+    </dialog>
+  );
+}
 
 export function OfflinePassphrase({ submit, onClose }: {
   submit: (phrase: string) => Promise<void>; onClose: () => void;

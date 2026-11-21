@@ -79,10 +79,10 @@ export default function useOfflineWorkspace(
             return;
           }
 
-          if (latest.revision !== before.base.revision ||
+          if (before.lastSyncedAt === undefined || latest.revision !== before.base.revision ||
               !sameWorkspace(before.local, latest.payload) ||
               !sameWorkspace(before.base.payload, latest.payload)) {
-            await persist({ base: latest, local: latest.payload });
+            await persist({ base: latest, local: latest.payload, lastSyncedAt: Date.now() });
           }
           setReview(null);
           setReviewError(false);
@@ -161,7 +161,7 @@ export default function useOfflineWorkspace(
         setReviewError(true);
         return;
       }
-      await persist({ base: { ...before.base, payload: result.base }, local: result.local });
+      await persist({ ...before, base: { ...before.base, payload: result.base }, local: result.local });
       setReviewError(false);
       const remaining = mergeWorkspace(result.base, result.local, review.remote.payload).conflicts;
       setReview(remaining.length ? { ...review, conflicts: remaining } : null);
@@ -173,6 +173,7 @@ export default function useOfflineWorkspace(
   return {
     dataSource: createDataSource(document.local, commit),
     hasPending: !sameWorkspace(document.base.payload, document.local),
+    lastSyncedAt: document.lastSyncedAt,
     status, review, reviewError, online, synchronize, resolve,
     finishLocalWrites: () => { active.current?.abort(); clearTimeout(requested.current); return queue.current.then(() => current.current); },
   };

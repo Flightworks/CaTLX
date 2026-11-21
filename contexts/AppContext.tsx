@@ -7,7 +7,7 @@ import useCloudWorkspace from '../hooks/useCloudWorkspace';
 import useOfflineWorkspace from '../hooks/useOfflineWorkspace';
 import { convertOfflineCopy, createOfflineCopy, forgetOfflineCopy, readOfflineCopy, unlockLegacyCopy, unlockWithDevice, type OfflineVault } from '../data/offlineVault';
 import { DeviceUnlockUnavailable, registerDevice } from '../data/deviceUnlock';
-import { OfflineConflicts, OfflinePassphrase } from '../components/layout/OfflineControls';
+import { OfflineConflicts, OfflineLogoutDialog, OfflinePassphrase, OfflineStatus } from '../components/layout/OfflineControls';
 import Button from '../components/ui/Button';
 import type { IDataSource } from '../types';
 
@@ -170,21 +170,28 @@ function CloudWorkspaceProvider({ config, initial, auth, ownerId, onEnroll, onDe
   );
 }
 
-function EnrolledWorkspace({ config, vault, canSync, auth, lock, onDenied, onConverted, children }: {
+function EnrolledWorkspace({ config, vault, canSync, auth, lock, forgetAndLogout, onDenied, onConverted, children }: {
   config: CloudConfig;
   vault: OfflineVault;
   canSync: boolean;
   auth: AuthContextType;
   lock: () => void;
+  forgetAndLogout: () => void;
   onConverted: (entry: OfflineVault) => void;
   onDenied: () => void;
   children: ReactNode;
 }) {
   const { t } = useTranslation();
-  const { dataSource, hasPending, status, review, reviewError, online, synchronize, resolve, finishLocalWrites } =
+  const { dataSource, hasPending, lastSyncedAt, status, review, reviewError, online, synchronize, resolve, finishLocalWrites } =
     useOfflineWorkspace(config, vault, canSync, onDenied);
   const [converting, setConverting] = useState(false);
   const [conversionError, setConversionError] = useState<string | null>(null);
+  const [confirmLogout, setConfirmLogout] = useState(false);
+
+  function leaveWorkspace(leave: () => void) {
+    setConfirmLogout(false);
+    void finishLocalWrites().then(leave);
+  }
 
   async function convert() {
     setConverting(true);
@@ -200,18 +207,20 @@ function EnrolledWorkspace({ config, vault, canSync, auth, lock, onDenied, onCon
   }
 
   const lockedByOtherTab = status === 'local_conflict';
-  const pendingLabel = t(hasPending ? 'offline.pending' : 'offline.ready');
+  const canReachServer = online && status !== 'unreachable';
   const notice = status === 'ready' || status === 'pending' ? null : status;
 
   return (
-    <AuthContext.Provider value={{ ...auth, logout: () => { void finishLocalWrites().then(auth.logout); } }}>
+    <AuthContext.Provider value={{ ...auth, logout: () => setConfirmLogout(true) }}>
+      <OfflineLogoutDialog open={confirmLogout} hasPending={hasPending} onClose={() => setConfirmLogout(false)}
+        onLock={() => leaveWorkspace(lock)} onForget={() => leaveWorkspace(forgetAndLogout)} />
       {config.environment === 'preprod' && (
         <p className="border-b border-separator bg-nasa-gray-800 px-4 py-1 text-center text-xs text-accent-ink">{t('cloud.preprod')}</p>
       )}
-      <div className="bg-nasa-gray-800">
+      <div className={canReachServer ? 'bg-nasa-gray-800' : 'bg-warning-surface'}>
         <div className="container mx-auto px-4 py-2 flex flex-wrap items-center justify-between gap-3">
           <div className="text-sm">
-            <p role="status">{!online && `${t('offline.offline_now')} · `}{pendingLabel}</p>
+            <OfflineStatus online={canReachServer} hasPending={hasPending} lastSyncedAt={lastSyncedAt} />
             {notice && <p role="status" className="text-nasa-gray-300">{t(`offline.${notice}`)}</p>}
           </div>
           <div className="flex flex-wrap gap-2">
@@ -227,10 +236,13 @@ function EnrolledWorkspace({ config, vault, canSync, auth, lock, onDenied, onCon
               : <Button size="sm" variant="secondary" onClick={() => void auth.signInWithGoogle?.()}>
                   {t('offline.reconnect')}
                 </Button>)}
-            <Button size="sm" variant="secondary" onClick={() => { void finishLocalWrites().then(lock); }}>{t('offline.lock')}</Button>
+            <Button size="sm" variant="secondary" onClick={() => leaveWorkspace(lock)}>{t('offline.lock')}</Button>
           </div>
         </div>
       </div>
+      {auth.cloudError === 'signout_failed' && (
+        <p role="alert" className="bg-nasa-gray-700 px-4 py-2 text-center">{t('cloud.signout_failed')}</p>
+      )}
       {conversionError && <p role="alert" className="p-2 text-center text-danger-ink">{t(conversionError)}</p>}
       {review && !lockedByOtherTab && (
         <OfflineConflicts conflicts={review.conflicts} error={reviewError} resolve={resolve} />
@@ -362,7 +374,6 @@ function CloudAppProvider({ config, children }: { config: CloudConfig; children:
 
   const logout = () => {
     if (signingOut.current) return;
-    if (record && !window.confirm(t('offline.logout_confirm'))) return;
     signingOut.current = true;
     void (async () => {
       try {
@@ -400,7 +411,7 @@ function CloudAppProvider({ config, children }: { config: CloudConfig; children:
     isLoggedIn: false,
     mode: 'cloud',
     login: () => {},
-    logout,
+    logout: () => { if (!record || window.confirm(t('offline.logout_confirm'))) logout(); },
     signInWithGoogle,
     cloudError: authError ?? (access?.userId === userId ? access?.error : undefined),
   };
@@ -419,7 +430,7 @@ function CloudAppProvider({ config, children }: { config: CloudConfig; children:
             setRecord(entry.record);
             setVault(entry);
           }}
-          lock={() => { setVault(null); setUnlocking(false); }} onDenied={onDenied}>
+          lock={() => { setVault(null); setUnlocking(false); }} forgetAndLogout={logout} onDenied={onDenied}>
           {children}
         </EnrolledWorkspace>
       );
