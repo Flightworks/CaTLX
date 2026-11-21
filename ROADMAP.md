@@ -9,6 +9,7 @@ Concentrer les prochains travaux sur l’interface de CaTLX et valider les chang
 ### Décisions prises
 
 - Un projet peut avoir ses propres catalogues de MTE et sa propre liste d’évaluateurs. Il peut aussi réutiliser des catalogues et des évaluateurs d’un autre projet.
+- Le catalogue MTE global de chaque compte réunit les MTE que ce compte est autorisé à consulter via ses projets. Une MTE partagée vers plusieurs de ses projets apparaît une seule fois. Une MTE liée uniquement à des projets auxquels le compte n’a pas accès reste invisible pour ce compte.
 - L’**administrateur** crée les projets et invite les personnes dans des projets précis.
 - Le **gestionnaire de projet** crée et gère les MTE et les scénarios de son projet, et peut saisir des cotations.
 - L’**évaluateur** dispose d’un accès limité aux études qui lui sont attribuées et à ses cotations.
@@ -22,5 +23,6 @@ Le projet d’origine garde la main sur les modifications d’un catalogue parta
 ### Points à couvrir lors de l’implémentation
 
 - Appliquer les permissions au niveau de chaque projet dans Supabase. Le partage d’un catalogue ou d’un évaluateur ne donne pas accès aux études, aux résultats ni aux cotations du projet d’origine.
+- Appliquer les mêmes droits côté serveur au catalogue MTE global, à la recherche et à l’accès direct aux MTE. Le catalogue agrège les entrées autorisées sans accorder de nouveaux droits de consultation ou de modification.
 - Préciser qui autorise et retire un partage, ainsi que le devenir des références utilisées dans les études existantes. Prévoir la révocation des accès et la resynchronisation des copies hors ligne.
 - Migrer les projets et les cotations existants en conservant leur historique. Vérifier sur `preprod` les rôles, l’isolation entre projets et la saisie successive pour plusieurs évaluateurs avec un seul compte connecté.

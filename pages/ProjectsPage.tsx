@@ -67,10 +67,7 @@ function ProjectList() {
     <div className="space-y-5">
       <div className="flex flex-wrap justify-between items-center gap-3">
         <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">{t('projects.title')}</h1>
-        <div className="flex gap-3 items-center">
-          <Link className="underline md:hidden" to="/projects/catalog">{t('admin.mte_catalog')}</Link>
-          <Button onClick={() => setCreating(true)}>{t('projects.new_project')}</Button>
-        </div>
+        <Button onClick={() => setCreating(true)}>{t('projects.new_project')}</Button>
       </div>
       {projects.length ? (
         <ul className="divide-y divide-separator rounded-lg border border-separator">
@@ -368,7 +365,7 @@ export default function ProjectsPage() {
   return (
     <Routes>
       <Route index element={<ProjectList />} />
-      <Route path="catalog" element={<div className="space-y-5"><Breadcrumbs /><ManageMTEs /></div>} />
+      <Route path="catalog" element={<Navigate to="/catalog" replace />} />
       <Route path=":projectId/studies/:studyId/*" element={<ProjectRoute />} />
       <Route path=":projectId/*" element={<ProjectRoute />} />
     </Routes>

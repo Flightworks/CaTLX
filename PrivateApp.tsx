@@ -7,6 +7,7 @@ import Layout from './components/layout/Layout';
 import AboutPage from './pages/AboutPage';
 import QuickRatingPage from './pages/QuickRatingPage';
 import ProjectsPage from './pages/ProjectsPage';
+import ManageMTEs from './pages/admin/ManageMTEs';
 
 function PrivateRoutes() {
   const { isLoggedIn } = useAuth();
@@ -17,6 +18,7 @@ function PrivateRoutes() {
       <Routes>
         <Route path="/workspace/quick-rating" element={<QuickRatingPage />} />
         <Route path="/projects/*" element={<ProjectsPage />} />
+        <Route path="/catalog" element={<ManageMTEs standalone />} />
         <Route path="/admin" element={<AdminDashboardPage />} />
         <Route path="/evaluator" element={<EvaluatorPage />} />
         <Route path="/about" element={<AboutPage />} />

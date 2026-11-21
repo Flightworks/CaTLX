@@ -7,7 +7,7 @@ import ThemeSwitch from '../ui/ThemeSwitch';
 import { APP_ICON } from '../../assets';
 
 const projectLink = { to: '/projects', label: 'projects.title', path: 'M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z' };
-const catalogLink = { to: '/projects/catalog', label: 'admin.mte_catalog', path: 'M4 6h16v14H4zM4 6l2-3h12l2 3m-10 5h4' };
+const catalogIcon = 'M4 6h16v14H4zM4 6l2-3h12l2 3m-10 5h4';
 
 const scenarioIcon = 'M6 9v6m0-6a3 3 0 1 0 0-6 3 3 0 0 0 0 6zm0 12a3 3 0 1 0 0-6 3 3 0 0 0 0 6zm0-6c7 0 12-1 12-6m0 0a3 3 0 1 0 0-6 3 3 0 0 0 0 6z';
 
@@ -50,7 +50,7 @@ function Navigation({ close, collapsed = false, toggle }: { close?: () => void; 
   const studyPath = study ? `${projectPath}/studies/${encodeURIComponent(study.id)}` : '';
   const projectLinks: NavigationItem[] = [
     { to: projectPath, label: 'projects.studies', path: 'M7 4h10v14H7zM4 7v14h10M10 8h4m-4 4h4', end: true },
-    { ...catalogLink, to: `${projectPath}/catalog` },
+    { to: `${projectPath}/catalog`, label: 'admin.mte_catalog', path: catalogIcon },
     { to: `${projectPath}/evaluators`, label: 'header.evaluators', path: 'M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2m20 0v-2a4 4 0 0 0-3-4M9 3a4 4 0 1 0 0 8 4 4 0 0 0 0-8m8 0a4 4 0 0 1 0 8' },
     { to: `${projectPath}/scenarios`, label: 'projects.scenarios', path: 'M3 4h6v5H3zM15 10h6v5h-6zM3 16h6v5H3zM6 9v7m0-4h9' },
     { to: `${projectPath}/results`, label: 'header.project_results', path: 'M3 4v16h18M8 16v-4m5 4V7m5 9v-6' },
@@ -110,7 +110,8 @@ function Navigation({ close, collapsed = false, toggle }: { close?: () => void; 
       <nav id={toggle ? 'workspace-desktop-navigation' : undefined} aria-label={t('header.main_navigation')}
         className="flex-1 space-y-1 px-2.5 pb-3">
         {renderLink({ ...projectLink, end: true })}
-        {project ? renderSection(t('header.project_section'), projectLinks) : renderLink(catalogLink, true)}
+        {renderLink({ to: '/catalog', label: 'catalog.global_title', path: 'M4 5h5v15H4zM9 5h5v15H9zm5 2 4-2 4 14-4 1zM4 9h10m-10 7h10' })}
+        {project && renderSection(t('header.project_section'), projectLinks)}
         {study && renderSection(study.name, studyLinks)}
         <div className="workspace-nav-section">
           {links.map(item => renderLink(item))}

@@ -58,7 +58,7 @@ const AdminDashboardPage: React.FC = () => {
           <TabButton tabId="stats">{t('admin.statistics')}</TabButton>
           <TabButton tabId="evaluators">{t('admin.manage_evaluators')}</TabButton>
           <TabButton tabId="studies">{t('admin.manage_studies')}</TabButton>
-          <TabButton tabId="mtes">{t('admin.mte_catalog')}</TabButton>
+          <TabButton tabId="mtes">{t('catalog.global_title')}</TabButton>
         </nav>
       </div>
       <div>{renderTabContent()}</div>

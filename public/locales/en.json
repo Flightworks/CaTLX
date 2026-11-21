@@ -29,6 +29,7 @@
     "no_studies": "No studies in this project."
   },
   "catalog": {
+    "global_title": "Global MTE catalog",
     "new": "Add New MTE",
     "edit": "Edit MTE",
     "save": "Save MTE",

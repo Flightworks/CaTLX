@@ -64,12 +64,13 @@ const MTEForm: React.FC<{
 };
 
 
-const ManageMTEs: React.FC<{ projectId?: string }> = ({ projectId }) => {
+const ManageMTEs: React.FC<{ projectId?: string; standalone?: boolean }> = ({ projectId, standalone }) => {
   const { t } = useTranslation();
   const { mtes, studies, ratings, addMte, updateMte, deleteMte } = useData();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingMte, setEditingMte] = useState<MTE | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const Heading = standalone ? 'h1' : 'h2';
 
   const catalog = useMemo(() => {
     if (!projectId) return mtes;
@@ -111,9 +112,9 @@ const ManageMTEs: React.FC<{ projectId?: string }> = ({ projectId }) => {
   return (
     <Card>
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-4">
-        <h2 className="text-xl font-bold">{t('admin.mte_catalog')}</h2>
+        <Heading className="text-xl font-bold">{t(projectId ? 'admin.mte_catalog' : 'catalog.global_title')}</Heading>
         {projectId ? (
-          <Link to="/projects/catalog" className="text-sm text-accent-ink underline">{t('catalog.open_global')}</Link>
+          <Link to="/catalog" className="text-sm text-accent-ink underline">{t('catalog.open_global')}</Link>
         ) : <Button onClick={handleAddNew} className="w-full sm:w-auto">{t('catalog.new')}</Button>}
       </div>
 
