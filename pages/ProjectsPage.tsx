@@ -13,19 +13,12 @@ import ManageStudies from './admin/ManageStudies';
 import ManageMTEs from './admin/ManageMTEs';
 import ManageEvaluators from './admin/ManageEvaluators';
 import ViewStats from './admin/ViewStats';
+import { projectPath, scenarioPath, studyPath } from './projectPaths';
 
 const inputClass = 'w-full rounded-md bg-nasa-gray-900 border border-nasa-gray-600 p-2 text-foreground';
 const tabClass = ({ isActive }: { isActive: boolean }) => isActive
   ? 'border-b-2 border-indigo-300 px-2.5 py-2 text-sm font-semibold text-foreground'
   : 'border-b-2 border-transparent px-2.5 py-2 text-sm text-nasa-gray-300 hover:text-foreground';
-
-function projectPath(id: string) {
-  return `/projects/${encodeURIComponent(id)}`;
-}
-
-function studyPath(study: Study) {
-  return `${projectPath(study.projectId)}/studies/${encodeURIComponent(study.id)}`;
-}
 
 function Breadcrumbs() {
   const { t } = useTranslation();
@@ -253,7 +246,7 @@ function Scenarios({ study, title }: { study: Study; title?: string }) {
           {entries.map(scenario => (
             <li key={scenario.id} className="rounded-md bg-nasa-gray-900 p-3 flex flex-wrap justify-between items-center gap-3">
               <div>
-                <Link className="font-semibold underline" to={`${studyPath(study)}/scenarios/${encodeURIComponent(scenario.id)}`}>{scenario.name}</Link>
+                <Link className="font-semibold underline" to={scenarioPath(study, scenario.id)}>{scenario.name}</Link>
                 <p className="text-sm text-nasa-gray-300">
                   {t('projects.task_count', { count: scenario.mteIds.length })}
                   {scenario.archived && ` · ${t('projects.archived')}`}
@@ -333,7 +326,7 @@ function StudyOverview({ project, study }: { project: Project; study: Study }) {
                 <h2 className="mr-2 text-sm font-medium text-nasa-gray-300">{t('projects.scenarios')}</h2>
                   {activeScenarios.map(scenario => (
                     <Link key={scenario.id} className="rounded border border-separator px-2.5 py-1.5 text-sm text-accent-ink hover:bg-hover-surface"
-                      to={`${path}/scenarios/${encodeURIComponent(scenario.id)}`}>
+                      to={scenarioPath(study, scenario.id)}>
                       {scenario.name} · {t('projects.task_count', { count: scenario.mteIds.length })}
                     </Link>
                   ))}
