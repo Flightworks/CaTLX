@@ -12,7 +12,7 @@ export default function PublicQuickRating() {
       <header className="bg-nasa-gray-800">
         <div className="container mx-auto px-4 py-4 flex flex-wrap items-center justify-between gap-3">
           <Link to="/" className="inline-flex items-center gap-2 font-bold">
-            <img src={APP_ICON} alt="" className="w-8 h-8" /> CaTLX
+            <img src={APP_ICON} alt="" className="w-8 h-8 rounded-lg" /> CaTLX
           </Link>
           <div className="flex items-center gap-4">
             <Link to="/login" className="underline">{t('login.cloud_title')}</Link>

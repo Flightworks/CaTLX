@@ -49,7 +49,6 @@ export default defineConfig(({ mode }) => {
       react(),
       VitePWA({
         registerType: 'autoUpdate',
-        includeAssets: ['logo.png', 'icon.svg', 'pwa-icon.png'],
         manifest: {
           name: 'CaTLX',
           short_name: 'CaTLX',
@@ -62,30 +61,19 @@ export default defineConfig(({ mode }) => {
           theme_color: '#0B3D91',
           icons: [
             {
-              src: 'logo.png',
-              sizes: '100x94',
-              type: 'image/png'
-            },
-            {
-              src: 'pwa-icon.png',
+              src: 'catlx-192.png',
               sizes: '192x192',
               type: 'image/png',
               purpose: 'any'
             },
             {
-              src: 'pwa-icon.png',
+              src: 'catlx-512.png',
               sizes: '512x512',
               type: 'image/png',
               purpose: 'any'
             },
             {
-              src: 'pwa-icon.png',
-              sizes: '192x192',
-              type: 'image/png',
-              purpose: 'maskable'
-            },
-            {
-              src: 'pwa-icon.png',
+              src: 'catlx-maskable-512.png',
               sizes: '512x512',
               type: 'image/png',
               purpose: 'maskable'

@@ -43,7 +43,7 @@ const LoginPage: React.FC = () => {
       <div className="text-center p-8 max-w-md w-full">
         <div className="mb-8">
           <div className="flex items-center justify-center">
-            <img src={APP_ICON} alt="CaTLX Logo" className="w-12 h-12 rounded-full mr-3" />
+            <img src={APP_ICON} alt="" className="w-12 h-12 rounded-xl mr-3" />
             <h1 className="text-4xl font-bold text-foreground tracking-wider">{t('login.title')}</h1>
           </div>
           <p className="text-nasa-gray-300 mt-2">{t('login.subtitle')}</p>
