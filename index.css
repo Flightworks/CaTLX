@@ -66,11 +66,6 @@
   filter: brightness(.56);
 }
 
-[data-theme-toggle][aria-pressed="true"] {
-  background: var(--workspace-active);
-  color: var(--workspace-active-text);
-}
-
 
 .express-tlx-slider {
   appearance: none;

@@ -178,7 +178,8 @@
     "discard_confirm": "Any unsaved changes will be lost. Continue?"
   },
   "header": {
-    "light_mode": "Light mode",
+    "switch_to_light_mode": "Switch to light mode",
+    "switch_to_dark_mode": "Switch to dark mode",
     "administration": "Administration",
     "main_navigation": "Main navigation",
     "open_menu": "Open menu",

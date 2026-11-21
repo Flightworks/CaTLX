@@ -178,7 +178,8 @@
     "discard_confirm": "Les modifications qui restent à enregistrer seront perdues. Continuer ?"
   },
   "header": {
-    "light_mode": "Mode clair",
+    "switch_to_light_mode": "Passer en mode clair",
+    "switch_to_dark_mode": "Passer en mode sombre",
     "administration": "Administration",
     "main_navigation": "Navigation principale",
     "open_menu": "Ouvrir le menu",
