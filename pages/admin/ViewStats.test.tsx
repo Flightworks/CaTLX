@@ -186,7 +186,7 @@ describe('ViewStats Component Logic and Display', () => {
 
     // Check number of evaluations
     expect(within(mte1Container!).queryByText('2')).not.toBeNull();
-    expect(within(mte1Container!).queryByText('EVALS')).not.toBeNull();
+    expect(within(mte1Container!).queryByText('Ratings')).not.toBeNull();
     
     // Check average overall score. There will be multiple '75.0' texts, we need to find the main one.
     const avgScoreElement = within(mte1Container!)

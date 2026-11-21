@@ -3,6 +3,7 @@ import { Link, NavLink } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../contexts/AppContext';
 import LanguageSwitcher from '../ui/LanguageSwitcher';
+import ThemeSwitch from '../ui/ThemeSwitch';
 import { APP_ICON } from '../../assets';
 
 const links = [
@@ -51,9 +52,10 @@ function Navigation({ close }: { close?: () => void }) {
           </NavLink>
         ))}
       </nav>
-      <div className="space-y-3 border-t border-white/10 px-4 py-4">
+      <div className="space-y-3 border-t border-separator px-4 py-4">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <LanguageSwitcher />
+          <ThemeSwitch />
           {mode !== 'cloud' && <span className="text-xs text-nasa-gray-300">{t(`header.${mode}`)}</span>}
         </div>
         {offlineEnrollment && (
@@ -63,7 +65,7 @@ function Navigation({ close }: { close?: () => void }) {
               <Icon path="M12 3v12m-4-4 4 4 4-4M5 15v5h14v-5" />
               {t('offline.enable')}
             </button>
-            {offlineEnrollment.error && <p role="alert" className="text-xs text-red-300">{t(offlineEnrollment.error)}</p>}
+            {offlineEnrollment.error && <p role="alert" className="text-xs text-danger-ink">{t(offlineEnrollment.error)}</p>}
           </>
         )}
         <button type="button" className="workspace-nav-link w-full" onClick={() => { close?.(); logout(); }}>
@@ -92,7 +94,7 @@ export default function Header() {
       <aside className="workspace-sidebar hidden md:sticky md:top-0 md:flex md:h-dvh md:w-52 md:shrink-0 md:flex-col lg:w-56">
         <Navigation />
       </aside>
-      <header className="workspace-sidebar flex min-h-12 items-center justify-between gap-3 border-b border-white/10 px-3 md:hidden">
+      <header className="workspace-sidebar flex min-h-12 items-center justify-between gap-3 border-b border-separator px-3 md:hidden">
         <button ref={openButton} type="button" className="workspace-icon-button"
           aria-label={t('header.open_menu')} aria-haspopup="dialog" aria-controls="workspace-menu"
           onClick={() => drawer.current?.showModal()}>

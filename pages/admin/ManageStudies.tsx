@@ -38,20 +38,20 @@ const ManageStudyMTEsModal: React.FC<{
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Available MTEs */}
         <div>
-          <h3 className="text-lg font-semibold text-white mb-2">{t('study_settings.available_mtes')}</h3>
+          <h3 className="text-lg font-semibold text-foreground mb-2">{t('study_settings.available_mtes')}</h3>
           <input
             type="search"
             placeholder={t('projects.search_tasks')}
             aria-label={t('projects.search_tasks')}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full bg-nasa-gray-900 border-nasa-gray-600 rounded-md shadow-sm focus:ring-nasa-blue focus:border-nasa-blue text-white placeholder-nasa-gray-400 mb-3"
+            className="w-full bg-nasa-gray-900 border-nasa-gray-600 rounded-md shadow-sm focus:ring-nasa-blue focus:border-nasa-blue text-foreground placeholder-nasa-gray-400 mb-3"
           />
           <div className="space-y-2 max-h-80 overflow-y-auto pr-2">
             {availableMtes.map(mte => (
               <div key={mte.id} className="flex justify-between items-center p-2 bg-nasa-gray-700 rounded">
                 <div>
-                  <p className="text-sm font-medium text-white">{mte.name}</p>
+                  <p className="text-sm font-medium text-foreground">{mte.name}</p>
                   <p className="text-xs text-nasa-gray-400 font-mono">[{mte.refNumber}]</p>
                 </div>
                 <Button size="sm" onClick={() => addMTEToStudy(study.id, mte.id)}>{t('study_settings.add')}</Button>
@@ -62,12 +62,12 @@ const ManageStudyMTEsModal: React.FC<{
         </div>
         {/* MTEs in Study */}
         <div>
-          <h3 className="text-lg font-semibold text-white mb-2">{t('study_settings.assigned_mtes', { count: mtesInStudy.length })}</h3>
+          <h3 className="text-lg font-semibold text-foreground mb-2">{t('study_settings.assigned_mtes', { count: mtesInStudy.length })}</h3>
            <div className="space-y-2 max-h-96 overflow-y-auto pr-2">
             {mtesInStudy.map(mte => (
               <div key={mte.id} className="flex justify-between items-center p-2 bg-nasa-gray-700 rounded">
                 <div>
-                  <p className="text-sm font-medium text-white">{mte.name}</p>
+                  <p className="text-sm font-medium text-foreground">{mte.name}</p>
                   <p className="text-xs text-nasa-gray-400 font-mono">[{mte.refNumber}]</p>
                 </div>
                 <Button size="sm" variant="danger" disabled={ratings.some(rating => rating.studyId === study.id && rating.mteId === mte.id) ||
@@ -107,11 +107,11 @@ const ManageStudyEvaluatorsModal: React.FC<{
     <Modal isOpen={true} onClose={onClose} title={t('study_settings.manage_evaluators_for', { study: study.name })} size="4xl">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div>
-          <h3 className="text-lg font-semibold text-white mb-2">{t('study_settings.available_evaluators')}</h3>
+          <h3 className="text-lg font-semibold text-foreground mb-2">{t('study_settings.available_evaluators')}</h3>
           <div className="space-y-2 max-h-80 overflow-y-auto pr-2">
             {availableEvaluators.map(evaluator => (
               <div key={evaluator.id} className="flex justify-between items-center p-2 bg-nasa-gray-700 rounded">
-                <p className="text-sm font-medium text-white">{evaluator.name}</p>
+                <p className="text-sm font-medium text-foreground">{evaluator.name}</p>
                 <Button size="sm" onClick={() => addEvaluatorToStudy(study.id, evaluator.id)}>{t('study_settings.add')}</Button>
               </div>
             ))}
@@ -119,11 +119,11 @@ const ManageStudyEvaluatorsModal: React.FC<{
           </div>
         </div>
         <div>
-          <h3 className="text-lg font-semibold text-white mb-2">{t('study_settings.assigned_evaluators', { count: evaluatorsInStudy.length })}</h3>
+          <h3 className="text-lg font-semibold text-foreground mb-2">{t('study_settings.assigned_evaluators', { count: evaluatorsInStudy.length })}</h3>
            <div className="space-y-2 max-h-96 overflow-y-auto pr-2">
             {evaluatorsInStudy.map(evaluator => (
               <div key={evaluator.id} className="flex justify-between items-center p-2 bg-nasa-gray-700 rounded">
-                <p className="text-sm font-medium text-white">{evaluator.name}</p>
+                <p className="text-sm font-medium text-foreground">{evaluator.name}</p>
                 <Button size="sm" variant="danger" onClick={() => removeEvaluatorFromStudy(study.id, evaluator.id)}>{t('study_settings.remove')}</Button>
               </div>
             ))}
@@ -157,15 +157,15 @@ const StudyForm: React.FC<{
     <form onSubmit={handleSubmit} className="space-y-4">
       <div>
         <label htmlFor={`${formId}-name`} className="block text-sm font-medium text-nasa-gray-300">{t('study_settings.name')}</label>
-        <input id={`${formId}-name`} type="text" value={name} onChange={e => setName(e.target.value)} required className="mt-1 block w-full bg-nasa-gray-700 border-nasa-gray-600 rounded-md shadow-sm focus:ring-nasa-blue focus:border-nasa-blue text-white" />
+        <input id={`${formId}-name`} type="text" value={name} onChange={e => setName(e.target.value)} required className="mt-1 block w-full bg-nasa-gray-700 border-nasa-gray-600 rounded-md shadow-sm focus:ring-nasa-blue focus:border-nasa-blue text-foreground" />
       </div>
        <div>
         <label htmlFor={`${formId}-date`} className="block text-sm font-medium text-nasa-gray-300">{t('study_settings.date')}</label>
-        <input id={`${formId}-date`} type="date" value={date} onChange={e => setDate(e.target.value)} required className="mt-1 block w-full bg-nasa-gray-700 border-nasa-gray-600 rounded-md shadow-sm focus:ring-nasa-blue focus:border-nasa-blue text-white" />
+        <input id={`${formId}-date`} type="date" value={date} onChange={e => setDate(e.target.value)} required className="mt-1 block w-full bg-nasa-gray-700 border-nasa-gray-600 rounded-md shadow-sm focus:ring-nasa-blue focus:border-nasa-blue text-foreground" />
       </div>
       <div>
         <label htmlFor={`${formId}-description`} className="block text-sm font-medium text-nasa-gray-300">{t('evaluator.optional_description')}</label>
-        <textarea id={`${formId}-description`} value={description} onChange={e => setDescription(e.target.value)} rows={3} className="mt-1 block w-full bg-nasa-gray-700 border-nasa-gray-600 rounded-md shadow-sm focus:ring-nasa-blue focus:border-nasa-blue text-white" />
+        <textarea id={`${formId}-description`} value={description} onChange={e => setDescription(e.target.value)} rows={3} className="mt-1 block w-full bg-nasa-gray-700 border-nasa-gray-600 rounded-md shadow-sm focus:ring-nasa-blue focus:border-nasa-blue text-foreground" />
       </div>
       <div className="flex justify-end space-x-2">
         <Button type="button" variant="secondary" onClick={onCancel}>{t('evaluator.cancel')}</Button>
@@ -177,7 +177,7 @@ const StudyForm: React.FC<{
 
 
 const ManageStudies: React.FC<{ projectId?: string; studyId?: string }> = ({ projectId, studyId }) => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { studies, mtes, ratings, evaluators, addStudy, updateStudy, deleteStudy } = useData();
   const session = useSession();
   const selectedProjectId = projectId ?? session.selectedProjectId;
@@ -227,7 +227,7 @@ const ManageStudies: React.FC<{ projectId?: string; studyId?: string }> = ({ pro
           const studyEvaluators = study.evaluatorIds.map(id => evaluators.find(e => e.id === id)).filter((e): e is Evaluator => !!e);
           if (projectId && !studyId) {
             return (
-              <Link key={study.id} className="flex flex-wrap justify-between items-center gap-3 rounded-md border border-white/10 px-4 py-3 hover:bg-white/5"
+              <Link key={study.id} className="flex flex-wrap justify-between items-center gap-3 rounded-md border border-separator px-4 py-3 hover:bg-hover-surface"
                 to={`/projects/${encodeURIComponent(projectId)}/studies/${encodeURIComponent(study.id)}`}>
                 <div>
                   <h3 className="font-semibold text-lg">{study.name}</h3>
@@ -241,8 +241,8 @@ const ManageStudies: React.FC<{ projectId?: string; studyId?: string }> = ({ pro
             <div key={study.id} className="p-4 bg-nasa-gray-900 rounded-lg border border-nasa-gray-700">
               <div className="flex flex-col sm:flex-row justify-between items-start gap-2">
                   <div>
-                      <h3 className="text-lg font-semibold text-white">{study.name}</h3>
-                      <p className="text-sm text-nasa-gray-300 font-medium">{new Date(study.date).toLocaleDateString()}</p>
+                      <h3 className="text-lg font-semibold text-foreground">{study.name}</h3>
+                      <p className="text-sm text-nasa-gray-300 font-medium">{new Date(study.date).toLocaleDateString(i18n.resolvedLanguage)}</p>
                       <p className="text-sm text-nasa-gray-400 mt-1">{study.description}</p>
                   </div>
                   <div className="flex-shrink-0 flex flex-wrap items-center gap-2">

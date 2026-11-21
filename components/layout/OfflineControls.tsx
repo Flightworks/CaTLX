@@ -5,7 +5,7 @@ import Modal from '../ui/Modal';
 import { TLX_DIMENSIONS_INFO } from '../../constants';
 import type { WorkspaceConflict } from '../../data/workspaceMerge';
 
-const inputClass = 'w-full rounded-md bg-nasa-gray-900 border border-nasa-gray-600 p-2 text-white';
+const inputClass = 'w-full rounded-md bg-nasa-gray-900 border border-nasa-gray-600 p-2 text-foreground';
 
 export function OfflinePassphrase({ submit, onClose }: {
   submit: (phrase: string) => Promise<void>; onClose: () => void;
@@ -38,7 +38,7 @@ export function OfflinePassphrase({ submit, onClose }: {
           <input type="password" autoComplete="current-password" className={inputClass}
             value={phrase} required onChange={event => setPhrase(event.target.value)} />
         </label>
-        {error && <p role="alert" className="text-red-300">{t('offline.unlock_failed')}</p>}
+        {error && <p role="alert" className="text-danger-ink">{t('offline.unlock_failed')}</p>}
         <Button type="submit" disabled={busy}>{t('offline.legacy_unlock')}</Button>
       </form>
     </Modal>
@@ -59,7 +59,7 @@ export function OfflineConflicts({ conflicts, error, resolve }: {
   return (
     <section className="container mx-auto my-4 rounded-lg bg-nasa-gray-800 p-4 space-y-4" aria-label={t('offline.conflicts')}>
       <p role="alert">{t('offline.conflicts')}</p>
-      {error && <p role="alert" className="text-red-300">{t('offline.invalid_resolution')}</p>}
+      {error && <p role="alert" className="text-danger-ink">{t('offline.invalid_resolution')}</p>}
       {conflicts.map(conflict => (
         <div className="border border-nasa-gray-600 rounded-md p-3 space-y-3" key={JSON.stringify(conflict.keys)}>
           <div className="grid gap-4 sm:grid-cols-2">

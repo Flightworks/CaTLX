@@ -137,7 +137,7 @@ function CloudWorkspaceProvider({ config, initial, auth, ownerId, onEnroll, onDe
         : undefined,
     }}>
       {config.environment === 'preprod' && (
-        <p className="border-b border-white/10 bg-[#22232d] px-4 py-1 text-center text-xs text-indigo-200">{t('cloud.preprod')}</p>
+        <p className="border-b border-separator bg-nasa-gray-800 px-4 py-1 text-center text-xs text-accent-ink">{t('cloud.preprod')}</p>
       )}
       {auth.cloudError === 'signout_failed' && (
         <p role="alert" className="bg-nasa-gray-700 px-4 py-2 text-center">{t('cloud.signout_failed')}</p>
@@ -206,7 +206,7 @@ function EnrolledWorkspace({ config, vault, canSync, auth, lock, onDenied, onCon
   return (
     <AuthContext.Provider value={{ ...auth, logout: () => { void finishLocalWrites().then(auth.logout); } }}>
       {config.environment === 'preprod' && (
-        <p className="border-b border-white/10 bg-[#22232d] px-4 py-1 text-center text-xs text-indigo-200">{t('cloud.preprod')}</p>
+        <p className="border-b border-separator bg-nasa-gray-800 px-4 py-1 text-center text-xs text-accent-ink">{t('cloud.preprod')}</p>
       )}
       <div className="bg-nasa-gray-800">
         <div className="container mx-auto px-4 py-2 flex flex-wrap items-center justify-between gap-3">
@@ -231,7 +231,7 @@ function EnrolledWorkspace({ config, vault, canSync, auth, lock, onDenied, onCon
           </div>
         </div>
       </div>
-      {conversionError && <p role="alert" className="p-2 text-center text-red-300">{t(conversionError)}</p>}
+      {conversionError && <p role="alert" className="p-2 text-center text-danger-ink">{t(conversionError)}</p>}
       {review && !lockedByOtherTab && (
         <OfflineConflicts conflicts={review.conflicts} error={reviewError} resolve={resolve} />
       )}
@@ -443,7 +443,7 @@ function CloudAppProvider({ config, children }: { config: CloudConfig; children:
               setDeviceBusy(false);
             }
           }}>{t('offline.unlock')}</Button>
-          {deviceError && <p role="alert" className="mt-2 text-red-300">{t(deviceError)}</p>}
+          {deviceError && <p role="alert" className="mt-2 text-danger-ink">{t(deviceError)}</p>}
         </div>
         {unlocking && !compatibleRecord.credentialId && <OfflinePassphrase onClose={() => setUnlocking(false)} submit={async phrase => {
           const latest = await readOfflineCopy(config.offlineScope);

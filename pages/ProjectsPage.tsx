@@ -14,10 +14,10 @@ import ManageMTEs from './admin/ManageMTEs';
 import ManageEvaluators from './admin/ManageEvaluators';
 import ViewStats from './admin/ViewStats';
 
-const inputClass = 'w-full rounded-md bg-nasa-gray-900 border border-nasa-gray-600 p-2 text-white';
+const inputClass = 'w-full rounded-md bg-nasa-gray-900 border border-nasa-gray-600 p-2 text-foreground';
 const tabClass = ({ isActive }: { isActive: boolean }) => isActive
-  ? 'border-b-2 border-indigo-300 px-2.5 py-2 text-sm font-semibold text-white'
-  : 'border-b-2 border-transparent px-2.5 py-2 text-sm text-nasa-gray-300 hover:text-white';
+  ? 'border-b-2 border-indigo-300 px-2.5 py-2 text-sm font-semibold text-foreground'
+  : 'border-b-2 border-transparent px-2.5 py-2 text-sm text-nasa-gray-300 hover:text-foreground';
 
 function projectPath(id: string) {
   return `/projects/${encodeURIComponent(id)}`;
@@ -56,10 +56,10 @@ function ProjectList() {
         </div>
       </div>
       {projects.length ? (
-        <ul className="divide-y divide-white/10 rounded-lg border border-white/10">
+        <ul className="divide-y divide-separator rounded-lg border border-separator">
           {projects.map(project => (
             <li key={project.id}>
-              <Link className="block px-4 py-3 transition-colors hover:bg-white/5" to={projectPath(project.id)}>
+              <Link className="block px-4 py-3 transition-colors hover:bg-hover-surface" to={projectPath(project.id)}>
                 <h2 className="font-semibold text-lg">{project.name}</h2>
                 <p className="text-sm text-nasa-gray-300">
                   {t('projects.study_count', { count: studies.filter(study => study.projectId === project.id).length })}
@@ -93,7 +93,7 @@ function ProjectOverview({ project }: { project: Project }) {
         <Button variant="secondary" onClick={() => setEditing(true)}>{t('projects.edit_project')}</Button>
       </div>
       {project.description && <p>{project.description}</p>}
-      <nav className="flex flex-wrap gap-x-2 border-b border-white/10">
+      <nav className="flex flex-wrap gap-x-2 border-b border-separator">
         <NavLink end className={tabClass} to={path}>{t('projects.studies')}</NavLink>
         <Link className="rounded-md px-3 py-2 hover:bg-nasa-gray-700" to="/projects/catalog">{t('admin.mte_catalog')}</Link>
         <NavLink className={tabClass} to={`${path}/evaluators`}>{t('admin.manage_evaluators')}</NavLink>
@@ -189,7 +189,7 @@ function ScenarioForm({ study, scenario, onClose }: { study: Study; scenario?: S
             </ol>
           </div>
         )}
-        {error && <p role="alert" className="text-red-300">{t('evaluator.error_submitting')}</p>}
+        {error && <p role="alert" className="text-danger-ink">{t('evaluator.error_submitting')}</p>}
         <div className="flex justify-end gap-2">
           <Button type="button" variant="secondary" onClick={onClose} disabled={saving}>{t('evaluator.cancel')}</Button>
           <Button type="submit" disabled={saving || !name.trim()}>{t(saving ? 'evaluator.submitting' : 'evaluator.save_changes')}</Button>
@@ -212,7 +212,7 @@ function Scenarios({ study }: { study: Study }) {
         <h2 className="text-xl font-bold">{t('projects.scenarios')}</h2>
         <Button onClick={() => setEditor({})}>{t('projects.new_scenario')}</Button>
       </div>
-      {error && <p role="alert" className="text-red-300">{t('evaluator.error_submitting')}</p>}
+      {error && <p role="alert" className="text-danger-ink">{t('evaluator.error_submitting')}</p>}
       {entries.length ? (
         <ul className="space-y-3">
           {entries.map(scenario => (
@@ -281,7 +281,7 @@ function StudyOverview({ project, study }: { project: Project; study: Study }) {
     <div className="space-y-5">
       <Breadcrumbs project={project} study={study} />
       <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">{study.name}</h1>
-      <nav className="flex flex-wrap gap-x-2 border-b border-white/10">
+      <nav className="flex flex-wrap gap-x-2 border-b border-separator">
         <NavLink end className={tabClass} to={path}>{t('projects.study_tasks')}</NavLink>
         <NavLink className={tabClass} to={`${path}/scenarios`}>{t('projects.scenarios')}</NavLink>
         <NavLink className={tabClass} to={`${path}/results`}>{t('projects.results')}</NavLink>
@@ -294,10 +294,10 @@ function StudyOverview({ project, study }: { project: Project; study: Study }) {
         <Route index element={(
           <div className="space-y-4">
             {activeScenarios.length > 0 && (
-              <section className="flex flex-wrap items-center gap-2 border-b border-white/10 pb-3">
+              <section className="flex flex-wrap items-center gap-2 border-b border-separator pb-3">
                 <h2 className="mr-2 text-sm font-medium text-nasa-gray-300">{t('projects.scenarios')}</h2>
                   {activeScenarios.map(scenario => (
-                    <Link key={scenario.id} className="rounded border border-white/10 px-2.5 py-1.5 text-sm text-indigo-100 hover:bg-white/10"
+                    <Link key={scenario.id} className="rounded border border-separator px-2.5 py-1.5 text-sm text-accent-ink hover:bg-hover-surface"
                       to={`${path}/scenarios/${encodeURIComponent(scenario.id)}`}>
                       {scenario.name} · {t('projects.task_count', { count: scenario.mteIds.length })}
                     </Link>

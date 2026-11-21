@@ -51,7 +51,7 @@ export default defineConfig(({ mode }) => {
         registerType: 'autoUpdate',
         includeAssets: ['logo.png', 'icon.svg', 'pwa-icon.png'],
         manifest: {
-          name: 'CaTLX Workload Assessment',
+          name: 'CaTLX',
           short_name: 'CaTLX',
           description: 'A web application to conduct NASA Task Load Index (TLX) assessments.',
           id: base,

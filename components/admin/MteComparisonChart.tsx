@@ -40,12 +40,12 @@ const MteComparisonChart: React.FC<{ data: AggregatedMteStats[] }> = ({ data }) 
       <div className="space-y-4">
         {sortedData.map(mte => (
           <div key={mte.mteId} className="grid grid-cols-12 gap-x-2 sm:gap-x-4 items-center text-sm">
-            <div className="col-span-12 sm:col-span-4 truncate text-white" title={`[${mte.mteRefNumber}] ${mte.mteName}`}>
+            <div className="col-span-12 sm:col-span-4 truncate text-foreground" title={`[${mte.mteRefNumber}] ${mte.mteName}`}>
               <span className="font-mono text-xs text-nasa-gray-400 mr-2">[{mte.mteRefNumber}]</span>
               {mte.mteName}
             </div>
             <div className="col-span-10 sm:col-span-7">
-              <div className="w-full bg-nasa-gray-700 rounded-full h-5 relative" title={`Average Score: ${mte.avgOverallScore.toFixed(1)}`}>
+              <div className="w-full bg-nasa-gray-700 rounded-full h-5 relative" title={t('charts.average', { score: mte.avgOverallScore.toFixed(1) })}>
                 <div
                   className="h-5 rounded-full"
                   style={{
@@ -54,8 +54,8 @@ const MteComparisonChart: React.FC<{ data: AggregatedMteStats[] }> = ({ data }) 
                   }}
                 >
                 </div>
-                <span className="absolute inset-0 flex items-center justify-center text-white text-xs font-bold drop-shadow-[0_1px_1px_rgba(0,0,0,0.7)] pointer-events-none">
-                  {mte.avgOverallScore.toFixed(1)}
+                <span className="absolute inset-0 flex items-center justify-center text-xs font-bold pointer-events-none">
+                  <span className="rounded bg-nasa-gray-900 px-1 text-foreground">{mte.avgOverallScore.toFixed(1)}</span>
                 </span>
               </div>
             </div>

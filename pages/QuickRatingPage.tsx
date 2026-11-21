@@ -80,7 +80,7 @@ const PairwiseComparisonView: React.FC<{
     const DimensionCard: React.FC<{ dimension: typeof dimensionA, onSelect: () => void }> = ({ dimension, onSelect }) => (
         <div
             onClick={onSelect}
-            className="w-full sm:w-1/2 p-6 bg-nasa-gray-900 rounded-lg cursor-pointer transition-all duration-200 ease-in-out hover:bg-nasa-light-blue hover:shadow-2xl hover:scale-105 border-2 border-nasa-gray-700 hover:border-nasa-blue"
+            className="w-full sm:w-1/2 p-6 bg-nasa-gray-900 rounded-lg cursor-pointer transition-all duration-200 ease-in-out hover:bg-nasa-gray-700 hover:shadow-2xl hover:scale-105 border-2 border-nasa-gray-700 hover:border-nasa-blue"
             role="button"
             tabIndex={0}
             onKeyDown={(e) => {
@@ -90,8 +90,8 @@ const PairwiseComparisonView: React.FC<{
                 }
             }}
         >
-            <h3 className="text-xl font-bold text-center text-white">{dimension.title}</h3>
-            <p className="text-sm text-nasa-gray-400 mt-2 text-center">{dimension.description}</p>
+            <h3 className="text-xl font-bold text-center text-foreground">{t(`tlx_dimensions.${dimension.id.toLowerCase().replaceAll(' ', '_')}.title`)}</h3>
+            <p className="text-sm text-nasa-gray-400 mt-2 text-center">{t(`tlx_dimensions.${dimension.id.toLowerCase().replaceAll(' ', '_')}.description`)}</p>
         </div>
     );
 
@@ -104,7 +104,7 @@ const PairwiseComparisonView: React.FC<{
 
                 <div>
                     <div className="flex justify-between mb-1">
-                        <span className="text-base font-medium text-nasa-blue">{t('evaluator.comparison', { current: currentPairIndex + 1, total: PAIRWISE_COMBINATIONS.length })}</span>
+                        <span className="text-base font-medium text-accent-ink">{t('evaluator.comparison', { current: currentPairIndex + 1, total: PAIRWISE_COMBINATIONS.length })}</span>
                     </div>
                     <div className="w-full bg-nasa-gray-700 rounded-full h-2.5">
                         <div className="bg-nasa-blue h-2.5 rounded-full transition-all duration-300 ease-in-out" style={{ width: `${progress}%` }}></div>
@@ -112,7 +112,7 @@ const PairwiseComparisonView: React.FC<{
                 </div>
 
                 <div className="text-center">
-                    <h2 className="text-lg font-semibold text-white mb-4">{t('evaluator.which_workload')}</h2>
+                    <h2 className="text-lg font-semibold text-foreground mb-4">{t('evaluator.which_workload')}</h2>
                     <div className="flex flex-col sm:flex-row items-stretch justify-center gap-4">
                         <DimensionCard dimension={dimensionA} onSelect={() => handleSelect(dimensionA.id)} />
                         <DimensionCard dimension={dimensionB} onSelect={() => handleSelect(dimensionB.id)} />
@@ -171,13 +171,13 @@ const QuickRatingPage: React.FC = () => {
         <div className="space-y-6">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <div>
-                    <h1 className="text-2xl font-bold text-white">{t('quick_rating.title')}</h1>
+                    <h1 className="text-2xl font-bold text-foreground">{t('quick_rating.title')}</h1>
                     <p className="text-nasa-gray-400">{t('quick_rating.description')}</p>
                 </div>
                 <div className="flex items-center gap-4">
                     <div className="text-right">
                         <span className="text-sm text-nasa-gray-400 block">{t('evaluator.overall_workload')}</span>
-                        <span className="text-3xl font-bold" style={{ color: getScoreColor(totalWeightedScore) }}>
+                        <span className="text-3xl font-bold" data-score-tone style={{ color: getScoreColor(totalWeightedScore) }}>
                             {totalWeightedScore.toFixed(2)}
                         </span>
                         <Button onClick={() => downloadCsv('catlx-quick-rating.csv', [
@@ -218,7 +218,7 @@ const QuickRatingPage: React.FC = () => {
                     <Card title={t('evaluator.weights')}>
                         <div className="space-y-4">
                             <div className="flex justify-between items-center">
-                                <span className="text-white font-medium">{isWeighted ? t('evaluator.weighted') : t('evaluator.unweighted')}</span>
+                                <span className="text-foreground font-medium">{isWeighted ? t('evaluator.weighted') : t('evaluator.unweighted')}</span>
                                 <ToggleSwitch
                                     label=""
                                     options={[
@@ -260,12 +260,12 @@ const QuickRatingPage: React.FC = () => {
                             {TLX_DIMENSIONS_INFO.map(dim => (
                                 <div key={dim.id} className="flex justify-between text-sm">
                                     <span className="text-nasa-gray-400">{t(`tlx_dimensions.${getDimensionKey(dim.id)}.title`)}</span>
-                                    <span className="font-mono font-semibold text-white">{scores[dim.id]}</span>
+                                    <span className="font-mono font-semibold text-foreground">{scores[dim.id]}</span>
                                 </div>
                             ))}
                             <div className="pt-4 border-t border-nasa-gray-700 flex justify-between items-center mt-4">
-                                <span className="font-bold text-white">{t('evaluator.total_score')}</span>
-                                <span className="font-bold text-xl" style={{ color: getScoreColor(totalWeightedScore) }}>{totalWeightedScore.toFixed(2)}</span>
+                                <span className="font-bold text-foreground">{t('evaluator.total_score')}</span>
+                                <span className="font-bold text-xl" data-score-tone style={{ color: getScoreColor(totalWeightedScore) }}>{totalWeightedScore.toFixed(2)}</span>
                             </div>
                         </div>
                     </Card>

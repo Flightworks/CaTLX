@@ -5,6 +5,9 @@ import App from './App';
 import { APP_ICON } from './assets';
 import initI18n from './i18n-init';
 import './index.css';
+import { initializeTheme } from './theme';
+
+initializeTheme();
 
 const rootElement = document.getElementById('root');
 if (!rootElement) {

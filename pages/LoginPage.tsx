@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { useAuth } from '../contexts/AppContext';
 import Button from '../components/ui/Button';
 import LanguageSwitcher from '../components/ui/LanguageSwitcher';
+import ThemeSwitch from '../components/ui/ThemeSwitch';
 import { APP_ICON } from '../assets';
 
 const GoogleIcon = () => (
@@ -43,12 +44,12 @@ const LoginPage: React.FC = () => {
         <div className="mb-8">
           <div className="flex items-center justify-center">
             <img src={APP_ICON} alt="CaTLX Logo" className="w-12 h-12 rounded-full mr-3" />
-            <h1 className="text-4xl font-bold text-white tracking-wider">{t('login.title')}</h1>
+            <h1 className="text-4xl font-bold text-foreground tracking-wider">{t('login.title')}</h1>
           </div>
           <p className="text-nasa-gray-300 mt-2">{t('login.subtitle')}</p>
         </div>
         <div className="bg-nasa-gray-800 p-8 rounded-lg shadow-2xl">
-          <h2 className="text-2xl font-semibold text-white mb-8">
+          <h2 className="text-2xl font-semibold text-foreground mb-8">
             {t(signInWithGoogle ? 'login.cloud_title' : 'login.choose_mode')}
           </h2>
           <div className="space-y-4">
@@ -81,11 +82,12 @@ const LoginPage: React.FC = () => {
             <Button onClick={() => navigate('/quick-rating')} variant="secondary" className="w-full">
               {t('quick_rating.title')}
             </Button>
-            {cloudError && <p role="alert" className="text-left text-red-300">{t(`cloud.${cloudError}`)}</p>}
+            {cloudError && <p role="alert" className="text-left text-danger-ink">{t(`cloud.${cloudError}`)}</p>}
           </div>
         </div>
-        <div className="mt-6 flex justify-center items-center">
+        <div className="mt-6 flex flex-wrap justify-center items-center gap-3">
           <LanguageSwitcher />
+          <ThemeSwitch />
         </div>
       </div>
     </div>

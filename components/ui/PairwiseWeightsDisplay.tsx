@@ -47,7 +47,7 @@ const PairwiseWeightsDisplay: React.FC<PairwiseWeightsDisplayProps> = ({ weights
                 style={{ width: `${(weights[id] / maxValue) * 100}%` }}
               ></div>
             </div>
-            <span className="font-semibold text-white w-4 text-right">{weights[id]}</span>
+            <span className="font-semibold text-foreground w-4 text-right">{weights[id]}</span>
           </li>
         ))}
       </ul>

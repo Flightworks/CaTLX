@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import LanguageSwitcher from '../components/ui/LanguageSwitcher';
+import ThemeSwitch from '../components/ui/ThemeSwitch';
 import QuickRatingPage from './QuickRatingPage';
 import { APP_ICON } from '../assets';
 
@@ -16,6 +17,7 @@ export default function PublicQuickRating() {
           <div className="flex items-center gap-4">
             <Link to="/login" className="underline">{t('login.cloud_title')}</Link>
             <LanguageSwitcher />
+          <ThemeSwitch />
           </div>
         </div>
       </header>

@@ -13,7 +13,7 @@ import PairwiseWeightsDisplay from '../components/ui/PairwiseWeightsDisplay';
 import ToggleSwitch from '../components/ui/ToggleSwitch';
 
 const initialScores = Object.fromEntries(TLX_DIMENSIONS_INFO.map(dim => [dim.id, 50])) as Record<TLXDimension, number>;
-const fieldClass = 'w-full rounded-md bg-nasa-gray-900 border border-nasa-gray-600 p-2 text-white';
+const fieldClass = 'w-full rounded-md bg-nasa-gray-900 border border-nasa-gray-600 p-2 text-foreground';
 
 function dimensionKey(id: TLXDimension) {
     return id.toLowerCase().replaceAll(' ', '_');
@@ -70,7 +70,7 @@ const PairwiseComparisonView: React.FC<{
     const DimensionCard: React.FC<{ dimension: typeof dimensionA, onSelect: () => void }> = ({ dimension, onSelect }) => (
         <div
             onClick={onSelect}
-            className="w-full sm:w-1/2 p-6 bg-nasa-gray-900 rounded-lg cursor-pointer transition-all duration-200 ease-in-out hover:bg-nasa-light-blue hover:shadow-2xl hover:scale-105 border-2 border-nasa-gray-700 hover:border-nasa-blue"
+            className="w-full sm:w-1/2 p-6 bg-nasa-gray-900 rounded-lg cursor-pointer transition-all duration-200 ease-in-out hover:bg-nasa-gray-700 hover:shadow-2xl hover:scale-105 border-2 border-nasa-gray-700 hover:border-nasa-blue"
             role="button"
             tabIndex={0}
             onKeyDown={(e) => {
@@ -79,9 +79,9 @@ const PairwiseComparisonView: React.FC<{
                     onSelect();
                 }
             }}
-            aria-label={`Select ${dimension.title}`}
+            aria-label={t(`tlx_dimensions.${dimensionKey(dimension.id)}.title`)}
         >
-            <h3 className="text-xl font-bold text-center text-white">{t(`tlx_dimensions.${dimension.id.toLowerCase().replace(/ /g, '_')}.title`)}</h3>
+            <h3 className="text-xl font-bold text-center text-foreground">{t(`tlx_dimensions.${dimension.id.toLowerCase().replace(/ /g, '_')}.title`)}</h3>
             <p className="text-sm text-nasa-gray-400 mt-2 text-center">{t(`tlx_dimensions.${dimension.id.toLowerCase().replace(/ /g, '_')}.description`)}</p>
         </div>
     );
@@ -96,7 +96,7 @@ const PairwiseComparisonView: React.FC<{
                 {/* Progress Bar */}
                 <div>
                     <div className="flex justify-between mb-1">
-                        <span className="text-base font-medium text-nasa-blue">{t('evaluator.comparison', { current: currentPairIndex + 1, total: PAIRWISE_COMBINATIONS.length })}</span>
+                        <span className="text-base font-medium text-accent-ink">{t('evaluator.comparison', { current: currentPairIndex + 1, total: PAIRWISE_COMBINATIONS.length })}</span>
                     </div>
                     <div className="w-full bg-nasa-gray-700 rounded-full h-2.5">
                         <div className="bg-nasa-blue h-2.5 rounded-full transition-all duration-300 ease-in-out" style={{ width: `${progress}%` }}></div>
@@ -105,7 +105,7 @@ const PairwiseComparisonView: React.FC<{
 
                 {/* Comparison Section */}
                 <div className="text-center">
-                    <h2 className="text-lg font-semibold text-white mb-4">{t('evaluator.which_workload')}</h2>
+                    <h2 className="text-lg font-semibold text-foreground mb-4">{t('evaluator.which_workload')}</h2>
                     <div className="flex flex-col sm:flex-row items-stretch justify-center gap-4">
                         <DimensionCard dimension={dimensionA} onSelect={() => handleSelect(dimensionA.id)} />
                         <DimensionCard dimension={dimensionB} onSelect={() => handleSelect(dimensionB.id)} />
@@ -171,14 +171,14 @@ function RatingForm({ study, scenario, evaluatorId, task, submitLabel, onClose }
         <section className="rounded-xl border border-nasa-gray-700 bg-nasa-gray-800 px-3 py-3 sm:px-5 sm:py-4">
             <div className="mb-3 flex items-start justify-between gap-3">
                 <div className="min-w-0">
-                    {task.refNumber && <p className="text-xs font-medium tabular-nums text-blue-200">{task.refNumber}</p>}
+                    {task.refNumber && <p className="text-xs font-medium tabular-nums text-accent-ink">{task.refNumber}</p>}
                     <h2 className="break-words text-lg font-semibold leading-tight sm:text-xl">{task.name}</h2>
                     {task.description && <p className="mt-1 text-sm text-nasa-gray-300">{task.description}</p>}
                 </div>
                 {isExpress && (
                     <div className="shrink-0 rounded-lg border border-blue-400/25 bg-blue-400/10 px-2.5 py-1.5 text-right sm:px-3">
-                        <p className="text-xs font-medium text-blue-200">{t('evaluator.total_score')}</p>
-                        <p className="text-xl font-semibold leading-tight tabular-nums text-white">
+                        <p className="text-xs font-medium text-accent-ink">{t('evaluator.total_score')}</p>
+                        <p className="text-xl font-semibold leading-tight tabular-nums text-foreground">
                             {scoreLabel}<span className="ml-1 text-xs font-normal text-nasa-gray-300">/ 100</span>
                         </p>
                     </div>
@@ -199,7 +199,7 @@ function RatingForm({ study, scenario, evaluatorId, task, submitLabel, onClose }
                 }}
             />
             <form onSubmit={submit} className="mt-3 space-y-3">
-                {error && <p role="alert" className="text-red-300">{t('evaluator.error_submitting')}</p>}
+                {error && <p role="alert" className="text-danger-ink">{t('evaluator.error_submitting')}</p>}
                 <fieldset disabled={saving} className={isExpress
                     ? 'grid gap-px overflow-hidden rounded-lg border border-nasa-gray-700 bg-nasa-gray-700 min-[320px]:grid-cols-2 lg:grid-cols-3'
                     : 'space-y-3'}>
@@ -218,7 +218,7 @@ function RatingForm({ study, scenario, evaluatorId, task, submitLabel, onClose }
                 </fieldset>
                 {isExpress ? (
                     <details open={existing?.comments ? true : undefined}>
-                        <summary className="w-fit cursor-pointer rounded text-sm text-blue-200 focus-visible:outline focus-visible:outline-2">
+                        <summary className="w-fit cursor-pointer rounded text-sm text-accent-ink focus-visible:outline focus-visible:outline-2">
                             {t('evaluator.optional_comments')}
                         </summary>
                         <textarea className={`mt-2 ${fieldClass}`} aria-label={t('evaluator.optional_comments')}
@@ -328,14 +328,14 @@ export function AssessmentRunner({ study, scenario, evaluatorId }: {
                 {comparison?.isWeighted && (
                     <PairwiseWeightsDisplay weights={comparison.weights} isWeighted />
                 )}
-                {saved && <p role="status" className="text-green-300">{t('projects.rating_saved')}</p>}
+                {saved && <p role="status" className="text-success-ink">{t('projects.rating_saved')}</p>}
                 {!evaluatorId && <p>{t('projects.choose_evaluator')}</p>}
                 {scenario && evaluatorId && assigned.length > 0 && !scenario.archived && (
                     next ? (
                         <Button onClick={() => openTask(next.id)}>
                             {t(completedIds.size ? 'projects.resume_scenario' : 'projects.start_scenario')}
                         </Button>
-                    ) : <p className="text-green-300">{t('projects.scenario_complete')}</p>
+                    ) : <p className="text-success-ink">{t('projects.scenario_complete')}</p>
                 )}
                 {!scenario && (
                     <div className="flex flex-wrap items-center gap-2">

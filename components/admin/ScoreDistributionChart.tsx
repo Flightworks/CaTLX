@@ -1,6 +1,8 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 
 const ScoreDistributionChart: React.FC<{ scores: number[] }> = ({ scores }) => {
+  const { t } = useTranslation();
   const bins = Array.from({ length: 10 }, (_, i) => i * 10); // [0, 10, ..., 90]
   const distribution = Array(10).fill(0);
   
@@ -19,17 +21,17 @@ const ScoreDistributionChart: React.FC<{ scores: number[] }> = ({ scores }) => {
 
   return (
     <div>
-      <h4 className="text-md font-medium text-white mb-3">Overall Score Distribution</h4>
+      <h4 className="text-md font-medium text-foreground mb-3">{t('charts.distribution')}</h4>
       <div className="flex items-end h-40 bg-nasa-gray-800 p-4 rounded-md space-x-1 border border-nasa-gray-700">
         {distribution.map((count, index) => (
           <div key={index} className="flex-1 flex flex-col items-center justify-end h-full group relative">
-            <div className="absolute top-0 -mt-6 hidden group-hover:block bg-nasa-gray-900 text-white text-xs px-2 py-1 rounded-md shadow-lg z-10 pointer-events-none">
-              {count} {count === 1 ? 'eval' : 'evals'}
+            <div className="absolute top-0 -mt-6 hidden group-hover:block bg-nasa-gray-900 text-foreground text-xs px-2 py-1 rounded-md shadow-lg z-10 pointer-events-none">
+              {t('charts.count', { count })}
             </div>
             <div
               className="w-full bg-nasa-blue hover:bg-nasa-light-blue transition-all duration-200 rounded-t-sm"
               style={{ height: `${(count / maxCount) * 100}%` }}
-              title={`${count} evaluations in ${bins[index]}-${bins[index]+9} range`}
+              title={t('charts.bin', { ratings: t('charts.count', { count }), min: bins[index], max: index === 9 ? 100 : bins[index] + 9 })}
             ></div>
           </div>
         ))}

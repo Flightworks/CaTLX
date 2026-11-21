@@ -1,6 +1,11 @@
 {
   "common": {
-    "close": "Fermer"
+    "close": "Fermer",
+    "edit": "Modifier",
+    "save": "Enregistrer",
+    "delete": "Supprimer",
+    "actions": "Actions",
+    "unknown": "Inconnu"
   },
   "study_settings": {
     "manage_mtes": "Gérer les MTE",
@@ -22,6 +27,30 @@
     "save": "Enregistrer l’étude",
     "choose_project": "Choisis un projet pour afficher ses études.",
     "no_studies": "Aucune étude dans ce projet."
+  },
+  "catalog": {
+    "new": "Nouvelle MTE",
+    "edit": "Modifier la MTE",
+    "save": "Enregistrer la MTE",
+    "reference": "Réf.",
+    "empty": "Aucune MTE dans le catalogue.",
+    "no_results": "Aucune MTE ne correspond à « {{query}} »."
+  },
+  "people": {
+    "new": "Nouvel évaluateur",
+    "edit": "Modifier l’évaluateur",
+    "quality": "Fonction",
+    "company": "Organisation",
+    "choose_project": "Choisis un projet pour gérer ses évaluateurs.",
+    "hint": "Les évaluateurs créés ici sont ajoutés à ce projet.",
+    "empty": "Aucun évaluateur n’est affecté à ce projet."
+  },
+  "charts": {
+    "distribution": "Distribution des scores globaux",
+    "count_one": "{{count}} cotation",
+    "count_other": "{{count}} cotations",
+    "bin": "{{ratings}} dans la plage {{min}} à {{max}}",
+    "average": "Score moyen · {{score}}"
   },
   "projects": {
     "title": "Projets",
@@ -146,6 +175,7 @@
     "discard_confirm": "Les modifications qui restent à enregistrer seront perdues. Continuer ?"
   },
   "header": {
+    "light_mode": "Mode clair",
     "administration": "Administration",
     "main_navigation": "Navigation principale",
     "open_menu": "Ouvrir le menu",
@@ -271,7 +301,9 @@
       "no": "Non"
     },
     "included_in": "Inclus dans :",
-    "evals_label": "EVALS",
+    "evals_label_one": "Évaluation",
+    "evals_label_other": "Évaluations",
+    "standard_deviation_summary": "(± {{score}} ÉT)",
     "avg_workload": "Charge de travail globale moy.",
     "workload_drivers": "Facteurs de charge de travail (Scores bruts moy.)",
     "no_eval_data": "Aucune donnée d'évaluation disponible",
@@ -284,36 +316,42 @@
   },
   "tlx_dimensions": {
     "mental_demand": {
+      "abbreviation": "EM",
       "title": "Exigence mentale",
       "description": "Quelle activité mentale et perceptuelle a été requise ? La tâche était-elle facile ou exigeante, simple ou complexe ?",
       "low_anchor": "Très faible",
       "high_anchor": "Très élevée"
     },
     "physical_demand": {
+      "abbreviation": "EP",
       "title": "Exigence physique",
       "description": "Quelle activité physique a été requise ? La tâche était-elle facile ou exigeante, lente ou rapide ?",
       "low_anchor": "Très faible",
       "high_anchor": "Très élevée"
     },
     "temporal_demand": {
+      "abbreviation": "ET",
       "title": "Exigence temporelle",
       "description": "Quelle pression temporelle avez-vous ressentie en raison du rythme ou de la cadence des tâches ou des éléments de tâche ?",
       "low_anchor": "Très faible",
       "high_anchor": "Très élevée"
     },
     "performance": {
+      "abbreviation": "P",
       "title": "Performance",
       "description": "Dans quelle mesure pensez-vous avoir réussi à atteindre les objectifs de la tâche ou de la mission ? Êtes-vous satisfait de votre performance ?",
       "low_anchor": "Bonne",
       "high_anchor": "Mauvaise"
     },
     "effort": {
+      "abbreviation": "E",
       "title": "Effort",
       "description": "Quelle difficulté avez-vous eue à travailler (mentalement et physiquement) pour atteindre votre niveau de performance ?",
       "low_anchor": "Très faible",
       "high_anchor": "Très élevé"
     },
     "frustration": {
+      "abbreviation": "F",
       "title": "Frustration",
       "description": "Dans quelle mesure vous êtes-vous senti insécurisé, découragé, irrité, stressé et agacé par rapport à sécurisé, gratifié, content, détendu et complaisant pendant la tâche ?",
       "low_anchor": "Très faible",

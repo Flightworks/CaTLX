@@ -14,7 +14,7 @@ const Select: React.FC<SelectProps> = ({ label, id, children, ...props }) => {
       </label>
       <select
         id={id}
-        className="block w-full pl-3 pr-10 py-2 text-base bg-nasa-gray-700 border-nasa-gray-600 focus:outline-none focus:ring-nasa-blue focus:border-nasa-blue sm:text-sm rounded-md text-white disabled:opacity-50"
+        className="block w-full pl-3 pr-10 py-2 text-base bg-nasa-gray-700 border-nasa-gray-600 focus:outline-none focus:ring-nasa-blue focus:border-nasa-blue sm:text-sm rounded-md text-foreground disabled:opacity-50"
         {...props}
       >
         {children}

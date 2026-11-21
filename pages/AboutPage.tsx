@@ -9,17 +9,17 @@ const AboutPage: React.FC = () => {
 
   return (
     <div className="space-y-6 max-w-4xl mx-auto">
-      <h1 className="text-3xl font-bold text-white">{t('about.title')}</h1>
+      <h1 className="text-3xl font-bold text-foreground">{t('about.title')}</h1>
       
       <Card>
-        <h2 className="text-2xl font-semibold text-white mb-4">{t('about.nasa_tlx_title')}</h2>
+        <h2 className="text-2xl font-semibold text-foreground mb-4">{t('about.nasa_tlx_title')}</h2>
         <div className="space-y-4 text-nasa-gray-300">
           <p>
             {t('about.nasa_tlx_desc1')}
           </p>
           <ul className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-2 pl-4">
             {TLX_DIMENSIONS_INFO.map(dim => (
-                <li key={dim.id} className="font-semibold text-white list-disc list-inside">{dim.title}</li>
+                <li key={dim.id} className="font-semibold text-foreground list-disc list-inside">{t(`tlx_dimensions.${dim.id.toLowerCase().replaceAll(' ', '_')}.title`)}</li>
             ))}
           </ul>
           <p>
@@ -29,7 +29,7 @@ const AboutPage: React.FC = () => {
       </Card>
 
       <Card>
-        <h2 className="text-2xl font-semibold text-white mb-4">{t('about.catlx_title')}</h2>
+        <h2 className="text-2xl font-semibold text-foreground mb-4">{t('about.catlx_title')}</h2>
          <div className="space-y-4 text-nasa-gray-300">
             <p>
                 {t('about.catlx_desc1')}
@@ -41,12 +41,12 @@ const AboutPage: React.FC = () => {
       </Card>
 
       <Card>
-        <h2 className="text-2xl font-semibold text-white mb-4">{t('about.offline_title')}</h2>
+        <h2 className="text-2xl font-semibold text-foreground mb-4">{t('about.offline_title')}</h2>
         <div className="space-y-4 text-nasa-gray-300">
             <p>
                 {t('about.offline_desc1')}
             </p>
-            <h3 className="text-lg font-semibold text-white">{t('about.how_to_install')}</h3>
+            <h3 className="text-lg font-semibold text-foreground">{t('about.how_to_install')}</h3>
             <ul className="list-disc list-inside space-y-2 pl-4">
                 <li>
                     <span className="font-semibold">{t('about.install_chrome')}</span>

@@ -23,6 +23,12 @@ const initI18n = async () => {
         loadPath: `${import.meta.env.BASE_URL}locales/{{lng}}.json`,
       }
     });
+  const updateDocument = (language: string) => {
+    document.documentElement.lang = language;
+    document.title = `CaTLX · ${i18n.t('login.subtitle')}`;
+  };
+  updateDocument(i18n.resolvedLanguage ?? 'en');
+  i18n.on('languageChanged', updateDocument);
 };
 
 export default initI18n;

@@ -19,7 +19,7 @@ const ToggleSwitch: React.FC<ToggleSwitchProps> = ({ label, options, selectedVal
             key={option.value}
             onClick={() => onChange(option.value)}
             className={`relative px-3 py-1 text-sm font-medium rounded-full transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-nasa-gray-800 focus:ring-nasa-blue ${
-              selectedValue === option.value ? 'text-white' : 'text-nasa-gray-300 hover:text-white'
+              selectedValue === option.value ? 'text-white' : 'text-nasa-gray-300 hover:text-foreground'
             }`}
             role="radio"
             aria-checked={selectedValue === option.value}

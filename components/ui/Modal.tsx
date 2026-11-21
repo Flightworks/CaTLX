@@ -30,7 +30,7 @@ const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children, footer,
       <div className={`relative bg-nasa-gray-800 rounded-lg shadow-xl w-full ${sizeClasses[size]} mx-4 my-8 overflow-hidden transform transition-all`}>
         <div className="px-6 py-4 border-b border-nasa-gray-700">
           <div className="flex items-start justify-between">
-            <h3 className="text-xl font-semibold text-white" id="modal-title">
+            <h3 className="text-xl font-semibold text-foreground" id="modal-title">
               {title}
             </h3>
             <button

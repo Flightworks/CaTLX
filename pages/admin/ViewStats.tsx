@@ -104,7 +104,7 @@ const ViewStats: React.FC<{ projectId?: string; studyId?: string }> = ({ project
       }
       
       const mteDisplayName = (() => {
-        if (!mte) return 'Unknown';
+        if (!mte) return t('common.unknown');
         return mte.refNumber ? `[${mte.refNumber}] ${mte.name}` : mte.name;
       })();
 
@@ -112,8 +112,8 @@ const ViewStats: React.FC<{ projectId?: string; studyId?: string }> = ({ project
         ratingId: rating.id,
         scenarioName: scenarios.find(scenario => scenario.id === rating.scenarioId)?.name ?? '',
         timestamp: rating.timestamp,
-        evaluatorName: evaluator?.name || 'Unknown',
-        studyName: study?.name || 'Unknown',
+        evaluatorName: evaluator?.name || t('common.unknown'),
+        studyName: study?.name || t('common.unknown'),
         studyId: study?.id || '',
         mteId: rating.mteId,
         mteName: mteDisplayName,
@@ -128,7 +128,7 @@ const ViewStats: React.FC<{ projectId?: string; studyId?: string }> = ({ project
         evaluatorId: rating.evaluatorId,
       };
     });
-  }, [evaluators, filteredRatings, mtes, pairwiseComparisons, scenarios, studies]);
+  }, [evaluators, filteredRatings, mtes, pairwiseComparisons, scenarios, studies, t]);
 
 
   const aggregatedMteData = useMemo<AggregatedMteStats[]>(() => {
@@ -197,7 +197,7 @@ const ViewStats: React.FC<{ projectId?: string; studyId?: string }> = ({ project
             studyNames
         };
     }).sort((a,b) => a.mteName.localeCompare(b.mteName));
-  }, [availableStudies, computedScores, filterScenario, filterStudyId, mtes, projectMteIds, scenarios, studies]);
+  }, [availableStudies, computedScores, filterScenario, filterStudyId, mtes, projectMteIds, scenarios, studies, t]);
 
   const downloadCsv = () => {
     if (computedScores.length === 0) {
@@ -215,8 +215,8 @@ const ViewStats: React.FC<{ projectId?: string; studyId?: string }> = ({ project
       t('stats.csv_headers.timestamp'),
       t('stats.csv_headers.is_weighted'),
       t('stats.csv_headers.total_weighted_score'),
-      ...TLX_DIMENSIONS_INFO.map(dim => `${dim.id}${t('stats.csv_headers.raw_suffix')}`),
-      ...TLX_DIMENSIONS_INFO.map(dim => `${dim.id}${t('stats.csv_headers.weight_suffix')}`),
+      ...TLX_DIMENSIONS_INFO.map(dim => `${t(`tlx_dimensions.${dim.id.toLowerCase().replaceAll(' ', '_')}.title`)}${t('stats.csv_headers.raw_suffix')}`),
+      ...TLX_DIMENSIONS_INFO.map(dim => `${t(`tlx_dimensions.${dim.id.toLowerCase().replaceAll(' ', '_')}.title`)}${t('stats.csv_headers.weight_suffix')}`),
       t('stats.csv_headers.comments'),
     ];
 
@@ -247,7 +247,7 @@ const ViewStats: React.FC<{ projectId?: string; studyId?: string }> = ({ project
   return (
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-        <h2 className="text-2xl font-bold text-white">{t('stats.title')}</h2>
+        <h2 className="text-2xl font-bold text-foreground">{t('stats.title')}</h2>
         <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto sm:items-center">
           {!studyId && <div className="w-full sm:w-64">
             <Select label={t('stats.filter_study')} id="study-filter" value={filterStudyId} onChange={(e) => {

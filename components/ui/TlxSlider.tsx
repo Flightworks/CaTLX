@@ -143,7 +143,7 @@ const TlxSlider: React.FC<TlxSliderProps> = ({ title, description, lowAnchor, hi
   if (compact) {
     return (
         <div className="p-4 bg-nasa-gray-900 rounded-lg">
-            <h4 className="text-md font-medium text-white mb-2">{title}</h4>
+            <h4 className="text-md font-medium text-foreground mb-2">{title}</h4>
             {content}
         </div>
     );
@@ -151,7 +151,7 @@ const TlxSlider: React.FC<TlxSliderProps> = ({ title, description, lowAnchor, hi
 
   return (
     <div className="p-4 bg-nasa-gray-900 rounded-lg">
-        <h3 className="text-lg font-semibold text-white">{title}</h3>
+        <h3 className="text-lg font-semibold text-foreground">{title}</h3>
         <p className="text-sm text-nasa-gray-400 my-2">{description}</p>
         {content}
     </div>

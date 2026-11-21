@@ -37,7 +37,7 @@ export const ProjectForm: React.FC<{
           id="project-name"
           value={name}
           onChange={(e) => setName(e.target.value)}
-          className="mt-1 block w-full bg-nasa-gray-700 border-nasa-gray-600 rounded-md shadow-sm focus:ring-nasa-blue focus:border-nasa-blue text-white"
+          className="mt-1 block w-full bg-nasa-gray-700 border-nasa-gray-600 rounded-md shadow-sm focus:ring-nasa-blue focus:border-nasa-blue text-foreground"
           required
         />
       </div>
@@ -48,7 +48,7 @@ export const ProjectForm: React.FC<{
           value={description}
           onChange={(e) => setDescription(e.target.value)}
           rows={3}
-          className="mt-1 block w-full bg-nasa-gray-700 border-nasa-gray-600 rounded-md shadow-sm focus:ring-nasa-blue focus:border-nasa-blue text-white"
+          className="mt-1 block w-full bg-nasa-gray-700 border-nasa-gray-600 rounded-md shadow-sm focus:ring-nasa-blue focus:border-nasa-blue text-foreground"
         />
       </div>
       <div className="flex justify-end space-x-2">
@@ -78,17 +78,17 @@ const ProjectSelector: React.FC<{ onCreateNew: () => void }> = ({ onCreateNew })
             <label htmlFor="project-selector" className="text-sm font-medium text-nasa-gray-300 whitespace-nowrap">{t('admin.current_project')}</label>
             <div className="flex-grow w-full sm:max-w-md">
               <select id="project-selector" value={selectedProjectId} onChange={e => setSelectedProjectId(e.target.value)}
-                className="block w-full pl-3 pr-10 py-2 text-base bg-nasa-gray-700 border-nasa-gray-600 focus:outline-none focus:ring-nasa-blue focus:border-nasa-blue sm:text-sm rounded-md text-white"
+                className="block w-full pl-3 pr-10 py-2 text-base bg-nasa-gray-700 border-nasa-gray-600 focus:outline-none focus:ring-nasa-blue focus:border-nasa-blue sm:text-sm rounded-md text-foreground"
               >
                 {projects.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
               </select>
             </div>
-            <Button size="sm" variant="secondary" onClick={onCreateNew}>New Project</Button>
+            <Button size="sm" variant="secondary" onClick={onCreateNew}>{t('projects.new_project')}</Button>
           </>
         ) : (
           <div className="w-full text-center py-4">
-            <p className="text-nasa-gray-300 mb-3">No projects found. Create your first project to get started.</p>
-            <Button onClick={onCreateNew}>Create First Project</Button>
+            <p className="text-nasa-gray-300 mb-3">{t('projects.no_projects')}</p>
+            <Button onClick={onCreateNew}>{t('projects.new_project')}</Button>
           </div>
         )}
       </div>
@@ -124,8 +124,8 @@ const AdminDashboardPage: React.FC = () => {
     <button
       onClick={() => setActiveTab(tabId)}
       className={`px-4 py-2 text-sm font-medium rounded-t-lg transition-colors border-b-2 ${activeTab === tabId
-          ? 'text-nasa-blue border-nasa-blue bg-nasa-gray-800'
-          : 'text-nasa-gray-300 border-transparent hover:text-white hover:border-nasa-gray-500'
+          ? 'text-accent-ink border-nasa-blue bg-nasa-gray-800'
+          : 'text-nasa-gray-300 border-transparent hover:text-foreground hover:border-nasa-gray-500'
         }`}
     >
       {children}
@@ -146,10 +146,10 @@ const AdminDashboardPage: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-3xl font-bold text-white">{t('admin.title')}</h1>
+      <h1 className="text-3xl font-bold text-foreground">{t('admin.title')}</h1>
 
       {mode === 'local' && (
-        <div className="bg-yellow-900 bg-opacity-50 text-yellow-200 p-4 rounded-lg text-center text-sm">
+        <div className="bg-warning-surface text-warning-ink p-4 rounded-lg text-center text-sm">
           {t('admin.local_mode_warning')}
         </div>
       )}
@@ -157,7 +157,7 @@ const AdminDashboardPage: React.FC = () => {
       <ProjectSelector onCreateNew={() => setIsProjectModalOpen(true)} />
 
       <div className="border-b border-nasa-gray-700">
-        <nav className="-mb-px flex space-x-4 flex-wrap" aria-label="Tabs">
+        <nav className="-mb-px flex space-x-4 flex-wrap" aria-label={t('admin.title')}>
           <TabButton tabId="stats">{t('admin.statistics')}</TabButton>
           <TabButton tabId="studies">{t('admin.manage_studies')}</TabButton>
           <TabButton tabId="evaluators">{t('admin.manage_evaluators')}</TabButton>
@@ -166,7 +166,7 @@ const AdminDashboardPage: React.FC = () => {
       </div>
       <div>{renderTabContent()}</div>
 
-      <Modal isOpen={isProjectModalOpen} onClose={() => setIsProjectModalOpen(false)} title="Create New Project">
+      <Modal isOpen={isProjectModalOpen} onClose={() => setIsProjectModalOpen(false)} title={t('projects.new_project')}>
         <ProjectForm onSave={handleCreateProject} onCancel={() => setIsProjectModalOpen(false)} />
       </Modal>
     </div>

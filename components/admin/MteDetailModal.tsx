@@ -64,12 +64,12 @@ const MteDetailModal: React.FC<{
                 <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-nasa-gray-300 uppercase tracking-wider">{t('stats.csv_headers.evaluator')}</th>
                 <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-nasa-gray-300 uppercase tracking-wider">{t('stats.csv_headers.study')}</th>
                 <th scope="col" className="px-2 py-3 text-center text-xs font-medium text-nasa-gray-300 uppercase tracking-wider">{t('stats.score')}</th>
-                <DimensionHeader title="MD" fullTitle={t('tlx_dimensions.mental_demand.title')} />
-                <DimensionHeader title="PD" fullTitle={t('tlx_dimensions.physical_demand.title')} />
-                <DimensionHeader title="TD" fullTitle={t('tlx_dimensions.temporal_demand.title')} />
-                <DimensionHeader title="P" fullTitle={t('tlx_dimensions.performance.title')} />
-                <DimensionHeader title="E" fullTitle={t('tlx_dimensions.effort.title')} />
-                <DimensionHeader title="F" fullTitle={t('tlx_dimensions.frustration.title')} />
+                <DimensionHeader title={t('tlx_dimensions.mental_demand.abbreviation')} fullTitle={t('tlx_dimensions.mental_demand.title')} />
+                <DimensionHeader title={t('tlx_dimensions.physical_demand.abbreviation')} fullTitle={t('tlx_dimensions.physical_demand.title')} />
+                <DimensionHeader title={t('tlx_dimensions.temporal_demand.abbreviation')} fullTitle={t('tlx_dimensions.temporal_demand.title')} />
+                <DimensionHeader title={t('tlx_dimensions.performance.abbreviation')} fullTitle={t('tlx_dimensions.performance.title')} />
+                <DimensionHeader title={t('tlx_dimensions.effort.abbreviation')} fullTitle={t('tlx_dimensions.effort.title')} />
+                <DimensionHeader title={t('tlx_dimensions.frustration.abbreviation')} fullTitle={t('tlx_dimensions.frustration.title')} />
                 <th scope="col" className="px-2 py-3 text-center text-xs font-medium text-nasa-gray-300 uppercase tracking-wider">{t('stats.weights')}</th>
               </tr>
             </thead>
@@ -77,9 +77,9 @@ const MteDetailModal: React.FC<{
               {relevantScores.map((score, index) => (
                 <React.Fragment key={index}>
                   <tr>
-                    <td className="px-4 py-4 whitespace-nowrap text-sm font-medium text-white">{score.evaluatorName}</td>
+                    <td className="px-4 py-4 whitespace-nowrap text-sm font-medium text-foreground">{score.evaluatorName}</td>
                     <td className="px-4 py-4 whitespace-nowrap text-sm text-nasa-gray-300">{score.studyName}</td>
-                    <td className="px-2 py-4 whitespace-nowrap text-sm font-bold text-center" style={{ color: getScoreColor(score.totalWeightedScore) }}>
+                    <td className="px-2 py-4 whitespace-nowrap text-sm font-bold text-center" data-score-tone style={{ color: getScoreColor(score.totalWeightedScore) }}>
                       {score.totalWeightedScore.toFixed(1)}
                     </td>
                     {TLX_DIMENSIONS_INFO.map(dim => (
