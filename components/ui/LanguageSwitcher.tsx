@@ -13,11 +13,11 @@ const LanguageSwitcher: React.FC = () => {
 
   return (
     <div className="flex items-center space-x-2">
-      <button onClick={() => changeLanguage('en')} className={`p-1 rounded-md transition-colors ${current === 'en' ? 'bg-nasa-light-blue' : 'hover:bg-nasa-gray-700'}`} aria-label="English">
-        <img src="https://flagcdn.com/gb.svg" alt="English" className="w-6 h-4" />
+      <button onClick={() => changeLanguage('en')} className={`px-2 py-1 rounded-md text-xs font-semibold transition-colors ${current === 'en' ? 'bg-nasa-light-blue' : 'hover:bg-nasa-gray-700'}`} aria-label="English" aria-pressed={current === 'en'}>
+        EN
       </button>
-      <button onClick={() => changeLanguage('fr')} className={`p-1 rounded-md transition-colors ${current === 'fr' ? 'bg-nasa-light-blue' : 'hover:bg-nasa-gray-700'}`} aria-label="French">
-        <img src="https://flagcdn.com/fr.svg" alt="French" className="w-6 h-4" />
+      <button onClick={() => changeLanguage('fr')} className={`px-2 py-1 rounded-md text-xs font-semibold transition-colors ${current === 'fr' ? 'bg-nasa-light-blue' : 'hover:bg-nasa-gray-700'}`} aria-label="Français" aria-pressed={current === 'fr'}>
+        FR
       </button>
     </div>
   );
