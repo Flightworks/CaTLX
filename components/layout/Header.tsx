@@ -110,7 +110,7 @@ function Navigation({ close, collapsed = false, toggle }: { close?: () => void; 
       <nav id={toggle ? 'workspace-desktop-navigation' : undefined} aria-label={t('header.main_navigation')}
         className="flex-1 space-y-1 px-2.5 pb-3">
         {renderLink({ ...projectLink, end: true })}
-        {project ? renderSection(project.name, projectLinks) : renderLink(catalogLink, true)}
+        {project ? renderSection(t('header.project_section'), projectLinks) : renderLink(catalogLink, true)}
         {study && renderSection(study.name, studyLinks)}
         <div className="workspace-nav-section">
           {links.map(item => renderLink(item))}

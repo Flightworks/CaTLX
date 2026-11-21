@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import { Link, Navigate, NavLink, Route, Routes, useParams, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useData } from '../contexts/AppContext';
@@ -27,14 +27,31 @@ function studyPath(study: Study) {
   return `${projectPath(study.projectId)}/studies/${encodeURIComponent(study.id)}`;
 }
 
-function Breadcrumbs({ project, study }: { project?: Project; study?: Study }) {
+function Breadcrumbs() {
   const { t } = useTranslation();
   return (
-    <nav aria-label={t('projects.path')} className="flex flex-wrap items-center gap-2 text-sm text-nasa-gray-300">
+    <nav aria-label={t('projects.path')} className="text-sm text-nasa-gray-300">
       <Link className="underline" to="/projects?all=1">{t('projects.title')}</Link>
-      {project && <><span aria-hidden="true">/</span><Link className="underline" to={projectPath(project.id)}>{project.name}</Link></>}
-      {study && <><span aria-hidden="true">/</span><Link className="underline" to={studyPath(study)}>{study.name}</Link></>}
     </nav>
+  );
+}
+
+function ActiveProjectHeader({ project, nested = false, action }: { project: Project; nested?: boolean; action?: ReactNode }) {
+  return (
+    <header className="flex flex-wrap items-end justify-between gap-3 border-b border-separator pb-2 sm:pb-4">
+      <div className={nested ? 'flex min-w-0 flex-wrap items-baseline gap-x-2 gap-y-1' : 'min-w-0 space-y-1'}>
+        <Breadcrumbs />
+        {nested ? (
+          <>
+            <span aria-hidden="true" className="text-nasa-gray-400">/</span>
+            <Link to={projectPath(project.id)} className="min-w-0 break-words font-semibold tracking-tight hover:underline sm:text-lg">
+              {project.name}
+            </Link>
+          </>
+        ) : <h1 className="break-words text-2xl font-semibold tracking-tight sm:text-3xl">{project.name}</h1>}
+      </div>
+      {action}
+    </header>
   );
 }
 
@@ -87,11 +104,8 @@ function ProjectOverview({ project }: { project: Project }) {
   const path = projectPath(project.id);
   return (
     <div className="space-y-5">
-      <Breadcrumbs project={project} />
-      <div className="flex items-center justify-between flex-wrap gap-3">
-        <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">{project.name}</h1>
-        <Button variant="secondary" onClick={() => setEditing(true)}>{t('projects.edit_project')}</Button>
-      </div>
+      <ActiveProjectHeader project={project}
+        action={<Button variant="secondary" onClick={() => setEditing(true)}>{t('projects.edit_project')}</Button>} />
       {project.description && <p>{project.description}</p>}
       <nav className="flex flex-wrap gap-x-2 border-b border-separator md:hidden">
         <NavLink end className={tabClass} to={path}>{t('projects.studies')}</NavLink>
@@ -303,7 +317,7 @@ function StudyOverview({ project, study }: { project: Project; study: Study }) {
   );
   return (
     <div className="space-y-5">
-      <Breadcrumbs project={project} study={study} />
+      <ActiveProjectHeader project={project} nested />
       <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">{study.name}</h1>
       <nav className="flex flex-wrap gap-x-2 border-b border-separator md:hidden">
         <NavLink end className={tabClass} to={path}>{t('projects.study_tasks')}</NavLink>
