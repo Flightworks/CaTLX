@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useData } from '../../contexts/AppContext';
 import { MTE } from '../../types';
 import Card from '../../components/ui/Card';
@@ -10,6 +11,7 @@ const MTEForm: React.FC<{
   onSave: (mte: (Omit<MTE, 'id' | 'refNumber'> & { refNumber?: string }) | MTE) => void;
   onCancel: () => void;
 }> = ({ mte, onSave, onCancel }) => {
+  const { t } = useTranslation();
   const [name, setName] = useState(mte?.name || '');
   const [description, setDescription] = useState(mte?.description || '');
   const [refNumber, setRefNumber] = useState(mte?.refNumber || '');
@@ -43,13 +45,12 @@ const MTEForm: React.FC<{
         />
       </div>
       <div>
-        <label htmlFor="description" className="block text-sm font-medium text-nasa-gray-300">Description</label>
+        <label htmlFor="description" className="block text-sm font-medium text-nasa-gray-300">{t('evaluator.optional_description')}</label>
         <textarea
           id="description"
           value={description}
           onChange={(e) => setDescription(e.target.value)}
           className="mt-1 block w-full bg-nasa-gray-700 border-nasa-gray-600 rounded-md shadow-sm focus:ring-nasa-blue focus:border-nasa-blue text-white"
-          required
           rows={3}
         />
       </div>

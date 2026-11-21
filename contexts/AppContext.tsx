@@ -5,7 +5,8 @@ import useMockData from '../hooks/useMockData';
 import useLocalStorageData from '../hooks/useLocalStorageData';
 import useCloudWorkspace from '../hooks/useCloudWorkspace';
 import useOfflineWorkspace from '../hooks/useOfflineWorkspace';
-import { createOfflineCopy, forgetOfflineCopy, readOfflineCopy, unlockOfflineCopy, type OfflineVault } from '../data/offlineVault';
+import { convertOfflineCopy, createOfflineCopy, forgetOfflineCopy, readOfflineCopy, unlockLegacyCopy, unlockWithDevice, type OfflineVault } from '../data/offlineVault';
+import { DeviceUnlockUnavailable, registerDevice } from '../data/deviceUnlock';
 import { OfflineConflicts, OfflinePassphrase } from '../components/layout/OfflineControls';
 import Button from '../components/ui/Button';
 import type { IDataSource } from '../types';
@@ -89,6 +90,7 @@ function CloudWorkspaceProvider({ config, initial, auth, ownerId, onEnroll, onDe
   const { t } = useTranslation();
   const { dataSource, status, retry } = useCloudWorkspace(config, initial);
   const [enrolling, setEnrolling] = useState(false);
+  const [enrollmentFailed, setEnrollmentFailed] = useState<string | null>(null);
   const [online, setOnline] = useState(navigator.onLine);
 
   useEffect(() => {
@@ -101,15 +103,25 @@ function CloudWorkspaceProvider({ config, initial, auth, ownerId, onEnroll, onDe
     };
   }, []);
 
-  async function enroll(phrase: string) {
-    const { data, error } = await loadWorkspace(config, AbortSignal.timeout(12000));
-    if (error) throw error;
-    if (!data) {
-      onDenied();
-      return;
+  async function enroll() {
+    setEnrolling(true);
+    setEnrollmentFailed(null);
+    try {
+      const device = await registerDevice();
+      const { data, error } = await loadWorkspace(config, AbortSignal.timeout(12000));
+      if (error) throw error;
+      if (!data) {
+        onDenied();
+        return;
+      }
+      onEnroll(await createOfflineCopy(config.offlineScope, ownerId, device, data));
+    } catch (error) {
+      setEnrollmentFailed(error instanceof DeviceUnlockUnavailable ? 'offline.device_unavailable' : 'offline.device_failed');
+    } finally {
+      setEnrolling(false);
     }
-    onEnroll(await createOfflineCopy(config.offlineScope, ownerId, phrase, data));
   }
+
   const canEdit = status === 'idle' || status === 'saving';
 
   const logout = () => {
@@ -125,11 +137,11 @@ function CloudWorkspaceProvider({ config, initial, auth, ownerId, onEnroll, onDe
         <p role="alert" className="bg-nasa-gray-700 px-4 py-2 text-center">{t('cloud.signout_failed')}</p>
       )}
       {status === 'idle' && online && (
-        <div className="container mx-auto px-4 py-2 flex justify-end">
-          <Button variant="secondary" size="sm" onClick={() => setEnrolling(true)}>{t('offline.enable')}</Button>
+        <div className="container mx-auto px-4 py-2 flex flex-wrap justify-end items-center gap-2">
+          {enrollmentFailed && <p role="alert" className="text-sm text-red-300">{t(enrollmentFailed)}</p>}
+          <Button variant="secondary" size="sm" disabled={enrolling} onClick={() => void enroll()}>{t('offline.enable')}</Button>
         </div>
       )}
-      {enrolling && <OfflinePassphrase creating submit={enroll} onClose={() => setEnrolling(false)} />}
       {status === 'saving' && (
         <p role="status" className="bg-nasa-gray-700 px-4 py-2 text-center">{t('cloud.saving')}</p>
       )}
@@ -158,18 +170,35 @@ function CloudWorkspaceProvider({ config, initial, auth, ownerId, onEnroll, onDe
   );
 }
 
-function EnrolledWorkspace({ config, vault, canSync, auth, lock, onDenied, children }: {
+function EnrolledWorkspace({ config, vault, canSync, auth, lock, onDenied, onConverted, children }: {
   config: CloudConfig;
   vault: OfflineVault;
   canSync: boolean;
   auth: AuthContextType;
   lock: () => void;
+  onConverted: (entry: OfflineVault) => void;
   onDenied: () => void;
   children: ReactNode;
 }) {
   const { t } = useTranslation();
   const { dataSource, hasPending, status, review, reviewError, online, synchronize, resolve, finishLocalWrites } =
     useOfflineWorkspace(config, vault, canSync, onDenied);
+  const [converting, setConverting] = useState(false);
+  const [conversionError, setConversionError] = useState<string | null>(null);
+
+  async function convert() {
+    setConverting(true);
+    setConversionError(null);
+    try {
+      const device = await registerDevice();
+      onConverted(await convertOfflineCopy(await finishLocalWrites(), device));
+    } catch (error) {
+      setConversionError(error instanceof DeviceUnlockUnavailable ? 'offline.device_unavailable' : 'offline.device_failed');
+    } finally {
+      setConverting(false);
+    }
+  }
+
   const lockedByOtherTab = status === 'local_conflict';
   const pendingLabel = t(hasPending ? 'offline.pending' : 'offline.ready');
   const notice = status === 'ready' || status === 'pending' ? null : status;
@@ -186,6 +215,11 @@ function EnrolledWorkspace({ config, vault, canSync, auth, lock, onDenied, child
             {notice && <p role="status" className="text-nasa-gray-300">{t(`offline.${notice}`)}</p>}
           </div>
           <div className="flex flex-wrap gap-2">
+            {!vault.record.credentialId && !lockedByOtherTab && (
+              <Button size="sm" variant="secondary" disabled={converting} onClick={() => void convert()}>
+                {t('offline.convert_device')}
+              </Button>
+            )}
             {online && !lockedByOtherTab && (canSync
               ? <Button size="sm" variant="secondary" disabled={status === 'syncing'} onClick={synchronize}>
                   {t('offline.sync_now')}
@@ -197,6 +231,7 @@ function EnrolledWorkspace({ config, vault, canSync, auth, lock, onDenied, child
           </div>
         </div>
       </div>
+      {conversionError && <p role="alert" className="p-2 text-center text-red-300">{t(conversionError)}</p>}
       {review && !lockedByOtherTab && (
         <OfflineConflicts conflicts={review.conflicts} error={reviewError} resolve={resolve} />
       )}
@@ -222,6 +257,8 @@ function CloudAppProvider({ config, children }: { config: CloudConfig; children:
   const [record, setRecord] = useState<OfflineVault['record'] | null | undefined>(undefined);
   const [vault, setVault] = useState<OfflineVault | null>(null);
   const [unlocking, setUnlocking] = useState(false);
+  const [deviceBusy, setDeviceBusy] = useState(false);
+  const [deviceError, setDeviceError] = useState<string | null>(null);
   const [deniedOwner, setDeniedOwner] = useState<string | null>(null);
   const [online, setOnline] = useState(navigator.onLine);
   const signingOut = useRef(false);
@@ -376,8 +413,12 @@ function CloudAppProvider({ config, children }: { config: CloudConfig; children:
   if (compatibleRecord) {
     if (vault?.record.ownerId === compatibleRecord.ownerId) {
       return (
-        <EnrolledWorkspace config={config} vault={vault} canSync={userId === compatibleRecord.ownerId}
-          auth={{ ...auth, isLoggedIn: true }}
+        <EnrolledWorkspace key={vault.record.credentialId ? 'device' : 'legacy'} config={config}
+          vault={vault} canSync={userId === compatibleRecord.ownerId}
+          auth={{ ...auth, isLoggedIn: true }} onConverted={entry => {
+            setRecord(entry.record);
+            setVault(entry);
+          }}
           lock={() => { setVault(null); setUnlocking(false); }} onDenied={onDenied}>
           {children}
         </EnrolledWorkspace>
@@ -387,12 +428,27 @@ function CloudAppProvider({ config, children }: { config: CloudConfig; children:
     return (
       <AuthContext.Provider value={auth}>
         <div className="container mx-auto px-4 pt-6 text-center">
-          <Button onClick={() => setUnlocking(true)}>{t('offline.unlock')}</Button>
+          <Button disabled={deviceBusy} onClick={async () => {
+            if (!compatibleRecord.credentialId) {
+              setUnlocking(true);
+              return;
+            }
+            setDeviceBusy(true);
+            setDeviceError(null);
+            try {
+              setVault(await unlockWithDevice(compatibleRecord));
+            } catch (error) {
+              setDeviceError(error instanceof DeviceUnlockUnavailable ? 'offline.device_unavailable' : 'offline.device_failed');
+            } finally {
+              setDeviceBusy(false);
+            }
+          }}>{t('offline.unlock')}</Button>
+          {deviceError && <p role="alert" className="mt-2 text-red-300">{t(deviceError)}</p>}
         </div>
-        {unlocking && <OfflinePassphrase creating={false} onClose={() => setUnlocking(false)} submit={async phrase => {
+        {unlocking && !compatibleRecord.credentialId && <OfflinePassphrase onClose={() => setUnlocking(false)} submit={async phrase => {
           const latest = await readOfflineCopy(config.offlineScope);
           if (!latest || latest.ownerId !== compatibleRecord.ownerId) throw new Error('Offline copy changed');
-          setVault(await unlockOfflineCopy(latest, phrase));
+          setVault(await unlockLegacyCopy(latest, phrase));
           setUnlocking(false);
         }} />}
         {children}

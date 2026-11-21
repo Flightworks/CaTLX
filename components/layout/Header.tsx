@@ -50,7 +50,7 @@ const Header: React.FC = () => {
                 <NavLink to="/projects" className={navLinkClass}>
                   {t('projects.title')}
                 </NavLink>
-                <NavLink to="/quick-rating" className={navLinkClass}>
+                <NavLink to="/workspace/quick-rating" className={navLinkClass}>
                   {t('header.quick_rating', 'Quick Rating')}
                 </NavLink>
                 <NavLink to="/admin" className={navLinkClass}>
@@ -89,7 +89,7 @@ const Header: React.FC = () => {
         <div className="md:hidden" id="mobile-menu">
           <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3">
             <NavLink to="/projects" className={mobileNavLinkClass} onClick={() => setIsMenuOpen(false)}>{t('projects.title')}</NavLink>
-            <NavLink to="/quick-rating" className={mobileNavLinkClass} onClick={() => setIsMenuOpen(false)}>{t('header.quick_rating', 'Quick Rating')}</NavLink>
+            <NavLink to="/workspace/quick-rating" className={mobileNavLinkClass} onClick={() => setIsMenuOpen(false)}>{t('header.quick_rating', 'Quick Rating')}</NavLink>
             <NavLink to="/admin" className={mobileNavLinkClass} onClick={() => setIsMenuOpen(false)}>{t('header.admin_dashboard')}</NavLink>
             <NavLink to="/about" className={mobileNavLinkClass} onClick={() => setIsMenuOpen(false)}>{t('header.about')}</NavLink>
           </div>

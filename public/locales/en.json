@@ -51,9 +51,6 @@
     "lock": "Lock",
     "reconnect": "Reconnect Google and sync",
     "phrase": "Local passphrase",
-    "confirm_phrase": "Confirm the passphrase",
-    "setup": "Choose a passphrase of at least 12 characters. You will need it to reopen your offline copy.",
-    "invalid_phrase": "Both passphrases must match and contain at least 12 characters.",
     "unlock_failed": "Could not open this copy. Check your passphrase.",
     "storage_failed": "Could not save on this device. Check available storage and try again.",
     "local_conflict": "This workspace changed in another tab. Close the other tab, then reload this page.",
@@ -78,7 +75,11 @@
     "rating": "Rating",
     "weights": "Weights",
     "logout_confirm": "Signing out removes the offline copy and any pending changes from this device. Continue?",
-    "close_setup": "Cancel"
+    "convert_device": "Use device unlock",
+    "legacy_unlock": "Open an older copy",
+    "legacy_hint": "Enter your current passphrase, then choose device unlock in the private workspace.",
+    "device_unavailable": "This browser or device cannot protect an offline copy with device unlock.",
+    "device_failed": "Device unlock failed or was cancelled. Try again."
   },
   "login": {
     "title": "CaTLX",
@@ -118,6 +119,7 @@
     "cloud": "Cloud"
   },
   "evaluator": {
+    "optional_description": "Description (optional)",
     "title": "Evaluator",
     "question": "Question",
     "answer": "Answer",

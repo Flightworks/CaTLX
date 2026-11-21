@@ -17,7 +17,7 @@ Ouvrir [http://localhost:3000](http://localhost:3000). Avec une configuration Su
 
 Depuis **Projets**, ouvre une étude, choisis son évaluateur et cote les tâches de l’étude ou d’un scénario. La recherche porte sur le nom et la référence MTE. **Ajouter et coter** associe une tâche du catalogue lors de l’enregistrement. Une même tâche peut être cotée séparément dans plusieurs scénarios.
 
-Le Quick Rating reste accessible hors ligne après le premier chargement complet de la PWA. Pour emporter l’espace privé, connecte-toi à Google en ligne et choisis **Activer le hors-ligne sur cet appareil**. La phrase secrète permet d’ouvrir la copie chiffrée sur cet appareil. CaTLX conserve les modifications sur cet appareil, puis les synchronise après reconnexion. En cas de conflit, choisis la version à garder. Une déconnexion efface la copie et les changements qui n’ont pas été synchronisés.
+Le Quick Rating reste accessible hors ligne après le premier chargement complet de la PWA. Pour emporter l’espace privé, connecte-toi à Google en ligne et choisis **Activer le hors-ligne sur cet appareil**. Le déverrouillage de l’appareil permet d’ouvrir la copie chiffrée sur un navigateur compatible avec WebAuthn PRF. Une copie existante peut être ouverte avec son ancienne phrase secrète, puis convertie depuis l’espace privé. CaTLX conserve les modifications sur cet appareil, puis les synchronise après reconnexion. En cas de conflit, choisis la version à garder. Une déconnexion efface la copie et les changements qui n’ont pas été synchronisés.
 
 ## Préproduction
 

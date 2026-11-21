@@ -138,6 +138,7 @@ const StudyForm: React.FC<{
   onSave: (study: Omit<Study, 'id' | 'mteIds' | 'evaluatorIds'> | Study) => void;
   onCancel: () => void;
 }> = ({ study, projectId, onSave, onCancel }) => {
+  const { t } = useTranslation();
   const [name, setName] = useState(study?.name || '');
   const [description, setDescription] = useState(study?.description || '');
   const [date, setDate] = useState(study ? new Date(study.date).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]);
@@ -159,8 +160,8 @@ const StudyForm: React.FC<{
         <input type="date" value={date} onChange={e => setDate(e.target.value)} required className="mt-1 block w-full bg-nasa-gray-700 border-nasa-gray-600 rounded-md shadow-sm focus:ring-nasa-blue focus:border-nasa-blue text-white" />
       </div>
       <div>
-        <label className="block text-sm font-medium text-nasa-gray-300">Study Description</label>
-        <textarea value={description} onChange={e => setDescription(e.target.value)} required rows={3} className="mt-1 block w-full bg-nasa-gray-700 border-nasa-gray-600 rounded-md shadow-sm focus:ring-nasa-blue focus:border-nasa-blue text-white" />
+        <label className="block text-sm font-medium text-nasa-gray-300">{t('evaluator.optional_description')}</label>
+        <textarea value={description} onChange={e => setDescription(e.target.value)} rows={3} className="mt-1 block w-full bg-nasa-gray-700 border-nasa-gray-600 rounded-md shadow-sm focus:ring-nasa-blue focus:border-nasa-blue text-white" />
       </div>
       <div className="flex justify-end space-x-2">
         <Button type="button" variant="secondary" onClick={onCancel}>Cancel</Button>

@@ -174,6 +174,6 @@ export default function useOfflineWorkspace(
     dataSource: createDataSource(document.local, commit),
     hasPending: !sameWorkspace(document.base.payload, document.local),
     status, review, reviewError, online, synchronize, resolve,
-    finishLocalWrites: () => { active.current?.abort(); clearTimeout(requested.current); return queue.current; },
+    finishLocalWrites: () => { active.current?.abort(); clearTimeout(requested.current); return queue.current.then(() => current.current); },
   };
 }

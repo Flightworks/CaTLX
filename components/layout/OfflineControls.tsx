@@ -7,52 +7,39 @@ import type { WorkspaceConflict } from '../../data/workspaceMerge';
 
 const inputClass = 'w-full rounded-md bg-nasa-gray-900 border border-nasa-gray-600 p-2 text-white';
 
-export function OfflinePassphrase({ creating, submit, onClose }: {
-  creating: boolean; submit: (phrase: string) => Promise<void>; onClose: () => void;
+export function OfflinePassphrase({ submit, onClose }: {
+  submit: (phrase: string) => Promise<void>; onClose: () => void;
 }) {
   const { t } = useTranslation();
   const [phrase, setPhrase] = useState('');
-  const [confirmation, setConfirmation] = useState('');
   const [busy, setBusy] = useState(false);
-  const [error, setError] = useState('');
-  const title = t(creating ? 'offline.enable' : 'offline.unlock');
+  const [error, setError] = useState(false);
 
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
     if (busy) return;
-    if (creating && (phrase.length < 12 || phrase !== confirmation)) {
-      setError('offline.invalid_phrase');
-      return;
-    }
-    setError('');
     setBusy(true);
+    setError(false);
     try {
       await submit(phrase);
     } catch {
-      setError(creating ? 'offline.storage_failed' : 'offline.unlock_failed');
+      setError(true);
     } finally {
       setBusy(false);
     }
   }
 
   return (
-    <Modal isOpen onClose={() => { if (!busy) onClose(); }} title={title}>
+    <Modal isOpen onClose={() => { if (!busy) onClose(); }} title={t('offline.legacy_unlock')}>
       <form onSubmit={handleSubmit} className="space-y-4">
-        {creating && <p>{t('offline.setup')}</p>}
+        <p>{t('offline.legacy_hint')}</p>
         <label className="block space-y-1">
           <span>{t('offline.phrase')}</span>
-          <input type="password" autoComplete={creating ? 'new-password' : 'current-password'}
-            className={inputClass} value={phrase} required onChange={event => setPhrase(event.target.value)} />
+          <input type="password" autoComplete="current-password" className={inputClass}
+            value={phrase} required onChange={event => setPhrase(event.target.value)} />
         </label>
-        {creating && (
-          <label className="block space-y-1">
-            <span>{t('offline.confirm_phrase')}</span>
-            <input type="password" autoComplete="new-password" className={inputClass} value={confirmation}
-              required onChange={event => setConfirmation(event.target.value)} />
-          </label>
-        )}
-        {error && <p role="alert" className="text-red-300">{t(error)}</p>}
-        <Button type="submit" disabled={busy}>{title}</Button>
+        {error && <p role="alert" className="text-red-300">{t('offline.unlock_failed')}</p>}
+        <Button type="submit" disabled={busy}>{t('offline.legacy_unlock')}</Button>
       </form>
     </Modal>
   );

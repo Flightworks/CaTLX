@@ -51,9 +51,6 @@
     "lock": "Verrouiller",
     "reconnect": "Reconnecter Google et synchroniser",
     "phrase": "Phrase secrète locale",
-    "confirm_phrase": "Confirmer la phrase secrète",
-    "setup": "Choisis une phrase d’au moins 12 caractères. Tu en auras besoin pour rouvrir la copie hors ligne.",
-    "invalid_phrase": "Les deux phrases doivent être identiques et contenir au moins 12 caractères.",
     "unlock_failed": "Impossible d’ouvrir cette copie. Vérifie la phrase secrète.",
     "storage_failed": "Impossible d’enregistrer sur cet appareil. Vérifie le stockage disponible et réessaie.",
     "local_conflict": "Cet espace a changé dans un autre onglet. Ferme cet autre onglet, puis recharge la page.",
@@ -78,7 +75,11 @@
     "rating": "Cotation",
     "weights": "Pondération",
     "logout_confirm": "La déconnexion effacera la copie de cet appareil et les modifications en attente. Continuer ?",
-    "close_setup": "Annuler"
+    "convert_device": "Utiliser le déverrouillage de l’appareil",
+    "legacy_unlock": "Ouvrir une ancienne copie",
+    "legacy_hint": "Utilise ta phrase secrète actuelle, puis choisis le déverrouillage de l’appareil dans l’espace privé.",
+    "device_unavailable": "Ce navigateur ou cet appareil ne peut pas protéger une copie hors ligne avec le déverrouillage de l’appareil.",
+    "device_failed": "Le déverrouillage de l’appareil a échoué ou a été annulé. Réessaie."
   },
   "login": {
     "title": "CaTLX",
@@ -118,6 +119,7 @@
     "cloud": "Cloud"
   },
   "evaluator": {
+    "optional_description": "Description (facultative)",
     "title": "Évaluateur",
     "question": "Question",
     "answer": "Réponse",

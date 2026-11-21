@@ -5,6 +5,7 @@ import EvaluatorPage from './pages/EvaluatorPage';
 import AdminDashboardPage from './pages/AdminDashboardPage';
 import Layout from './components/layout/Layout';
 import AboutPage from './pages/AboutPage';
+import QuickRatingPage from './pages/QuickRatingPage';
 import ProjectsPage from './pages/ProjectsPage';
 
 function PrivateRoutes() {
@@ -14,6 +15,7 @@ function PrivateRoutes() {
   return (
     <Layout>
       <Routes>
+        <Route path="/workspace/quick-rating" element={<QuickRatingPage />} />
         <Route path="/projects/*" element={<ProjectsPage />} />
         <Route path="/admin" element={<AdminDashboardPage />} />
         <Route path="/evaluator" element={<EvaluatorPage />} />

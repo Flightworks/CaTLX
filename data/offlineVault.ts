@@ -1,4 +1,5 @@
 import type { LoadedWorkspace } from './supabase';
+import { requestDeviceKey } from './deviceUnlock';
 import type { WorkspaceData } from '../types';
 
 export type OfflineDocument = {
@@ -12,6 +13,7 @@ type OfflineRecord = {
   generation: number;
   salt: Uint8Array<ArrayBuffer>;
   iv: Uint8Array<ArrayBuffer>;
+  credentialId?: Uint8Array<ArrayBuffer>;
   ciphertext: ArrayBuffer;
 };
 
@@ -87,12 +89,14 @@ function parameters(record: Omit<OfflineRecord, 'ciphertext'>): AesGcmParams {
   return {
     name: 'AES-GCM',
     iv: record.iv,
-    additionalData: encoder.encode(JSON.stringify([record.scope, record.ownerId, record.generation])),
+    additionalData: encoder.encode(JSON.stringify(record.credentialId
+      ? [record.scope, record.ownerId, record.generation, [...record.credentialId]]
+      : [record.scope, record.ownerId, record.generation])),
   };
 }
 
 async function persist(
-  identity: Pick<OfflineRecord, 'scope' | 'ownerId' | 'salt'>,
+  identity: Pick<OfflineRecord, 'scope' | 'ownerId' | 'salt' | 'credentialId'>,
   key: CryptoKey,
   document: OfflineDocument,
   previous?: OfflineRecord,
@@ -108,22 +112,40 @@ async function persist(
   return { record, key, document };
 }
 
-export async function createOfflineCopy(scope: string, ownerId: string, phrase: string, base: LoadedWorkspace) {
-  if (phrase.length < 12) throw new TypeError('Passphrase too short');
-  const salt = crypto.getRandomValues(new Uint8Array(32));
-  const key = await deriveKey(phrase, salt);
-  return persist({ scope, ownerId, salt }, key, { base, local: base.payload });
+type DeviceSetup = { credentialId: Uint8Array<ArrayBuffer>; salt: Uint8Array<ArrayBuffer>; key: CryptoKey };
+
+export function createOfflineCopy(scope: string, ownerId: string, device: DeviceSetup, base: LoadedWorkspace) {
+  const { credentialId, salt, key } = device;
+  return persist({ scope, ownerId, salt, credentialId }, key, { base, local: base.payload });
 }
 
-export async function unlockOfflineCopy(record: OfflineRecord, phrase: string): Promise<OfflineVault> {
-  const key = await deriveKey(phrase, record.salt);
+async function decryptCopy(record: OfflineRecord, key: CryptoKey): Promise<OfflineVault> {
   const plaintext = await crypto.subtle.decrypt(parameters(record), key, record.ciphertext);
   return { record, key, document: JSON.parse(decoder.decode(plaintext)) };
 }
 
+export async function unlockLegacyCopy(record: OfflineRecord, phrase: string): Promise<OfflineVault> {
+  if (record.credentialId) throw new OfflineCopyChanged();
+  return decryptCopy(record, await deriveKey(phrase, record.salt));
+}
+
+export async function unlockWithDevice(record: OfflineRecord): Promise<OfflineVault> {
+  if (!record.credentialId) throw new OfflineCopyChanged();
+  const key = await requestDeviceKey({ id: record.credentialId, salt: record.salt });
+  const latest = await readOfflineCopy(record.scope);
+  if (!latest || latest.ownerId !== record.ownerId) throw new OfflineCopyChanged();
+  return decryptCopy(latest, key);
+}
+
+export function convertOfflineCopy(vault: OfflineVault, device: DeviceSetup) {
+  const { scope, ownerId } = vault.record;
+  const { credentialId, salt, key } = device;
+  return persist({ scope, ownerId, salt, credentialId }, key, vault.document, vault.record);
+}
+
 export function updateOfflineCopy(vault: OfflineVault, document: OfflineDocument) {
-  const { scope, ownerId, salt } = vault.record;
-  return persist({ scope, ownerId, salt }, vault.key, document, vault.record);
+  const { scope, ownerId, salt, credentialId } = vault.record;
+  return persist({ scope, ownerId, salt, credentialId }, vault.key, document, vault.record);
 }
 
 export function forgetOfflineCopy(record: OfflineRecord) {
