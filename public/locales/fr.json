@@ -31,6 +31,10 @@
   "catalog": {
     "global_title": "Catalogue MTE global",
     "new": "Nouvelle MTE",
+    "new_phase": "Nouvelle phase de mission",
+    "mission_hierarchy": "Phase de mission → MTE générale → MTE détaillée",
+    "hierarchy_hint": "Créez une phase de mission, puis ajoutez des sous-MTE avec le bouton +. Pour classer une MTE existante, ouvrez sa fiche et choisissez son niveau et son parent.",
+    "project_hierarchy_hint": "Créez des phases et classez les MTE dans le catalogue global. Les branches apparaissent ici lorsque leurs MTE sont utilisées dans le projet.",
     "edit": "Modifier la MTE",
     "save": "Enregistrer la MTE",
     "reference": "Réf.",

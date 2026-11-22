@@ -31,6 +31,10 @@
   "catalog": {
     "global_title": "Global MTE catalog",
     "new": "Add New MTE",
+    "new_phase": "New mission phase",
+    "mission_hierarchy": "Mission phase → General MTE → Detailed MTE",
+    "hierarchy_hint": "Create a mission phase, then use + to add child MTEs. To organize an existing MTE, edit it and choose its level and parent.",
+    "project_hierarchy_hint": "Create phases and organize MTEs in the global catalogue. Branches appear here when their MTEs are used in the project.",
     "edit": "Edit MTE",
     "save": "Save MTE",
     "reference": "Ref #",

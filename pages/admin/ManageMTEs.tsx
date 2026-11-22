@@ -179,6 +179,7 @@ const ManageMTEs: React.FC<{ projectId?: string; standalone?: boolean }> = ({ pr
   }, [catalog, children, collapsed, mtesById, query, roots]);
 
   const parents = useMemo(() => new Set(mtes.map(mte => mte.parentId)), [mtes]);
+  const hasMissionPhases = roots.some(mte => mte.level === 'phase');
   const evaluated = useMemo(() => new Set([
     ...ratings.map(rating => rating.mteId),
     ...(passages ?? []).flatMap(passage => passage.mteIds),
@@ -213,9 +214,23 @@ const ManageMTEs: React.FC<{ projectId?: string; standalone?: boolean }> = ({ pr
           </label>
           {projectId ? (
             <Link to="/catalog" className="rounded-md px-2 py-1.5 text-sm font-medium text-accent-ink hover:bg-hover-surface hover:underline">{t('catalog.open_global')}</Link>
-          ) : <Button size="sm" onClick={() => setEditor({})} className="min-h-9 whitespace-nowrap px-3">{t('catalog.new')}</Button>}
+          ) : <>
+            <Button size="sm" variant="secondary" onClick={() => setEditor({})} className="min-h-9 px-3">
+              {t('catalog.new')}
+            </Button>
+            <Button size="sm" onClick={() => setEditor({ level: 'phase' })} className="min-h-9 px-3">
+              {t('catalog.new_phase')}
+            </Button>
+          </>}
         </div>
       </header>
+
+      {!hasMissionPhases && !query && (
+        <div className="space-y-1 border-b border-separator bg-nasa-gray-900/50 px-4 py-3 text-sm xl:px-5">
+          <p className="font-semibold text-foreground">{t('catalog.mission_hierarchy')}</p>
+          <p className="text-nasa-gray-300">{t(projectId ? 'catalog.project_hierarchy_hint' : 'catalog.hierarchy_hint')}</p>
+        </div>
+      )}
 
       <div className="overflow-x-auto rounded-b-xl">
         <table role="table" className="block w-full lg:table">
@@ -303,7 +318,8 @@ const ManageMTEs: React.FC<{ projectId?: string; standalone?: boolean }> = ({ pr
           </tbody>
         </table>
       </div>
-      <Modal isOpen={editor !== null} onClose={() => setEditor(null)} title={t(editor?.mte ? 'catalog.edit' : 'catalog.new')} size="xl">
+      <Modal isOpen={editor !== null} onClose={() => setEditor(null)}
+        title={t(editor?.mte ? 'catalog.edit' : editor?.level === 'phase' ? 'catalog.new_phase' : 'catalog.new')} size="xl">
         {editor && (
           <MteForm
             mte={editor.mte}
