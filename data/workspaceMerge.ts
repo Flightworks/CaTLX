@@ -1,5 +1,5 @@
 import type { WorkspaceData } from '../types';
-import { passageCriteria, sameMteCriterion, validMteParent } from './mte';
+import { indexMtePaths, mteBranchReferences, mteReferenceKey, passageCriteria, sameMteCriterion, validMteParent } from './mte';
 import { ratingContext } from './workspace';
 
 const collections = [
@@ -72,6 +72,7 @@ function invalidLinks(workspace: WorkspaceData) {
   const conditions = new Map((workspace.conditions ?? []).map(entry => [entry.id, entry]));
   const passages = new Map((workspace.passages ?? []).map(entry => [entry.id, entry]));
   const byContext = new Map<string, string>();
+  const byReference = new Map<string, string>();
 
   for (const project of workspace.projects) {
     for (const id of project.memberIds) {
@@ -81,6 +82,13 @@ function invalidLinks(workspace: WorkspaceData) {
   for (const task of tasks.values()) {
     const parent = task.parentId === undefined ? undefined : tasks.get(task.parentId);
     if (!validMteParent(task, parent)) issues.push([`mtes:${task.id}`, `mtes:${task.parentId ?? task.id}`]);
+    const reference = mteReferenceKey(task.refNumber);
+    if (reference) {
+      const key = `mtes:${task.id}`;
+      const first = byReference.get(reference);
+      if (first) issues.push(first < key ? [first, key] : [key, first]);
+      else byReference.set(reference, key);
+    }
   }
   for (const study of workspace.studies) {
     const key = `studies:${study.id}`;
@@ -143,23 +151,35 @@ function invalidLinks(workspace: WorkspaceData) {
   return issues;
 }
 
+function renumberedBranches(base: WorkspaceData['mtes'], next: WorkspaceData['mtes']) {
+  // Resolve a renumbering together when a concurrent edit conflicts with one of its rows.
+  const paths = indexMtePaths(base);
+  const nextRefs = new Map(next.map(mte => [mte.id, mte.refNumber.trim()]));
+  return base.flatMap(root => {
+    const reference = nextRefs.get(root.id);
+    if (!reference || !root.refNumber.trim() || reference === root.refNumber.trim()) return [];
+    const changes = [...mteBranchReferences(paths, root, reference)];
+    return changes.length > 1 && changes.every(([id, ref]) => nextRefs.get(id) === ref)
+      ? [changes.map(([id]) => `mtes:${id}`)] : [];
+  });
+}
+
 export function mergeWorkspace(base: WorkspaceData, local: WorkspaceData, remote: WorkspaceData) {
   const original = indexWorkspace(base);
   const ours = indexWorkspace(local);
   const theirs = indexWorkspace(remote);
   const candidate = new Map(theirs);
+  const branches = [...renumberedBranches(base.mtes, local.mtes), ...renumberedBranches(base.mtes, remote.mtes)];
   let groups: Set<string>[] = [];
   function groupKeys(keys: string[]) {
     const together = new Set(keys);
-    const separate: Set<string>[] = [];
-    for (const group of groups) {
-      if ([...group].some(key => together.has(key))) {
-        group.forEach(key => together.add(key));
-      } else {
-        separate.push(group);
-      }
+    const related = [...branches, ...groups.map(group => [...group])];
+    let size = 0;
+    while (size !== together.size) {
+      size = together.size;
+      for (const group of related) if (group.some(key => together.has(key))) group.forEach(key => together.add(key));
     }
-    groups = [...separate, together];
+    groups = [...groups.filter(group => ![...group].some(key => together.has(key))), together];
   }
 
   for (const key of new Set([...original.keys(), ...ours.keys(), ...theirs.keys()])) {
@@ -177,15 +197,9 @@ export function mergeWorkspace(base: WorkspaceData, local: WorkspaceData, remote
   for (;;) {
     const broken = invalidLinks(buildWorkspace(candidate))
       .filter(pair => !existingIssues.has(JSON.stringify(pair)));
-    if (broken.length === 0) break;
-    const changed = new Set<string>();
-    for (const pair of broken) {
-      groupKeys(pair);
-      for (const key of pair) {
-        if (!equal(candidate.get(key), theirs.get(key))) changed.add(key);
-      }
-    }
-    if (!changed.size) break;
+    broken.forEach(pair => groupKeys(pair));
+    const changed = [...new Set(groups.flatMap(group => [...group]))].filter(key => !equal(candidate.get(key), theirs.get(key)));
+    if (!changed.length) break;
     for (const key of changed) replaceEntry(candidate, key, theirs.get(key));
   }
 

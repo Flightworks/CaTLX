@@ -1,5 +1,5 @@
 import type { IDataSource, MTE, MteCriterion, MteObservation, Passage, Rating, WorkspaceData } from '../types';
-import { criteriaForRating, sameMteCriterion, validMteParent } from './mte';
+import { criteriaForRating, indexMtePaths, mteBranchReferences, mteReferenceKey, MteReferenceError, sameMteCriterion, validMteParent } from './mte';
 
 export const emptyWorkspace: WorkspaceData = {
   projects: [],
@@ -56,7 +56,25 @@ function writeMte(current: WorkspaceData, task: MTE, creating: boolean): Workspa
       current.mtes.some(mte => mte.parentId === task.id && !validMteParent(mte, task))) {
     throw new Error('Invalid MTE hierarchy');
   }
-  return { ...current, mtes: creating ? [...current.mtes, task] : updateItem(current.mtes, task) };
+  const previous = current.mtes.find(mte => mte.id === task.id);
+  if (previous?.refNumber.trim() === task.refNumber.trim()) {
+    return { ...current, mtes: updateItem(current.mtes, task) };
+  }
+  const references = previous ? mteBranchReferences(indexMtePaths(current.mtes), previous, task.refNumber) :
+    new Map([[task.id, task.refNumber]]);
+  const used = new Set(current.mtes.filter(mte => !references.has(mte.id)).map(mte => mteReferenceKey(mte.refNumber)));
+  for (const reference of references.values()) {
+    const key = mteReferenceKey(reference);
+    if (!key) continue;
+    if (used.has(key)) throw new MteReferenceError('duplicate');
+    used.add(key);
+  }
+  const mtes = creating ? [...current.mtes, task] : current.mtes.map(mte => {
+    if (mte.id === task.id) return task;
+    const reference = references.get(mte.id);
+    return reference === undefined ? mte : { ...mte, refNumber: reference };
+  });
+  return { ...current, mtes };
 }
 
 function validateObservations(
@@ -184,7 +202,7 @@ export function createDataSource(data: WorkspaceData, commit: CommitWorkspace): 
     },
     async saveMte(input) {
       const { id, ...fields } = input;
-      const mte = normalizeMte({ ...fields, id: id ?? newId(), name: fields.name.trim() });
+      const mte = normalizeMte({ ...fields, id: id ?? newId(), name: fields.name.trim(), refNumber: fields.refNumber.trim() });
       await commit(current => {
         if (!mte.name || (id !== undefined && !current.mtes.some(task => task.id === id))) {
           throw new Error('The MTE name is missing or the MTE no longer exists.');
@@ -195,6 +213,7 @@ export function createDataSource(data: WorkspaceData, commit: CommitWorkspace): 
     },
     deleteMte(id) {
       commit(current => current.mtes.some(task => task.parentId === id) ||
+        [...indexMtePaths(current.mtes).values()].some(path => path.at(-2)?.id === id) ||
         current.passages?.some(pass => pass.mteIds.includes(id)) ? current : ({
         ...current,
         mtes: removeItem(current.mtes, id),

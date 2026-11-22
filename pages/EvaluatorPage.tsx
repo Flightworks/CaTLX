@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { useData } from '../contexts/AppContext';
 import { TLXDimension, type MTE, type Scenario, type Study } from '../types';
 import { TLX_DIMENSIONS_INFO, PAIRWISE_COMBINATIONS, DEFAULT_WEIGHTS } from '../constants';
-import { criteriaForRating, mtePath } from '../data/mte';
+import { criteriaForRating, indexMtePaths } from '../data/mte';
 import { latestRating } from '../data/workspace';
 import MteObserverFields, { observationDrafts, readObservations, type ObservationDrafts } from '../components/MteObserverFields';
 import ExpressTlxControl from '../components/ui/ExpressTlxControl';
@@ -286,6 +286,7 @@ export function AssessmentRunner({ study, scenario, evaluatorId, passageId, pass
     const context = { studyId: study.id, scenarioId: scenario?.id, evaluatorId, passageId };
     const task = mtes.find(entry => entry.id === taskId);
     const tasksById = new Map(mtes.map(entry => [entry.id, entry]));
+    const paths = indexMtePaths(mtes);
     const assigned = [...new Set(scenario?.mteIds ?? study.mteIds)]
         .flatMap(id => tasksById.get(id) ?? []);
     const assignedIds = new Set(assigned.map(entry => entry.id));
@@ -298,7 +299,7 @@ export function AssessmentRunner({ study, scenario, evaluatorId, passageId, pass
     const browsing = !scenario && showCatalog;
     const candidates = browsing ? mtes.filter(entry => !assignedIds.has(entry.id)) : assigned;
     const tasks = candidates.map(entry => {
-        const path = mtePath(entry, tasksById);
+        const path = paths.get(entry.id) ?? [entry];
         return { entry, path, label: path.map(task => task.name).join(' › ') };
     }).filter(({ path }) => path.map(entry => `${entry.refNumber} ${entry.name}`).join(' ').toLocaleLowerCase().includes(query));
     if (browsing) tasks.sort((a, b) => a.label.localeCompare(b.label));
@@ -316,7 +317,7 @@ export function AssessmentRunner({ study, scenario, evaluatorId, passageId, pass
             : 'projects.save_and_choose';
         return <RatingForm key={task.id} study={study} scenario={scenario} evaluatorId={evaluatorId}
             passageId={passageId} passageLabel={passageLabel} task={task}
-            taskParents={mtePath(task, tasksById).slice(0, -1).map(entry => entry.name).join(' › ')}
+            taskParents={paths.get(task.id)?.slice(0, -1).map(entry => entry.name).join(' › ') ?? ''}
             submitLabel={submitLabel} onClose={wasSaved => {
                 setTaskId(wasSaved && nextTask ? nextTask.id : '');
                 setSaved(Boolean(wasSaved));

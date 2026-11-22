@@ -2,7 +2,7 @@ import { useState, type ReactNode } from 'react';
 import { Link, Navigate, NavLink, Route, Routes, useMatch, useParams, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useData } from '../contexts/AppContext';
-import { mtePath } from '../data/mte';
+import { indexMtePaths } from '../data/mte';
 import type { Project, Scenario, Study } from '../types';
 import Button from '../components/ui/Button';
 import Card from '../components/ui/Card';
@@ -145,9 +145,9 @@ function ScenarioForm({ studies, draft, onClose }: { studies: Study[]; draft: Sc
   const study = studies.find(entry => entry.id === studyId);
   const used = new Set(scenario ? ratings.filter(rating => !rating.passageId && rating.scenarioId === scenario.id).map(rating => rating.mteId) : []);
   const allowedIds = new Set([...(study?.mteIds ?? []), ...(scenario?.mteIds ?? [])]);
-  const catalogById = new Map(mtes.map(task => [task.id, task]));
+  const paths = indexMtePaths(mtes);
   const availableTasks = mtes.filter(task => allowedIds.has(task.id)).map(task => {
-    const path = mtePath(task, catalogById);
+    const path = paths.get(task.id) ?? [task];
     return { ...task, path: path.map(entry => entry.name).join(' › '), refs: path.map(entry => entry.refNumber).join(' ') };
   }).sort((a, b) => a.path.localeCompare(b.path));
   const tasksById = new Map(availableTasks.map(task => [task.id, task]));

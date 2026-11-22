@@ -5,7 +5,7 @@ import { useData } from '../contexts/AppContext';
 import type { Condition, Passage, Rating, Study } from '../types';
 import { orderedPassages } from '../data/workspace';
 import { downloadCsv } from '../data/csv';
-import { mtePath } from '../data/mte';
+import { indexMtePaths } from '../data/mte';
 import { TLX_DIMENSIONS_INFO } from '../constants';
 import { MteObservationSummary } from '../components/MteObservationSummary';
 import Button from '../components/ui/Button';
@@ -235,6 +235,7 @@ export function PassageComparison({ study }: { study: Study }) {
   const [choices, setChoices] = useState<Record<string, string>>({});
   const scriptPasses = passages.filter(entry => entry.studyId === study.id && entry.scenarioId === scenarioId);
   const tasks = mtes.filter(task => scriptPasses.some(pass => pass.mteIds.includes(task.id)));
+  const paths = indexMtePaths(mtes);
   const fmt = new Intl.NumberFormat(i18n.resolvedLanguage, { maximumFractionDigits: 2 });
   const date = new Intl.DateTimeFormat(i18n.resolvedLanguage, { dateStyle: 'short', timeStyle: 'short' });
 
@@ -254,10 +255,10 @@ export function PassageComparison({ study }: { study: Study }) {
         <option value="">{t('passages.choose')}</option>
         {options.filter(entry => entry.id !== conditionA).map(entry => <option key={entry.id} value={entry.id}>{conditionLabel(entry)}</option>)}
       </Select>
-      <Select id="compare-mte" label="MTE" value={mteId} onChange={e => setTask(e.target.value)}>
+      <Select id="compare-mte" label={t('catalog.task')} value={mteId} onChange={e => setTask(e.target.value)}>
         <option value="">{t('passages.choose')}</option>
         {tasks.map(entry => <option key={entry.id} value={entry.id}>
-          {mtePath(entry, mtes).map(task => task.name).join(' / ')}
+          {(paths.get(entry.id) ?? [entry]).map(task => task.name).join(' › ')}
         </option>)}
       </Select>
     </div>

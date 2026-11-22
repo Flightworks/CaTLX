@@ -1,7 +1,7 @@
 import { expect, test } from 'vitest';
 import { DEFAULT_WEIGHTS } from '../constants';
 import type { MTE, MteCriterion, WorkspaceData } from '../types';
-import { criteriaForRating, mtePath } from './mte';
+import { criteriaForRating, indexMtePaths, nextSubMteReference } from './mte';
 import { createDataSource, emptyWorkspace } from './workspace';
 import { mergeWorkspace } from './workspaceMerge';
 
@@ -35,8 +35,9 @@ function editWorkspace(initial: WorkspaceData) {
 test('validates all three levels and preserves existing standalone tasks', async () => {
   const standalone = { id: 'standalone', name: 'Existing task', description: '', refNumber: 'LEGACY' };
   const { read, source } = editWorkspace({ ...emptyWorkspace, mtes: [phase, general, detail, standalone] });
-  expect(mtePath(detail, read().mtes)).toEqual([phase, general, detail]);
-  expect(mtePath(standalone, read().mtes)).toEqual([standalone]);
+  const paths = indexMtePaths(read().mtes);
+  expect(paths.get(detail.id)).toEqual([phase, general, detail]);
+  expect(paths.get(standalone.id)).toEqual([standalone]);
 
   await expect(source.saveMte({ ...detail, parentId: phase.id })).rejects.toThrow('hierarchy');
   await expect(source.saveMte({ ...general, level: 'phase', parentId: undefined })).rejects.toThrow('hierarchy');
@@ -46,6 +47,52 @@ test('validates all three levels and preserves existing standalone tasks', async
 
   await source.saveMte({ ...detail, id: undefined, name: 'Second detail' });
   expect(read().mtes.at(-1)).toMatchObject({ name: 'Second detail', parentId: general.id });
+});
+
+const referencedRoot: MTE = { id: 'root', name: 'Root', refNumber: 'M-10', description: '' };
+const referencedChild: MTE = { id: detail.id, name: 'Check', refNumber: 'm-10.1', description: '', criteria: [criterion] };
+
+test('derives the closest unique parent from references and suggests a free branch', () => {
+  const nested = { ...referencedChild, id: 'nested', refNumber: 'M-10.1.1' };
+  const gap = { ...referencedChild, id: 'gap', refNumber: 'M-10.2.1' };
+  const unrelated = { ...referencedChild, id: 'unrelated', refNumber: 'M-100' };
+  const mtes = [referencedChild, referencedRoot, nested, unrelated, gap];
+  const paths = indexMtePaths(mtes);
+
+  expect(paths.get(nested.id)).toEqual([referencedRoot, referencedChild, nested]);
+  expect(paths.get(gap.id)).toEqual([referencedRoot, gap]);
+  expect(paths.get(unrelated.id)).toEqual([unrelated]);
+  expect(nextSubMteReference(referencedRoot, mtes)).toBe('M-10.3');
+  expect(indexMtePaths([...mtes, { ...referencedRoot, id: 'duplicate' }]).get(referencedChild.id)).toEqual([referencedChild]);
+});
+
+test('renumbers a branch atomically while preserving the criterion and scenario link', async () => {
+  const occupied = { ...referencedChild, id: 'occupied', refNumber: 'M-20.1' };
+  const { read, source } = editWorkspace(fixture([referencedRoot, referencedChild, occupied]));
+  await expect(source.saveMte({ ...referencedRoot, refNumber: 'M-20' })).rejects.toThrow('duplicate');
+  expect(read().mtes).toEqual([referencedRoot, referencedChild, occupied]);
+  await source.saveMte({ ...referencedRoot, refNumber: ' M-30 ' });
+  expect(read().mtes.slice(0, 2)).toEqual([
+    { ...referencedRoot, refNumber: 'M-30' }, { ...referencedChild, refNumber: 'M-30.1' },
+  ]);
+  expect(read().scenarios?.[0].mteIds).toEqual([referencedChild.id]);
+  source.deleteMte(referencedRoot.id);
+  expect(read().mtes).toHaveLength(3);
+});
+
+test('offline merge puts a colliding branch renumbering in one conflict', async () => {
+  const base = fixture([referencedRoot, referencedChild]);
+  const local = editWorkspace(base);
+  const remote = editWorkspace(base);
+  await local.source.saveMte({ ...referencedRoot, refNumber: 'M-20' });
+  const occupiedId = await remote.source.saveMte({ ...referencedChild, id: undefined, refNumber: 'm-20.1' });
+  const merged = mergeWorkspace(base, local.read(), remote.read());
+
+  expect(merged.payload.mtes).toEqual(remote.read().mtes);
+  expect(merged.conflicts).toHaveLength(1);
+  expect(new Set(merged.conflicts[0].keys)).toEqual(new Set([
+    `mtes:${referencedRoot.id}`, `mtes:${referencedChild.id}`, `mtes:${occupiedId}`,
+  ]));
 });
 
 test('offline merge groups a new child with a parent changed by another device', () => {

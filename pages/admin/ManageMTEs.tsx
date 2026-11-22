@@ -2,26 +2,20 @@ import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useData } from '../../contexts/AppContext';
-import { mtePath, validMteParent } from '../../data/mte';
-import type { MTE, MteLevel, Project, Scenario, Study } from '../../types';
+import { indexMtePaths, mteReferenceKey, MteReferenceError, nextSubMteReference } from '../../data/mte';
+import type { MTE, Project, Scenario, Study } from '../../types';
 import MteForm from '../../components/admin/MteForm';
-import MteAttachmentForm from '../../components/admin/MteAttachmentForm';
 import Button from '../../components/ui/Button';
 import Modal from '../../components/ui/Modal';
 import RowAction from '../../components/ui/RowAction';
 import { projectPath, scenarioPath, studyPath } from '../projectPaths';
 
 type StudyUsage = { study: Study; project: Project; scenarios: Scenario[] };
-type CatalogDialog =
-  | { mode: 'create'; level?: MteLevel; parentId?: string }
-  | { mode: 'edit'; mteId: string }
-  | { mode: 'attach'; mteId?: string; parentId?: string };
+type CatalogDialog = { mteId?: string; initialReference?: string; addChildAfterSave?: boolean };
 
 function entryId(id: string) {
   return `catalog-mte-${id}`;
 }
-
-const independentHeadingId = 'catalog-independent-heading';
 
 function MteUsage({ entries, showProject }: { entries: Map<string, StudyUsage> | undefined; showProject: boolean }) {
   const { t } = useTranslation();
@@ -85,19 +79,18 @@ function MteCriteria({ criteria }: { criteria: NonNullable<MTE['criteria']> }) {
 }
 
 export default function ManageMTEs({ projectId, standalone }: { projectId?: string; standalone?: boolean }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { mtes, projects, studies, scenarios, ratings, passages, saveMte, deleteMte } = useData();
   const [dialog, setDialog] = useState<CatalogDialog | null>(null);
-  const [activePhaseId, setActivePhaseId] = useState<string | null>();
   const [search, setSearch] = useState('');
   const [focusId, setFocusId] = useState<string>();
   const query = search.trim().toLocaleLowerCase();
   const Heading = standalone ? 'h1' : 'h2';
-  const mtesById = useMemo(() => new Map(mtes.map(mte => [mte.id, mte])), [mtes]);
+  const paths = useMemo(() => indexMtePaths(mtes), [mtes]);
 
   useEffect(() => {
     if (!focusId) return;
-    const entry = document.getElementById(focusId);
+    const entry = document.getElementById(entryId(focusId));
     if (!entry) return;
     entry.focus({ preventScroll: true });
     entry.scrollIntoView({ block: 'nearest' });
@@ -142,139 +135,96 @@ export default function ManageMTEs({ projectId, standalone }: { projectId?: stri
     if (!projectId) return mtes;
     const ids = new Set(usages.keys());
     for (const id of usages.keys()) {
-      const mte = mtesById.get(id);
-      if (!mte) continue;
-      for (const ancestor of mtePath(mte, mtesById)) ids.add(ancestor.id);
+      for (const ancestor of paths.get(id) ?? []) ids.add(ancestor.id);
     }
     return mtes.filter(mte => ids.has(mte.id));
-  }, [mtes, mtesById, projectId, usages]);
+  }, [mtes, paths, projectId, usages]);
 
-  const { phases, independent, children } = useMemo(() => {
-    const phases: MTE[] = [];
-    const independent: MTE[] = [];
-    const children = new Map<string, MTE[]>();
-    for (const mte of catalog) {
-      if (mte.parentId && validMteParent(mte, mtesById.get(mte.parentId))) {
-        const siblings = children.get(mte.parentId) ?? [];
-        siblings.push(mte);
-        children.set(mte.parentId, siblings);
-      } else {
-        (mte.level === 'phase' ? phases : independent).push(mte);
+  const rows = useMemo(() => {
+    const matched = new Set<string>();
+    const context = new Set<string>();
+    if (query) {
+      for (const mte of catalog) {
+        const fields = [mte.refNumber, mte.name, mte.description, ...(mte.criteria ?? []).map(criterion => criterion.label)];
+        if (!fields.some(field => field.toLocaleLowerCase().includes(query))) continue;
+        matched.add(mte.id);
+        for (const entry of paths.get(mte.id) ?? []) context.add(entry.id);
       }
     }
-    return { phases, independent, children };
-  }, [catalog, mtesById]);
 
-  const parents = useMemo(() => new Set(mtes.map(mte => mte.parentId)), [mtes]);
-  const evaluated = useMemo(() => new Set([
+    const compare = new Intl.Collator(i18n.resolvedLanguage, { numeric: true, sensitivity: 'base' });
+    const siblings = new Map<string | undefined, MTE[]>();
+    for (const mte of catalog) {
+      const path = paths.get(mte.id) ?? [mte];
+      if (query && !context.has(mte.id) && !path.some(entry => matched.has(entry.id))) continue;
+      const key = path.at(-2)?.id;
+      const group = siblings.get(key) ?? [];
+      group.push(mte);
+      siblings.set(key, group);
+    }
+
+    const ordered: { mte: MTE; depth: number }[] = [];
+    function append(parentId: string | undefined, depth: number) {
+      const entries = siblings.get(parentId) ?? [];
+      entries.sort((a, b) => Number(!a.refNumber.trim()) - Number(!b.refNumber.trim()) ||
+        compare.compare(a.refNumber, b.refNumber) || compare.compare(a.name, b.name));
+      for (const mte of entries) {
+        ordered.push({ mte, depth });
+        append(mte.id, depth + 1);
+      }
+    }
+    append(undefined, 0);
+    return ordered;
+  }, [catalog, i18n.resolvedLanguage, paths, query]);
+
+  const protectedIds = new Set([
     ...ratings.map(rating => rating.mteId),
     ...(passages ?? []).flatMap(passage => passage.mteIds),
-  ]), [passages, ratings]);
-  const attachable = independent.filter(mte => !mte.level && !mte.parentId && !parents.has(mte.id));
-  const attachableIds = new Set(attachable.map(mte => mte.id));
-  const phase = activePhaseId === null ? undefined : phases.find(entry => entry.id === activePhaseId) ?? phases[0];
-  const generalMtes = phase ? children.get(phase.id) ?? [] : [];
-  const matches = query ? catalog.filter(mte =>
-    [mte.name, mte.refNumber, mte.description, ...(mte.criteria ?? []).map(criterion => criterion.label)]
-      .some(text => text.toLocaleLowerCase().includes(query))) : [];
-  const editing = dialog && 'mteId' in dialog && dialog.mteId ? mtesById.get(dialog.mteId) : undefined;
-  const destination = dialog && 'parentId' in dialog && dialog.parentId ? mtesById.get(dialog.parentId) : undefined;
+  ]);
+  const parents = new Set(mtes.flatMap(mte => [mte.parentId, paths.get(mte.id)?.at(-2)?.id]));
+  const editing = dialog?.mteId ? mtes.find(mte => mte.id === dialog.mteId) : undefined;
 
-  function reveal(headingId: string, phaseId: string | null) {
-    setSearch('');
-    setActivePhaseId(phaseId);
-    setFocusId(headingId);
+  function referenceTaken(reference: string, exceptId?: string) {
+    const key = mteReferenceKey(reference);
+    return mtes.some(mte => mte.id !== exceptId && mteReferenceKey(mte.refNumber) === key);
+  }
+
+  function addChild(mte: MTE) {
+    if (!mte.refNumber.trim() || referenceTaken(mte.refNumber, mte.id)) {
+      setDialog({ mteId: mte.id, addChildAfterSave: true });
+    } else {
+      setDialog({ initialReference: nextSubMteReference(mte, mtes) });
+    }
   }
 
   async function save(input: Parameters<typeof saveMte>[0]) {
+    if (dialog?.addChildAfterSave && referenceTaken(input.refNumber, input.id)) throw new MteReferenceError('duplicate');
     const id = await saveMte(input);
-    const parent = input.parentId ? mtesById.get(input.parentId) : undefined;
-    const root = parent ? mtePath(parent, mtesById)[0] : undefined;
-    reveal(entryId(id), input.level === 'phase' ? id : root?.level === 'phase' ? root.id : null);
-    setDialog(current => current === dialog ? null : current);
+    setSearch('');
+    if (dialog?.addChildAfterSave) {
+      const initialReference = nextSubMteReference({ ...input, id }, mtes);
+      setDialog(current => current === dialog ? { initialReference } : current);
+    } else {
+      setDialog(current => current === dialog ? null : current);
+      setFocusId(id);
+    }
   }
-
-  function metadata(mte: MTE) {
-    const usage = usages.get(mte.id);
-    if (!mte.description && !mte.criteria?.length && !usage?.size) return null;
-    return <div className="space-y-1 text-sm text-nasa-gray-300">
-      {mte.description && <p className="whitespace-pre-line break-words">{mte.description}</p>}
-      {!!mte.criteria?.length && <MteCriteria criteria={mte.criteria} />}
-      <MteUsage entries={usage} showProject={!projectId} />
-    </div>;
-  }
-
-  function editActions(mte: MTE) {
-    if (projectId) return null;
-    const isParent = parents.has(mte.id);
-    return <div className="flex shrink-0 items-center gap-1">
-      <Button size="sm" variant="secondary" className="min-h-8" onClick={() => setDialog({ mode: 'edit', mteId: mte.id })}>
-        {t('common.edit')}
-      </Button>
-      <RowAction icon="delete" label={t(isParent ? 'catalog.delete_has_children' : 'common.delete')}
-        disabled={isParent || evaluated.has(mte.id)} onClick={() => deleteMte(mte.id)} />
-    </div>;
-  }
-
-  function addActions(parent: MTE) {
-    if (projectId) return null;
-    const level = parent.level === 'phase' ? 'general' : 'detail';
-    return <div className="flex flex-wrap items-center gap-2">
-      <Button size="sm" variant={level === 'general' ? 'primary' : 'secondary'} className="min-h-8"
-        onClick={() => setDialog({ mode: 'create', level, parentId: parent.id })}>
-        {t(`catalog.add_${level}`)}
-      </Button>
-      {attachable.length > 0 && (
-        <button type="button" className="min-h-8 rounded px-1 text-sm font-medium text-accent-ink hover:underline focus-visible:outline focus-visible:outline-2"
-          onClick={() => setDialog({ mode: 'attach', parentId: parent.id })}>
-          {t('catalog.attach_existing')}
-        </button>
-      )}
-    </div>;
-  }
-
-  function reference(mte: MTE) {
-    return mte.refNumber && <span className="break-words font-mono text-xs font-normal text-nasa-gray-300">{mte.refNumber}</span>;
-  }
-
-  function taskName(mte: MTE) {
-    return <><span className="break-words">{mte.name}</span>{reference(mte)}</>;
-  }
-
-  function taskRow(mte: MTE, kind: 'independent' | 'detail') {
-    const TaskHeading = kind === 'independent' ? 'h3' : 'h5';
-    const canAttach = kind === 'independent' && !projectId && phases.length > 0 && attachableIds.has(mte.id);
-    return <li key={mte.id} className="space-y-1.5 px-3 py-2.5 sm:px-4">
-      <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1">
-        <TaskHeading id={entryId(mte.id)} tabIndex={-1}
-          className="flex min-w-0 flex-wrap items-baseline gap-x-2 text-sm font-semibold text-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent-ink">
-          {taskName(mte)}
-        </TaskHeading>
-        <div className="flex flex-wrap items-center gap-2">
-          {canAttach && <Button size="sm" className="min-h-8" onClick={() => setDialog({ mode: 'attach', mteId: mte.id })}>
-            {t('catalog.attach')}
-          </Button>}
-          {editActions(mte)}
-        </div>
-      </div>
-      {metadata(mte)}
-    </li>;
-  }
-
-  const dialogTitle = dialog?.mode === 'attach' ? 'catalog.attach_existing' :
-    dialog?.mode === 'edit' ? 'catalog.edit' :
-    dialog?.level ? `catalog.new_${dialog.level}` : 'catalog.new_standalone';
-
-  const navClass = (current: boolean) => `flex w-full min-w-0 items-center justify-between gap-2 rounded-md px-3 py-2 text-left text-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent-ink ${current
-    ? 'bg-[var(--workspace-active)] font-semibold text-[var(--workspace-active-text)]'
-    : 'text-foreground hover:bg-hover-surface'}`;
 
   return (
-    <section className="space-y-4">
-      <header className="flex flex-wrap items-center justify-between gap-3">
-        <Heading className="text-2xl font-semibold tracking-tight">{t(projectId ? 'admin.mte_catalog' : 'catalog.global_title')}</Heading>
-        <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
-          <label className="relative w-full min-w-0 sm:w-64">
+    <section data-workspace-surface className="overflow-hidden rounded-xl bg-nasa-gray-800">
+      <header className="space-y-3 border-b border-separator p-4 sm:p-5">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <Heading className="text-2xl font-semibold tracking-tight">{t(projectId ? 'admin.mte_catalog' : 'catalog.global_title')}</Heading>
+          {projectId ? (
+            <Link to="/catalog" className="rounded px-1 text-sm font-medium text-accent-ink hover:underline">{t('catalog.open_global')}</Link>
+          ) : (
+            <Button size="sm" className="min-h-9 px-3" onClick={() => setDialog({})}>
+              <span aria-hidden="true" className="mr-1.5 text-base leading-none">+</span>{t('catalog.new')}
+            </Button>
+          )}
+        </div>
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+          <label className="relative w-full max-w-xs">
             <span className="sr-only">{t('catalog.search')}</span>
             <svg aria-hidden="true" className="pointer-events-none absolute left-3 top-2.5 size-4 text-nasa-gray-400"
               viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round">
@@ -283,148 +233,71 @@ export default function ManageMTEs({ projectId, standalone }: { projectId?: stri
             <input type="search" placeholder={t('catalog.search')} value={search} onChange={event => setSearch(event.target.value)}
               className="h-9 w-full rounded-md border border-separator bg-nasa-gray-900 pl-9 pr-3 text-sm text-foreground outline-none placeholder:text-nasa-gray-400 focus-visible:border-accent-ink" />
           </label>
-          {projectId && <Link to="/catalog" className="rounded-md px-2 py-1.5 text-sm font-medium text-accent-ink hover:bg-hover-surface hover:underline">
-            {t('catalog.open_global')}
-          </Link>}
+          {!projectId && <p className="text-xs text-nasa-gray-300">{t('catalog.reference_example')}</p>}
         </div>
       </header>
 
-      <div className="grid items-start gap-4 lg:grid-cols-[minmax(12rem,1fr)_minmax(0,3fr)]">
-        <nav aria-label={t('catalog.structure')} data-workspace-surface className="min-w-0 space-y-2 rounded-xl bg-nasa-gray-800 p-3">
-          <p className="px-3 pt-1 text-sm font-semibold text-nasa-gray-300">{t('catalog.phases')}</p>
-          {phases.length > 0 && (
-            <ul className="space-y-1">
-              {phases.map(entry => {
-                const current = !query && phase?.id === entry.id;
-                return <li key={entry.id}>
-                  <button type="button" aria-pressed={current} className={navClass(current)} onClick={() => reveal(entryId(entry.id), entry.id)}>
-                    <span className="min-w-0 break-words">{entry.name}</span>{reference(entry)}
-                  </button>
-                </li>;
-              })}
-            </ul>
-          )}
-          {projectId ? phases.length === 0 && <p className="px-3 text-sm text-nasa-gray-400">{t('catalog.no_project_phases')}</p> : (
-            <Button size="sm" className="min-h-9 w-full px-3" onClick={() => setDialog({ mode: 'create', level: 'phase' })}>
-              {t('catalog.new_phase')}
-            </Button>
-          )}
-          <div className="border-t border-separator pt-2">
-            <button type="button" aria-pressed={!query && !phase} className={navClass(!query && !phase)}
-              onClick={() => reveal(independentHeadingId, null)}>
-              <span className="min-w-0 break-words">{t('catalog.independent')}</span>
-              <span className="text-xs tabular-nums">{independent.length}</span>
-            </button>
-          </div>
-        </nav>
-
-        <div className="min-w-0 space-y-4">
-          {query ? (
-            <section data-workspace-surface className="rounded-xl bg-nasa-gray-800">
-              <h2 className="px-4 pt-4 text-lg font-semibold">{t('catalog.search_results')}</h2>
-              {matches.length ? (
-                <ul className="divide-y divide-separator p-2">
-                  {matches.map(mte => {
-                    const path = mtePath(mte, mtesById);
-                    const root = path[0];
-                    return <li key={mte.id}>
-                      <button type="button" className="w-full space-y-0.5 rounded-md px-3 py-2.5 text-left hover:bg-hover-surface focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent-ink"
-                        onClick={() => reveal(entryId(mte.id), root.level === 'phase' ? root.id : null)}>
-                        <span className="flex flex-wrap items-baseline gap-x-2 text-sm font-semibold text-accent-ink">{taskName(mte)}</span>
-                        <span className="block break-words text-xs text-nasa-gray-300">{path.length > 1
-                          ? path.slice(0, -1).map(entry => entry.name).join(' › ')
-                          : t(root.level === 'phase' ? 'catalog.level_phase' : 'catalog.independent')}</span>
-                      </button>
-                    </li>;
-                  })}
-                </ul>
-              ) : <p className="p-4 text-sm text-nasa-gray-300">{t('catalog.no_results', { query: search.trim() })}</p>}
-            </section>
-          ) : phase ? (
-            <section data-workspace-surface className="space-y-4 rounded-xl bg-nasa-gray-800 p-3 sm:p-5">
-              <header className="space-y-2 border-b border-separator pb-3">
-                <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-2">
-                  <div className="min-w-0">
-                    <p className="text-sm font-medium text-accent-ink">{t('catalog.level_phase')}</p>
-                    <h2 id={entryId(phase.id)} tabIndex={-1}
-                      className="flex min-w-0 flex-wrap items-baseline gap-x-2 text-xl font-semibold focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent-ink">
-                      {taskName(phase)}
-                    </h2>
+      {rows.length > 0 ? (
+        <ul className="divide-y divide-separator">
+          {rows.map(({ mte, depth }) => {
+            const isParent = parents.has(mte.id);
+            const hasDetails = mte.description || mte.criteria?.length || usages.has(mte.id);
+            const entry = <>
+              <span className="flex min-w-0 items-baseline gap-1.5">
+                {depth > 0 && <span aria-hidden="true" className="inline-block size-2 shrink-0 self-center rounded-bl-sm border-b border-l border-nasa-gray-400" />}
+                <span className={`min-w-0 break-all font-mono text-xs font-medium ${mte.refNumber ? 'text-accent-ink' : 'text-nasa-gray-300'}`}>
+                  {mte.refNumber || t('catalog.no_reference')}
+                </span>
+              </span>
+              <span className="flex min-w-0 items-center gap-2 text-sm font-semibold">
+                <span className="min-w-0 break-words">{mte.name}</span>
+                {!projectId && <svg aria-hidden="true" className="size-3.5 shrink-0 text-nasa-gray-400" viewBox="0 0 24 24"
+                  fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="m14 5 5 5M4 20l4.5-1 12-12a1.5 1.5 0 0 0 0-2l-1.5-1.5a1.5 1.5 0 0 0-2 0l-12 12L4 20Z" />
+                </svg>}
+              </span>
+            </>;
+            const entryClass = 'grid min-w-0 flex-1 items-baseline gap-x-2 gap-y-1 rounded px-1 py-1.5 text-left sm:grid-cols-[minmax(5rem,1fr)_minmax(0,4fr)]';
+            return (
+              <li key={mte.id} className="px-3 py-1.5 sm:px-4">
+                <div className="min-w-0" style={{ paddingInlineStart: Math.min(depth, 4) * 12 }}>
+                  <div className="flex items-start justify-between gap-1 sm:gap-3">
+                    {projectId ? <div id={entryId(mte.id)} tabIndex={-1} className={entryClass}>{entry}</div> : (
+                      <button id={entryId(mte.id)} type="button" aria-label={t('catalog.edit_named', { name: mte.name, reference: mte.refNumber })}
+                        className={`${entryClass} hover:bg-hover-surface focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent-ink`}
+                        onClick={() => setDialog({ mteId: mte.id })}>{entry}</button>
+                    )}
+                    {!projectId && <div className="flex shrink-0 items-center gap-0.5">
+                      <Button size="sm" variant="secondary" className="min-h-8 whitespace-nowrap" onClick={() => addChild(mte)}>
+                        <span aria-hidden="true" className="mr-1 font-normal">+</span>{t('catalog.subtask')}
+                      </Button>
+                      <RowAction icon="delete" label={t(isParent ? 'catalog.delete_has_children' : 'common.delete')}
+                        disabled={isParent || protectedIds.has(mte.id)} onClick={() => deleteMte(mte.id)} />
+                    </div>}
                   </div>
-                  {editActions(phase)}
+                  {hasDetails ? <div className="space-y-1 px-1 pb-1 text-sm text-nasa-gray-300">
+                    {mte.description && <p className="whitespace-pre-line break-words">{mte.description}</p>}
+                    <div className="flex flex-wrap items-start gap-x-4 gap-y-1">
+                      {!!mte.criteria?.length && <MteCriteria criteria={mte.criteria} />}
+                      <MteUsage entries={usages.get(mte.id)} showProject={!projectId} />
+                    </div>
+                  </div> : null}
                 </div>
-                {metadata(phase)}
-              </header>
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <h3 className="text-base font-semibold">{t('catalog.general_mtes')}</h3>
-                {addActions(phase)}
-              </div>
-              {generalMtes.length ? (
-                <ul className="space-y-3">
-                  {generalMtes.map(general => {
-                    const detailedMtes = children.get(general.id) ?? [];
-                    return <li key={general.id} className="rounded-lg border border-separator bg-nasa-gray-900">
-                      <div className="space-y-2 p-3 sm:p-4">
-                        <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-1">
-                          <h4 id={entryId(general.id)} tabIndex={-1}
-                            className="flex min-w-0 flex-wrap items-baseline gap-x-2 text-base font-semibold focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent-ink">
-                            {taskName(general)}
-                          </h4>
-                          {editActions(general)}
-                        </div>
-                        {metadata(general)}
-                        {(detailedMtes.length > 0 || !projectId) && (
-                          <div className="space-y-2 border-l-2 border-separator pl-2.5 sm:pl-4">
-                            <p className="text-sm font-medium text-nasa-gray-300">{t('catalog.detailed_mtes')}</p>
-                            {detailedMtes.length > 0 && (
-                              <ul className="divide-y divide-separator rounded-md border border-separator bg-nasa-gray-800">
-                                {detailedMtes.map(mte => taskRow(mte, 'detail'))}
-                              </ul>
-                            )}
-                            {addActions(general)}
-                          </div>
-                        )}
-                      </div>
-                    </li>;
-                  })}
-                </ul>
-              ) : <p className="rounded-lg border border-dashed border-separator p-4 text-sm text-nasa-gray-300">{t('catalog.no_general_mtes')}</p>}
-            </section>
-          ) : (
-            <section data-workspace-surface className="overflow-hidden rounded-xl bg-nasa-gray-800">
-              <header className="space-y-2 border-b border-separator px-4 py-3 sm:px-5">
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <h2 id={independentHeadingId} tabIndex={-1}
-                    className="text-lg font-semibold focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent-ink">
-                    {t('catalog.independent')}
-                  </h2>
-                  {!projectId && <Button size="sm" variant="secondary" className="min-h-8" onClick={() => setDialog({ mode: 'create' })}>
-                    {t('catalog.new_standalone')}
-                  </Button>}
-                </div>
-                {!projectId && phases.length === 0 && <p className="text-sm text-nasa-gray-300">{t('catalog.start_with_phase')}</p>}
-              </header>
-              {independent.length > 0 ? <ul className="divide-y divide-separator">
-                {independent.map(mte => taskRow(mte, 'independent'))}
-              </ul> : <p className="p-4 text-sm text-nasa-gray-300">
-                {t(projectId && catalog.length === 0 ? 'catalog.project_empty' : 'catalog.no_independent')}
-              </p>}
-            </section>
-          )}
-        </div>
-      </div>
+              </li>
+            );
+          })}
+        </ul>
+      ) : (
+        <p className="p-5 text-sm text-nasa-gray-300">{query
+          ? t('catalog.no_results', { query: search.trim() }) : t(projectId ? 'catalog.project_empty' : 'catalog.empty')}</p>
+      )}
 
-      <Modal isOpen={dialog !== null} onClose={() => setDialog(null)} title={t(dialogTitle)} size={dialog?.mode === 'attach' ? 'lg' : 'xl'}>
-        {dialog?.mode === 'attach' ? (
-          <MteAttachmentForm mtes={mtesById} available={attachable} mte={editing} parent={destination}
-            onSave={(mte, parent) => save({ ...mte, level: parent.level === 'phase' ? 'general' : 'detail', parentId: parent.id })}
-            onCancel={() => setDialog(null)} />
-        ) : dialog && (
-          <MteForm mte={editing} mtes={mtesById}
-            initialLevel={dialog.mode === 'create' ? dialog.level : undefined}
-            initialParentId={destination?.id}
-            onSave={save} onCancel={() => setDialog(null)} />
-        )}
+      <Modal isOpen={dialog !== null} onClose={() => setDialog(null)} size="lg"
+        title={t(dialog?.addChildAfterSave ? 'catalog.assign_reference' : editing ? 'catalog.edit' :
+          dialog?.initialReference ? 'catalog.new_subtask' : 'catalog.new')}>
+        {dialog && <MteForm key={editing?.id ?? 'new'} mte={editing} mtes={mtes} paths={paths}
+          initialReference={dialog.initialReference} requireReference={dialog.addChildAfterSave}
+          onSave={save} onCancel={() => setDialog(null)} />}
       </Modal>
     </section>
   );

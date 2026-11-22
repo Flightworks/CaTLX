@@ -2,7 +2,7 @@ import React, { useState, useMemo, useId } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useData, useSession } from '../../contexts/AppContext';
-import { mtePath } from '../../data/mte';
+import { indexMtePaths } from '../../data/mte';
 import { Study, MTE, Evaluator } from '../../types';
 import Card from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
@@ -20,9 +20,9 @@ const ManageStudyMTEsModal: React.FC<{
   const [searchQuery, setSearchQuery] = useState('');
 
   const catalog = useMemo(() => {
-    const byId = new Map(mtes.map(mte => [mte.id, mte]));
+    const paths = indexMtePaths(mtes);
     return mtes.map(mte => {
-      const path = mtePath(mte, byId);
+      const path = paths.get(mte.id) ?? [mte];
       return { ...mte, path: path.map(entry => entry.name).join(' › '), refs: path.map(entry => entry.refNumber).join(' ') };
     }).sort((a, b) => a.path.localeCompare(b.path));
   }, [mtes]);
