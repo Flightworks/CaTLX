@@ -1,4 +1,5 @@
-import type { IDataSource, Passage, Rating, WorkspaceData } from '../types';
+import type { IDataSource, MTE, MteCriterion, MteObservation, Passage, Rating, WorkspaceData } from '../types';
+import { criteriaForRating, sameMteCriterion, validMteParent } from './mte';
 
 export const emptyWorkspace: WorkspaceData = {
   projects: [],
@@ -15,7 +16,7 @@ export const emptyWorkspace: WorkspaceData = {
 export type WorkspaceChange = (data: WorkspaceData) => WorkspaceData;
 type CommitWorkspace = (change: WorkspaceChange, awaitSave?: boolean) => Promise<void> | void;
 
-function newId(): string {
+export function newId(): string {
   if (typeof crypto.randomUUID === 'function') return crypto.randomUUID();
   // Browsers still provide getRandomValues when local mode runs over HTTP.
   return Array.from(crypto.getRandomValues(new Uint8Array(16)), byte => byte.toString(16).padStart(2, '0')).join('');
@@ -31,6 +32,55 @@ function removeItem<T extends { id: string }>(items: T[], id: string): T[] {
 
 function includeId(ids: string[], id: string): string[] {
   return ids.includes(id) ? ids : [...ids, id];
+}
+
+function normalizeMte(task: MTE): MTE {
+  if (task.criteria === undefined) return task;
+  const criterionIds = new Set<string>();
+  const criteria = task.criteria.map(({ id, label: untrimmedLabel, instructions, type, maxErrorRate }) => {
+    const label = untrimmedLabel.trim();
+    if (!id || !label || criterionIds.has(id) || (type !== 'score' && type !== 'errorRate') ||
+        (maxErrorRate !== undefined && (type !== 'errorRate' || !Number.isFinite(maxErrorRate) ||
+          maxErrorRate < 0 || maxErrorRate > 100))) {
+      throw new Error('Invalid MTE criterion');
+    }
+    criterionIds.add(id);
+    return { id, label, instructions: instructions.trim(), type, ...(maxErrorRate === undefined ? {} : { maxErrorRate }) };
+  });
+  return { ...task, criteria };
+}
+
+function writeMte(current: WorkspaceData, task: MTE, creating: boolean): WorkspaceData {
+  const parent = current.mtes.find(mte => mte.id === task.parentId);
+  if (!validMteParent(task, parent) ||
+      current.mtes.some(mte => mte.parentId === task.id && !validMteParent(mte, task))) {
+    throw new Error('Invalid MTE hierarchy');
+  }
+  return { ...current, mtes: creating ? [...current.mtes, task] : updateItem(current.mtes, task) };
+}
+
+function validateObservations(
+  observations: MteObservation[] | undefined, task: MTE, passage?: Passage, existing?: Rating,
+): MteObservation[] | undefined {
+  if (observations === undefined) return existing?.observations;
+  const definitions = new Map(criteriaForRating(task, passage, existing).map(criterion => [criterion.id, criterion]));
+  return observations.map(({ criterion: submitted, score, errors, opportunities }) => {
+    const criterion = definitions.get(submitted.id);
+    if (!criterion || !sameMteCriterion(criterion, submitted)) {
+      throw new Error('The MTE criteria changed. Reopen the task to continue.');
+    }
+    definitions.delete(criterion.id);
+    if (criterion.type === 'score' && score !== undefined && Number.isInteger(score) && score >= 1 && score <= 5 &&
+        errors === undefined && opportunities === undefined) {
+      return { criterion, score };
+    }
+    if (criterion.type === 'errorRate' && errors !== undefined && opportunities !== undefined &&
+        Number.isSafeInteger(errors) && Number.isSafeInteger(opportunities) &&
+        errors >= 0 && opportunities >= errors && score === undefined) {
+      return { criterion, errors, opportunities };
+    }
+    throw new Error('Invalid MTE observation');
+  });
 }
 
 export function ratingContext(rating: Pick<Rating, 'studyId' | 'scenarioId' | 'evaluatorId' | 'mteId' | 'passageId'>): string {
@@ -124,15 +174,27 @@ export function createDataSource(data: WorkspaceData, commit: CommitWorkspace): 
         scenarios: (current.scenarios ?? []).filter(scenario => scenario.studyId !== id) }));
     },
     addMte(mte) {
-      const newMte = { ...mte, id: newId(), refNumber: mte.refNumber || '' };
-      commit(current => ({ ...current, mtes: [...current.mtes, newMte] }));
+      const newMte = normalizeMte({ ...mte, id: newId(), refNumber: mte.refNumber || '' });
+      commit(current => writeMte(current, newMte, true));
       return newMte;
     },
     updateMte(mte) {
-      commit(current => ({ ...current, mtes: updateItem(current.mtes, mte) }));
+      commit(current => current.mtes.some(task => task.id === mte.id) ?
+        writeMte(current, normalizeMte(mte), false) : current);
+    },
+    async saveMte(input) {
+      const { id, ...fields } = input;
+      const mte = normalizeMte({ ...fields, id: id ?? newId(), name: fields.name.trim() });
+      await commit(current => {
+        if (!mte.name || (id !== undefined && !current.mtes.some(task => task.id === id))) {
+          throw new Error('The MTE name is missing or the MTE no longer exists.');
+        }
+        return writeMte(current, mte, id === undefined);
+      }, true);
     },
     deleteMte(id) {
-      commit(current => current.passages?.some(pass => pass.mteIds.includes(id)) ? current : ({
+      commit(current => current.mtes.some(task => task.parentId === id) ||
+        current.passages?.some(pass => pass.mteIds.includes(id)) ? current : ({
         ...current,
         mtes: removeItem(current.mtes, id),
         scenarios: (current.scenarios ?? []).map(scenario => ({
@@ -233,7 +295,8 @@ export function createDataSource(data: WorkspaceData, commit: CommitWorkspace): 
         const order = Math.max(0, ...passes.filter(entry => entry.studyId === study.id).map(entry => entry.order)) + 1;
         // An ordinary passage snapshots its scenario when started. A repetition preserves the original protocol.
         const mteIds = repeat ? [...repeat.mteIds] : [];
-        return { ...current, passages: [...passes, { ...input, id, order, mteIds }] };
+        const mteCriteria = repeat?.mteCriteria;
+        return { ...current, passages: [...passes, { ...input, id, order, mteIds, ...(mteCriteria ? { mteCriteria } : {}) }] };
       }, true);
     },
     async startPassage(id) {
@@ -245,10 +308,13 @@ export function createDataSource(data: WorkspaceData, commit: CommitWorkspace): 
         const scenario = current.scenarios?.find(entry => entry.id === pass.scenarioId && entry.studyId === pass.studyId);
         const ids = pass.mteIds.length ? pass.mteIds : scenario?.archived ? [] : scenario?.mteIds ?? [];
         const mteIds = [...new Set(ids)];
-        if (!mteIds.length || mteIds.some(mteId => !current.mtes.some(mte => mte.id === mteId))) {
+        const tasks = new Map(current.mtes.map(mte => [mte.id, mte]));
+        if (!mteIds.length || mteIds.some(mteId => !tasks.has(mteId))) {
           throw new Error('Passage has no available tasks');
         }
-        return { ...current, passages: updateItem(passes, { ...pass, mteIds, startedAt: Date.now() }) };
+        const mteCriteria: Record<string, MteCriterion[]> = pass.mteCriteria ??
+          Object.fromEntries(mteIds.map(mteId => [mteId, tasks.get(mteId)?.criteria?.map(criterion => ({ ...criterion })) ?? []]));
+        return { ...current, passages: updateItem(passes, { ...pass, mteIds, mteCriteria, startedAt: Date.now() }) };
       }, true);
     },
     async movePassage(id, offset) {
@@ -278,9 +344,10 @@ export function createDataSource(data: WorkspaceData, commit: CommitWorkspace): 
       await commit(current => {
         const study = current.studies.find(candidate => candidate.id === input.studyId);
         const scenario = current.scenarios?.find(candidate => candidate.id === input.scenarioId);
+        const task = current.mtes.find(candidate => candidate.id === input.mteId);
         const pass = input.passageId ? current.passages?.find(entry => entry.id === input.passageId) : undefined;
         if (input.passageId) {
-          if (!pass || pass.startedAt === undefined || pass.studyId !== input.studyId ||
+          if (!task || !pass || pass.startedAt === undefined || pass.studyId !== input.studyId ||
               pass.scenarioId !== input.scenarioId || pass.evaluatorId !== input.evaluatorId ||
               !pass.mteIds.includes(input.mteId)) throw new Error('Invalid passage rating');
           const existing = current.ratings.filter(rating => rating.passageId === pass.id);
@@ -288,7 +355,8 @@ export function createDataSource(data: WorkspaceData, commit: CommitWorkspace): 
           if (!previous && pass.mteIds.find(id => !existing.some(rating => rating.mteId === id)) !== input.mteId) {
             throw new Error('Rate the next task in the passage');
           }
-          const rating = { ...input, id: previous?.id ?? `rating/${ratingContext(input)}`, timestamp };
+          const observations = validateObservations(input.observations, task, pass, previous);
+          const rating = { ...input, observations, id: previous?.id ?? `rating/${ratingContext(input)}`, timestamp };
           const ratings = previous ? updateItem(current.ratings, rating) : [...current.ratings, rating];
           const finished = !previous && existing.length + 1 === pass.mteIds.length;
           return { ...current, ratings, passages: finished
@@ -296,13 +364,14 @@ export function createDataSource(data: WorkspaceData, commit: CommitWorkspace): 
             : current.passages };
         }
         if (!study || !study.evaluatorIds.includes(input.evaluatorId) ||
-            !current.mtes.some(task => task.id === input.mteId) ||
+            !task ||
             (input.scenarioId && (!scenario || scenario.studyId !== study.id || scenario.archived ||
               !scenario.mteIds.includes(input.mteId)))) {
           throw new Error('The assessment context changed. Reopen the task to continue.');
         }
         const previous = latestRating(current.ratings, input);
-        const rating = { ...input, id: previous?.id ?? `rating/${ratingContext(input)}`, timestamp };
+        const observations = validateObservations(input.observations, task, undefined, previous);
+        const rating = { ...input, observations, id: previous?.id ?? `rating/${ratingContext(input)}`, timestamp };
         return {
           ...current,
           studies: scenario ? current.studies : updateItem(current.studies, {
@@ -314,7 +383,14 @@ export function createDataSource(data: WorkspaceData, commit: CommitWorkspace): 
     },
     async addRating(rating) {
       const newRating = { ...rating, id: newId(), timestamp: Date.now() };
-      await commit(current => ({ ...current, ratings: [...current.ratings, newRating] }), true);
+      await commit(current => {
+        if (newRating.observations === undefined) return { ...current, ratings: [...current.ratings, newRating] };
+        const task = current.mtes.find(candidate => candidate.id === rating.mteId);
+        if (!task) throw new Error('Unknown MTE');
+        const passage = current.passages?.find(entry => entry.id === rating.passageId);
+        const observations = validateObservations(newRating.observations, task, passage);
+        return { ...current, ratings: [...current.ratings, { ...newRating, observations }] };
+      }, true);
     },
     addPairwiseComparison(comparison) {
       const matches = (existing: WorkspaceData['pairwiseComparisons'][number]) =>

@@ -7,6 +7,7 @@ import Modal from '../ui/Modal';
 import Button from '../ui/Button';
 import PairwiseWeightsDisplay from '../ui/PairwiseWeightsDisplay';
 import ScoreDistributionChart from './ScoreDistributionChart';
+import { MteObservationSummary } from '../MteObservationSummary';
 
 const getScoreColor = (score: number): string => {
   const green = [74, 222, 128];
@@ -100,6 +101,13 @@ const MteDetailModal: React.FC<{
                           </svg>
                           <p className="whitespace-pre-wrap flex-1">{score.comments}</p>
                         </div>
+                      </td>
+                    </tr>
+                  )}
+                  {!!score.observations?.length && (
+                    <tr className="bg-nasa-gray-800">
+                      <td colSpan={10} className="px-4 py-3 text-sm">
+                        <MteObservationSummary observations={score.observations} />
                       </td>
                     </tr>
                   )}

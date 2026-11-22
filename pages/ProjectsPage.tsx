@@ -2,6 +2,7 @@ import { useState, type ReactNode } from 'react';
 import { Link, Navigate, NavLink, Route, Routes, useMatch, useParams, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useData } from '../contexts/AppContext';
+import { mtePath } from '../data/mte';
 import type { Project, Scenario, Study } from '../types';
 import Button from '../components/ui/Button';
 import Card from '../components/ui/Card';
@@ -144,10 +145,14 @@ function ScenarioForm({ studies, draft, onClose }: { studies: Study[]; draft: Sc
   const study = studies.find(entry => entry.id === studyId);
   const used = new Set(scenario ? ratings.filter(rating => !rating.passageId && rating.scenarioId === scenario.id).map(rating => rating.mteId) : []);
   const allowedIds = new Set([...(study?.mteIds ?? []), ...(scenario?.mteIds ?? [])]);
-  const tasksById = new Map(mtes.map(task => [task.id, task]));
-  const availableTasks = mtes.filter(task => allowedIds.has(task.id));
+  const catalogById = new Map(mtes.map(task => [task.id, task]));
+  const availableTasks = mtes.filter(task => allowedIds.has(task.id)).map(task => {
+    const path = mtePath(task, catalogById);
+    return { ...task, path: path.map(entry => entry.name).join(' › '), refs: path.map(entry => entry.refNumber).join(' ') };
+  }).sort((a, b) => a.path.localeCompare(b.path));
+  const tasksById = new Map(availableTasks.map(task => [task.id, task]));
   const query = search.trim().toLocaleLowerCase();
-  const visibleTasks = availableTasks.filter(task => `${task.refNumber} ${task.name}`.toLocaleLowerCase().includes(query));
+  const visibleTasks = availableTasks.filter(task => `${task.refs} ${task.path}`.toLocaleLowerCase().includes(query));
 
   function changeStudy(id: string) {
     setStudyId(id);
@@ -213,7 +218,7 @@ function ScenarioForm({ studies, draft, onClose }: { studies: Study[]; draft: Sc
                   <label className="flex items-center gap-2 py-2 text-sm" key={task.id}>
                     <input type="checkbox" checked={ids.includes(task.id)} disabled={used.has(task.id)}
                       onChange={event => setIds(event.target.checked ? [...ids, task.id] : ids.filter(id => id !== task.id))} />
-                    <span className="min-w-0 break-words">{task.refNumber && `[${task.refNumber}] `}{task.name}</span>
+                    <span className="min-w-0 break-words">{task.refNumber && `[${task.refNumber}] `}{task.path}</span>
                   </label>
                 ))}
               </div>
@@ -226,7 +231,7 @@ function ScenarioForm({ studies, draft, onClose }: { studies: Study[]; draft: Sc
                   {ids.map((id, index) => (
                     <li key={id}>
                       <div className="flex items-center justify-between gap-1">
-                        <span className="min-w-0 break-words">{tasksById.get(id)?.name ?? id}</span>
+                        <span className="min-w-0 break-words">{tasksById.get(id)?.path ?? id}</span>
                         <div className="flex shrink-0">
                           <RowAction icon="up" label={t('projects.move_up')} disabled={index === 0} onClick={() => moveTask(index, -1)} />
                           <RowAction icon="down" label={t('projects.move_down')} disabled={index === ids.length - 1} onClick={() => moveTask(index, 1)} />

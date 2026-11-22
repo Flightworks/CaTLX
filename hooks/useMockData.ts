@@ -1,6 +1,6 @@
 import { createDataSource } from '../data/workspace';
-import { useState } from 'react';
-import { Evaluator, Study, MTE, Rating, PairwiseComparison, TLXDimension, IDataSource, Project } from '../types';
+import { useRef, useState } from 'react';
+import { Evaluator, Study, MTE, Rating, PairwiseComparison, TLXDimension, IDataSource, Project, WorkspaceData } from '../types';
 import { DEFAULT_WEIGHTS } from '../constants';
 
 export const INITIAL_EVALUATORS: Evaluator[] = [
@@ -196,7 +196,7 @@ export const INITIAL_PAIRWISE_COMPARISONS: PairwiseComparison[] = [
 
 
 const useMockData = (): IDataSource => {
-  const [data, setData] = useState({
+  const [data, setData] = useState<WorkspaceData>({
     projects: INITIAL_PROJECTS,
     evaluators: INITIAL_EVALUATORS,
     studies: INITIAL_STUDIES,
@@ -204,8 +204,12 @@ const useMockData = (): IDataSource => {
     ratings: INITIAL_RATINGS,
     pairwiseComparisons: INITIAL_PAIRWISE_COMPARISONS,
   });
+  const current = useRef(data);
 
-  return createDataSource(data, change => setData(previous => change(previous)));
+  return createDataSource(data, change => {
+    current.current = change(current.current);
+    setData(current.current);
+  });
 };
 
 export default useMockData;

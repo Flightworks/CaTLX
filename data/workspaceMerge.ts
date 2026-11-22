@@ -1,4 +1,5 @@
 import type { WorkspaceData } from '../types';
+import { passageCriteria, sameMteCriterion, validMteParent } from './mte';
 import { ratingContext } from './workspace';
 
 const collections = [
@@ -64,7 +65,7 @@ function replaceEntry(entries: Entries, key: string, value?: Entry) {
 function invalidLinks(workspace: WorkspaceData) {
   const issues: [string, string][] = [];
   const studies = new Map(workspace.studies.map(study => [study.id, study]));
-  const tasks = new Set(workspace.mtes.map(task => task.id));
+  const tasks = new Map(workspace.mtes.map(task => [task.id, task]));
   const evaluators = new Set(workspace.evaluators.map(evaluator => evaluator.id));
   const projects = new Set(workspace.projects.map(project => project.id));
   const scenarios = new Map((workspace.scenarios ?? []).map(scenario => [scenario.id, scenario]));
@@ -76,6 +77,10 @@ function invalidLinks(workspace: WorkspaceData) {
     for (const id of project.memberIds) {
       if (id !== project.ownerId && !evaluators.has(id)) issues.push([`projects:${project.id}`, `evaluators:${id}`]);
     }
+  }
+  for (const task of tasks.values()) {
+    const parent = task.parentId === undefined ? undefined : tasks.get(task.parentId);
+    if (!validMteParent(task, parent)) issues.push([`mtes:${task.id}`, `mtes:${task.parentId ?? task.id}`]);
   }
   for (const study of workspace.studies) {
     const key = `studies:${study.id}`;
@@ -110,8 +115,11 @@ function invalidLinks(workspace: WorkspaceData) {
     if (!evaluators.has(rating.evaluatorId)) issues.push([key, `evaluators:${rating.evaluatorId}`]);
     if (rating.passageId) {
       const pass = passages.get(rating.passageId);
+      const criteria = passageCriteria(pass, rating.mteId);
       if (!pass || pass.startedAt === undefined || pass.studyId !== rating.studyId || pass.scenarioId !== rating.scenarioId ||
-          pass.evaluatorId !== rating.evaluatorId || !pass.mteIds.includes(rating.mteId)) {
+          pass.evaluatorId !== rating.evaluatorId || !pass.mteIds.includes(rating.mteId) ||
+          (criteria && rating.observations?.some(observation =>
+            !criteria.some(criterion => sameMteCriterion(criterion, observation.criterion))))) {
         issues.push([key, `passages:${rating.passageId}`]);
       }
     } else if (rating.scenarioId) {

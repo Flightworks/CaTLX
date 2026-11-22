@@ -5,7 +5,9 @@ import { useData } from '../contexts/AppContext';
 import type { Condition, Passage, Rating, Study } from '../types';
 import { orderedPassages } from '../data/workspace';
 import { downloadCsv } from '../data/csv';
+import { mtePath } from '../data/mte';
 import { TLX_DIMENSIONS_INFO } from '../constants';
+import { MteObservationSummary } from '../components/MteObservationSummary';
 import Button from '../components/ui/Button';
 import Modal from '../components/ui/Modal';
 import RowAction from '../components/ui/RowAction';
@@ -139,7 +141,7 @@ export default function StudyPassages({ study }: { study: Study }) {
     const headers = [t('passages.id'), t('passages.pilot'), t('passages.condition'), t('passages.version'), t('projects.scenario'),
       t('stats.csv_headers.mte_ref'), t('stats.csv_headers.mte_name'), t('stats.csv_headers.timestamp'),
       ...TLX_DIMENSIONS_INFO.map(({ id }) => t(`tlx_dimensions.${id.toLowerCase().replaceAll(' ', '_')}.title`)),
-      t('evaluator.total_score'), t('evaluator.comments')];
+      t('evaluator.total_score'), t('evaluator.comments'), t('mte_observation.csv_header')];
     const rows = queue.flatMap(pass => pass.mteIds.flatMap(id => {
       const rating = studyRatings.find(entry => entry.passageId === pass.id && entry.mteId === id);
       if (!rating) return [];
@@ -149,7 +151,7 @@ export default function StudyPassages({ study }: { study: Study }) {
         condition?.name ?? '', condition?.version ?? '', scenarios.find(entry => entry.id === pass.scenarioId)?.name ?? '',
         task?.refNumber ?? '', task?.name ?? id, new Date(rating.timestamp).toISOString(),
         ...TLX_DIMENSIONS_INFO.map(({ id: dimension }) => rating.scores[dimension]),
-        rawScore(rating).toFixed(2), rating.comments ?? '']];
+        rawScore(rating).toFixed(2), rating.comments ?? '', rating.observations?.length ? JSON.stringify(rating.observations) : '']];
     }));
     downloadCsv('catlx-passages.csv', [headers, ...rows]);
   }
@@ -254,7 +256,9 @@ export function PassageComparison({ study }: { study: Study }) {
       </Select>
       <Select id="compare-mte" label="MTE" value={mteId} onChange={e => setTask(e.target.value)}>
         <option value="">{t('passages.choose')}</option>
-        {tasks.map(entry => <option key={entry.id} value={entry.id}>{entry.name}</option>)}
+        {tasks.map(entry => <option key={entry.id} value={entry.id}>
+          {mtePath(entry, mtes).map(task => task.name).join(' / ')}
+        </option>)}
       </Select>
     </div>
     {scenarioId && conditionA && conditionB && mteId && (
@@ -286,6 +290,7 @@ export function PassageComparison({ study }: { study: Study }) {
                     </option>)}
                   </select>}
                   <p>{rating ? fmt.format(rawScore(rating)) : '—'}</p>
+                  <MteObservationSummary observations={rating?.observations} />
                   {rating?.comments && <p className="whitespace-pre-wrap text-xs text-nasa-gray-300">{rating.comments}</p>}
                 </td>)}
                 <td className="px-3 py-2">{delta !== undefined ? fmt.format(delta) : t(incompatible ? 'passages.incompatible' : 'passages.incomplete')}</td>

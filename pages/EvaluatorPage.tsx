@@ -4,7 +4,9 @@ import { useTranslation } from 'react-i18next';
 import { useData } from '../contexts/AppContext';
 import { TLXDimension, type MTE, type Scenario, type Study } from '../types';
 import { TLX_DIMENSIONS_INFO, PAIRWISE_COMBINATIONS, DEFAULT_WEIGHTS } from '../constants';
+import { criteriaForRating, mtePath } from '../data/mte';
 import { latestRating } from '../data/workspace';
+import MteObserverFields, { observationDrafts, readObservations, type ObservationDrafts } from '../components/MteObserverFields';
 import ExpressTlxControl from '../components/ui/ExpressTlxControl';
 import Button from '../components/ui/Button';
 import PairwiseWeightsDisplay from '../components/ui/PairwiseWeightsDisplay';
@@ -105,20 +107,25 @@ const PairwiseComparisonView: React.FC<{
     );
 };
 
-function RatingForm({ study, scenario, evaluatorId, passageId, passageLabel, task, submitLabel, onClose }: {
+function RatingForm({ study, scenario, evaluatorId, passageId, passageLabel, task, taskParents, submitLabel, onClose }: {
     study: Study;
     scenario?: Scenario;
     evaluatorId: string;
     passageId?: string;
     passageLabel?: string;
     task: MTE;
+    taskParents: string;
     submitLabel: string;
     onClose: (saved?: boolean) => void;
 }) {
     const { t, i18n } = useTranslation();
-    const { ratings, saveRating, pairwiseComparisons } = useData();
+    const { ratings, saveRating, pairwiseComparisons, passages } = useData();
     const context = { studyId: study.id, scenarioId: scenario?.id, evaluatorId, passageId, mteId: task.id };
     const existing = latestRating(ratings, context);
+    const [criteria] = useState(() => criteriaForRating(task, passages?.find(passage => passage.id === passageId), existing));
+    const [drafts, setDrafts] = useState(() => observationDrafts(existing?.observations));
+    const [observerOpen, setObserverOpen] = useState(Boolean(existing?.observations?.length));
+    const [validateObservations, setValidateObservations] = useState(false);
     const [scores, setScores] = useState(existing?.scores ?? initialScores);
     const [comments, setComments] = useState(existing?.comments ?? '');
     const [mode, setMode] = useState<'express' | 'step-by-step'>(() =>
@@ -141,10 +148,17 @@ function RatingForm({ study, scenario, evaluatorId, passageId, passageLabel, tas
     async function submit(event: React.FormEvent) {
         event.preventDefault();
         if (saving || (!isExpress && step < lastStep)) return;
+        const observations = readObservations(criteria, drafts);
+        if (observations === null) {
+            setValidateObservations(true);
+            setObserverOpen(true);
+            return;
+        }
         setSaving(true);
         setError(false);
         try {
-            await saveRating({ ...context, scores, comments: comments.trim() || undefined });
+            await saveRating({ ...context, scores, comments: comments.trim() || undefined,
+                observations: criteria.length ? observations : undefined });
             onClose(true);
         } catch {
             setError(true);
@@ -157,6 +171,7 @@ function RatingForm({ study, scenario, evaluatorId, passageId, passageLabel, tas
         <section className="rounded-lg border border-separator bg-nasa-gray-800 p-3 sm:p-4">
             <div className="mb-2 flex items-start justify-between gap-2.5">
                 <div className="min-w-0">
+                    {taskParents && <p className="break-words text-xs text-nasa-gray-300">{taskParents}</p>}
                     {task.refNumber && <p className="text-xs font-medium tabular-nums text-accent-ink">{task.refNumber}</p>}
                     <h2 className="break-words text-lg font-semibold leading-tight sm:text-xl">{task.name}</h2>
                     {task.description && <p className="mt-0.5 text-sm text-nasa-gray-300">{task.description}</p>}
@@ -221,6 +236,11 @@ function RatingForm({ study, scenario, evaluatorId, passageId, passageLabel, tas
                             onChange={event => setComments(event.target.value)} />
                     </label>
                 )}
+                {criteria.length > 0 && (isExpress || step === lastStep) && <MteObserverFields
+                    criteria={criteria} drafts={drafts} open={observerOpen} onOpenChange={setObserverOpen}
+                    validate={validateObservations} disabled={saving} fieldClass={fieldClass}
+                    onChange={(id, field, value) => setDrafts(current => new Map(current)
+                        .set(id, { ...current.get(id), [field]: value }))} />}
                 {passageLabel && <p className="text-sm font-medium text-accent-ink">{passageLabel}</p>}
                 <div className="flex flex-wrap items-center justify-between gap-2 border-t border-separator pt-2">
                     <Button variant="secondary" type="button" size="sm" className="min-h-9" onClick={() => onClose()} disabled={saving}>
@@ -275,10 +295,13 @@ export function AssessmentRunner({ study, scenario, evaluatorId, passageId, pass
     const query = search.trim().toLocaleLowerCase();
     const next = assigned.find(entry => !completedIds.has(entry.id));
     const following = assigned.find(entry => entry.id !== taskId && !completedIds.has(entry.id));
-    const candidates = !scenario && showCatalog
-        ? mtes.filter(entry => !assignedIds.has(entry.id)).sort((a, b) => a.name.localeCompare(b.name))
-        : assigned;
-    const tasks = candidates.filter(entry => `${entry.refNumber} ${entry.name}`.toLocaleLowerCase().includes(query));
+    const browsing = !scenario && showCatalog;
+    const candidates = browsing ? mtes.filter(entry => !assignedIds.has(entry.id)) : assigned;
+    const tasks = candidates.map(entry => {
+        const path = mtePath(entry, tasksById);
+        return { entry, path, label: path.map(task => task.name).join(' › ') };
+    }).filter(({ path }) => path.map(entry => `${entry.refNumber} ${entry.name}`).join(' ').toLocaleLowerCase().includes(query));
+    if (browsing) tasks.sort((a, b) => a.label.localeCompare(b.label));
 
     function openTask(id: string) {
         setSaved(false);
@@ -292,7 +315,9 @@ export function AssessmentRunner({ study, scenario, evaluatorId, passageId, pass
             ? nextTask ? 'projects.save_and_next' : 'projects.finish_scenario'
             : 'projects.save_and_choose';
         return <RatingForm key={task.id} study={study} scenario={scenario} evaluatorId={evaluatorId}
-            passageId={passageId} passageLabel={passageLabel} task={task} submitLabel={submitLabel} onClose={wasSaved => {
+            passageId={passageId} passageLabel={passageLabel} task={task}
+            taskParents={mtePath(task, tasksById).slice(0, -1).map(entry => entry.name).join(' › ')}
+            submitLabel={submitLabel} onClose={wasSaved => {
                 setTaskId(wasSaved && nextTask ? nextTask.id : '');
                 setSaved(Boolean(wasSaved));
                 if (wasSaved && !scenario) {
@@ -375,7 +400,7 @@ export function AssessmentRunner({ study, scenario, evaluatorId, passageId, pass
                     </p>
                 ) : (
                     <ul className="divide-y divide-separator overflow-hidden rounded-md border border-separator">
-                        {tasks.map((entry, index) => {
+                        {tasks.map(({ entry, path }, index) => {
                             const previous = latestRating(scopeRatings, { ...context, mteId: entry.id });
                             const score = previous && totalWeight > 0 ? TLX_DIMENSIONS_INFO.reduce(
                                 (sum, dim) => sum + previous.scores[dim.id] * weights[dim.id], 0) / totalWeight : null;
@@ -383,6 +408,9 @@ export function AssessmentRunner({ study, scenario, evaluatorId, passageId, pass
                             return (
                                 <li className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1.5 bg-nasa-gray-900 px-2.5 py-2" key={entry.id}>
                                     <div className="min-w-0 flex-1 basis-32">
+                                        {path.length > 1 && <p className="break-words text-xs text-nasa-gray-300">
+                                            {path.slice(0, -1).map(parent => parent.name).join(' › ')}
+                                        </p>}
                                         <p className="break-words text-sm font-semibold text-foreground">
                                             {scenario && `${index + 1}. `}{entry.refNumber && `[${entry.refNumber}] `}{entry.name}
                                         </p>

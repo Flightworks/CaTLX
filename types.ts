@@ -22,11 +22,24 @@ export interface Evaluator {
   company: string;
 }
 
+export type MteLevel = 'phase' | 'general' | 'detail';
+
+export interface MteCriterion {
+  id: string;
+  label: string;
+  instructions: string;
+  type: 'score' | 'errorRate';
+  maxErrorRate?: number;
+}
+
 export interface MTE {
   id: string;
   name: string;
   description: string;
   refNumber: string;
+  level?: MteLevel;
+  parentId?: string;
+  criteria?: MteCriterion[];
 }
 
 export interface Study {
@@ -69,8 +82,16 @@ export interface Passage {
   conditionId: string;
   order: number;
   mteIds: string[];
+  mteCriteria?: Record<string, MteCriterion[]>;
   startedAt?: number;
   completedAt?: number;
+}
+
+export interface MteObservation {
+  criterion: MteCriterion;
+  score?: number;
+  errors?: number;
+  opportunities?: number;
 }
 
 export interface Rating {
@@ -83,6 +104,7 @@ export interface Rating {
   scores: Record<TLXDimension, number>;
   timestamp: number;
   comments?: string;
+  observations?: MteObservation[];
 }
 
 export interface ComputedTLXScore {
@@ -97,6 +119,7 @@ export interface ComputedTLXScore {
   mteId: string;
   isWeighted: boolean;
   comments?: string;
+  observations?: MteObservation[];
 }
 
 export interface WorkspaceData {
@@ -126,6 +149,7 @@ export interface IDataSource extends WorkspaceData {
   deleteStudy: (id: string) => void;
   addMte: (mte: Omit<MTE, 'id' | 'refNumber'> & { refNumber?: string }) => MTE;
   updateMte: (mte: MTE) => void;
+  saveMte: (input: Omit<MTE, 'id'> & { id?: string }) => Promise<void>;
   deleteMte: (id: string) => void;
   addMTEToStudy: (studyId: string, mteId: string) => void;
   removeMTEFromStudy: (studyId: string, mteId: string) => void;

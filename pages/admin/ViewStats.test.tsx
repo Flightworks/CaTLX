@@ -127,6 +127,7 @@ const mockDataSource: IDataSource = {
   updateStudy: vi.fn(),
   deleteStudy: vi.fn(),
   addMte: vi.fn(),
+  saveMte: vi.fn(),
   updateMte: vi.fn(),
   deleteMte: vi.fn(),
   addMTEToStudy: vi.fn(),

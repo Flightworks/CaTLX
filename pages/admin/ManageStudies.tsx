@@ -2,6 +2,7 @@ import React, { useState, useMemo, useId } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useData, useSession } from '../../contexts/AppContext';
+import { mtePath } from '../../data/mte';
 import { Study, MTE, Evaluator } from '../../types';
 import Card from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
@@ -18,22 +19,17 @@ const ManageStudyMTEsModal: React.FC<{
   const { mtes, ratings, scenarios = [], addMTEToStudy, removeMTEFromStudy } = useData();
   const [searchQuery, setSearchQuery] = useState('');
 
-  const mtesInStudy = useMemo(() => {
-    return study.mteIds
-      .map(id => mtes.find(m => m.id === id))
-      .filter((m): m is MTE => !!m)
-      .sort((a, b) => a.name.localeCompare(b.name));
-  }, [study.mteIds, mtes]);
-
-  const availableMtes = useMemo(() => {
-    const lowercasedQuery = searchQuery.toLowerCase();
-    return mtes
-      .filter(mte => 
-        !study.mteIds.includes(mte.id) &&
-        (searchQuery === '' || mte.name.toLowerCase().includes(lowercasedQuery) || mte.refNumber.toLowerCase().includes(lowercasedQuery))
-      )
-      .sort((a, b) => a.name.localeCompare(b.name));
-  }, [mtes, study.mteIds, searchQuery]);
+  const catalog = useMemo(() => {
+    const byId = new Map(mtes.map(mte => [mte.id, mte]));
+    return mtes.map(mte => {
+      const path = mtePath(mte, byId);
+      return { ...mte, path: path.map(entry => entry.name).join(' › '), refs: path.map(entry => entry.refNumber).join(' ') };
+    }).sort((a, b) => a.path.localeCompare(b.path));
+  }, [mtes]);
+  const assignedIds = new Set(study.mteIds);
+  const mtesInStudy = catalog.filter(mte => assignedIds.has(mte.id));
+  const query = searchQuery.trim().toLocaleLowerCase();
+  const availableMtes = catalog.filter(mte => !assignedIds.has(mte.id) && `${mte.refs} ${mte.path}`.toLocaleLowerCase().includes(query));
 
   return (
     <Modal isOpen={true} onClose={onClose} title={t('study_settings.manage_mtes_for', { study: study.name })} size="4xl">
@@ -51,10 +47,10 @@ const ManageStudyMTEsModal: React.FC<{
           />
           <div className="space-y-2 max-h-80 overflow-y-auto pr-2">
             {availableMtes.map(mte => (
-              <div key={mte.id} className="flex justify-between items-center p-2 bg-nasa-gray-700 rounded">
-                <div>
-                  <p className="text-sm font-medium text-foreground">{mte.name}</p>
-                  <p className="text-xs text-nasa-gray-400 font-mono">[{mte.refNumber}]</p>
+              <div key={mte.id} className="flex justify-between items-center gap-2 p-2 bg-nasa-gray-700 rounded">
+                <div className="min-w-0 break-words">
+                  <p className="text-sm font-medium text-foreground">{mte.path}</p>
+                  {mte.refNumber && <p className="text-xs text-nasa-gray-400 font-mono">[{mte.refNumber}]</p>}
                 </div>
                 <Button size="sm" onClick={() => addMTEToStudy(study.id, mte.id)}>{t('study_settings.add')}</Button>
               </div>
@@ -67,10 +63,10 @@ const ManageStudyMTEsModal: React.FC<{
           <h3 className="text-lg font-semibold text-foreground mb-2">{t('study_settings.assigned_mtes', { count: mtesInStudy.length })}</h3>
            <div className="space-y-2 max-h-96 overflow-y-auto pr-2">
             {mtesInStudy.map(mte => (
-              <div key={mte.id} className="flex justify-between items-center p-2 bg-nasa-gray-700 rounded">
-                <div>
-                  <p className="text-sm font-medium text-foreground">{mte.name}</p>
-                  <p className="text-xs text-nasa-gray-400 font-mono">[{mte.refNumber}]</p>
+              <div key={mte.id} className="flex justify-between items-center gap-2 p-2 bg-nasa-gray-700 rounded">
+                <div className="min-w-0 break-words">
+                  <p className="text-sm font-medium text-foreground">{mte.path}</p>
+                  {mte.refNumber && <p className="text-xs text-nasa-gray-400 font-mono">[{mte.refNumber}]</p>}
                 </div>
                 <Button size="sm" variant="secondary" disabled={ratings.some(rating => rating.studyId === study.id && rating.mteId === mte.id) ||
                     scenarios.some(scenario => scenario.studyId === study.id && scenario.mteIds.includes(mte.id))}

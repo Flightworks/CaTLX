@@ -125,6 +125,7 @@ const ViewStats: React.FC<{ projectId?: string; studyId?: string }> = ({ project
         totalWeightedScore: totalWeight > 0 ? totalWeightedScore / totalWeight : 0,
         isWeighted,
         comments: rating.comments,
+        observations: rating.observations,
         projectId: study?.projectId || '',
         evaluatorId: rating.evaluatorId,
       };
@@ -219,6 +220,7 @@ const ViewStats: React.FC<{ projectId?: string; studyId?: string }> = ({ project
       ...TLX_DIMENSIONS_INFO.map(dim => `${t(`tlx_dimensions.${dim.id.toLowerCase().replaceAll(' ', '_')}.title`)}${t('stats.csv_headers.raw_suffix')}`),
       ...TLX_DIMENSIONS_INFO.map(dim => `${t(`tlx_dimensions.${dim.id.toLowerCase().replaceAll(' ', '_')}.title`)}${t('stats.csv_headers.weight_suffix')}`),
       t('stats.csv_headers.comments'),
+      t('mte_observation.csv_header'),
     ];
 
     const rows = computedScores.map(score => {
@@ -237,6 +239,7 @@ const ViewStats: React.FC<{ projectId?: string; studyId?: string }> = ({ project
         ...TLX_DIMENSIONS_INFO.map(dim => score.rawScores[dim.id]),
         ...TLX_DIMENSIONS_INFO.map(dim => score.weights[dim.id]),
         score.comments || '',
+        score.observations?.length ? JSON.stringify(score.observations) : '',
       ];
 
       return values;
