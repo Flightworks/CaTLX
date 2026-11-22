@@ -191,6 +191,7 @@ export function createDataSource(data: WorkspaceData, commit: CommitWorkspace): 
         }
         return writeMte(current, mte, id === undefined);
       }, true);
+      return mte.id;
     },
     deleteMte(id) {
       commit(current => current.mtes.some(task => task.parentId === id) ||

@@ -149,7 +149,7 @@ export interface IDataSource extends WorkspaceData {
   deleteStudy: (id: string) => void;
   addMte: (mte: Omit<MTE, 'id' | 'refNumber'> & { refNumber?: string }) => MTE;
   updateMte: (mte: MTE) => void;
-  saveMte: (input: Omit<MTE, 'id'> & { id?: string }) => Promise<void>;
+  saveMte: (input: Omit<MTE, 'id'> & { id?: string }) => Promise<string>;
   deleteMte: (id: string) => void;
   addMTEToStudy: (studyId: string, mteId: string) => void;
   removeMTEFromStudy: (studyId: string, mteId: string) => void;

@@ -37,7 +37,8 @@ export default function MteForm({ mte, mtes, initialLevel, initialParentId, onSa
 
   const hasChildren = !!mte && [...mtes.values()].some(entry => entry.parentId === mte.id);
   const parentLevel = level === 'general' ? 'phase' : level === 'detail' ? 'general' : undefined;
-  const parentOptions = parentLevel ? [...mtes.values()].filter(entry => entry.level === parentLevel && entry.id !== mte?.id) : [];
+  const parent = mtes.get(parentId);
+  const parentOptions = mte && parentLevel ? [...mtes.values()].filter(entry => entry.level === parentLevel && entry.id !== mte.id) : [];
 
   function updateCriterion(id: string, changes: Partial<CriterionDraft>) {
     setCriteria(current => current.map(criterion => criterion.id === id ? { ...criterion, ...changes } : criterion));
@@ -71,17 +72,22 @@ export default function MteForm({ mte, mtes, initialLevel, initialParentId, onSa
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <fieldset disabled={saving} className="space-y-4">
+        {!mte && parent && (
+          <p className="break-words rounded-md border border-separator bg-nasa-gray-900 px-3 py-2 text-sm text-nasa-gray-300">
+            {t('catalog.under', { path: mtePath(parent, mtes).map(entry => entry.name).join(' › ') })}
+          </p>
+        )}
         <div className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_8rem]">
           <div>
             <label htmlFor={`${formId}-name`} className={label}>{t('evaluator.name')}</label>
-            <input id={`${formId}-name`} className={field} value={name} onChange={event => setName(event.target.value)} required />
+            <input id={`${formId}-name`} className={field} value={name} onChange={event => setName(event.target.value)} required autoFocus />
           </div>
           <div>
             <label htmlFor={`${formId}-ref`} className={label}>{t('evaluator.ref_number')}</label>
             <input id={`${formId}-ref`} className={field} value={refNumber} onChange={event => setRefNumber(event.target.value)} />
           </div>
         </div>
-        <div>
+        {mte && <div>
           <label htmlFor={`${formId}-level`} className={label}>{t('catalog.level')}</label>
           <select
             id={`${formId}-level`}
@@ -100,8 +106,8 @@ export default function MteForm({ mte, mtes, initialLevel, initialParentId, onSa
             <option value="detail">{t('catalog.level_detail')}</option>
           </select>
           {hasChildren && <p id={`${formId}-level-help`} className="mt-1 text-xs text-nasa-gray-400">{t('catalog.level_locked')}</p>}
-        </div>
-        {parentLevel && (
+        </div>}
+        {mte && parentLevel && (
           <div>
             <label htmlFor={`${formId}-parent`} className={label}>{t(`catalog.parent_${parentLevel}`)}</label>
             <select
