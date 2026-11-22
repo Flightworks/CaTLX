@@ -10,6 +10,8 @@ const keys = {
   ratings: 'catlx_ratings',
   pairwiseComparisons: 'catlx_pairwise_comparisons',
   scenarios: 'catlx_scenarios',
+  conditions: 'catlx_conditions',
+  passages: 'catlx_passages',
 } satisfies Record<keyof WorkspaceData, string>;
 
 const collections = Object.keys(keys) as (keyof WorkspaceData)[];

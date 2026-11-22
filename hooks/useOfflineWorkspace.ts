@@ -4,7 +4,7 @@ import { OfflineCopyChanged, updateOfflineCopy, type OfflineDocument, type Offli
 import { createDataSource, type WorkspaceChange } from '../data/workspace';
 import { mergeWorkspace, resolveWorkspaceConflict, sameWorkspace, type WorkspaceConflict } from '../data/workspaceMerge';
 
-type OfflineStatus = 'ready' | 'pending' | 'syncing' | 'unreachable' | 'conflicts' | 'storage_failed' | 'local_conflict';
+type OfflineStatus = 'ready' | 'pending' | 'syncing' | 'unreachable' | 'conflicts' | 'storage_failed' | 'local_conflict' | 'upgrade_required';
 type Review = { remote: LoadedWorkspace; conflicts: WorkspaceConflict[] };
 
 export default function useOfflineWorkspace(
@@ -65,6 +65,10 @@ export default function useOfflineWorkspace(
             const result = await saveWorkspace(config, payload, remote.revision, crypto.randomUUID(), controller.signal);
             if (controller.signal.aborted || !mounted.current) break;
             if (result === 'conflict') continue;
+            if (result === 'upgrade_required') {
+              setStatus('upgrade_required');
+              return;
+            }
             if (result === 'denied') {
               onDenied();
               return;

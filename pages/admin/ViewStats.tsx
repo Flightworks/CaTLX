@@ -70,6 +70,7 @@ const ViewStats: React.FC<{ projectId?: string; studyId?: string }> = ({ project
 
   const filteredRatings = useMemo(() => {
     return ratings.filter(rating => {
+      if (rating.passageId) return false;
       const study = studies.find(s => s.id === rating.studyId);
       if (!study) return false;
       if (selectedProjectId && study.projectId !== selectedProjectId) return false;

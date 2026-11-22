@@ -58,11 +58,12 @@ export async function saveWorkspace(
   revision: number,
   writeId: string,
   signal: AbortSignal,
-): Promise<'saved' | 'conflict' | 'denied'> {
+): Promise<'saved' | 'conflict' | 'denied' | 'upgrade_required'> {
   const query = () => client.from('catlx_workspace').select('revision, write_id').eq('environment', environment);
 
   const { data, error } = await client.from('catlx_workspace')
     .update({ payload, revision: revision + 1, write_id: writeId })
+    .setHeader('x-client-info', 'catlx-workspace/2')
     .eq('environment', environment)
     .eq('revision', revision)
     .select('revision')
@@ -71,6 +72,7 @@ export async function saveWorkspace(
 
   if (error) {
     if (error.code === '42501') return 'denied';
+    if (error.message === 'catlx_workspace_upgrade_required') return 'upgrade_required';
     throw error;
   }
   if (data) return 'saved';

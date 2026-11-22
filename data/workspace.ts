@@ -1,4 +1,4 @@
-import type { IDataSource, Rating, WorkspaceData } from '../types';
+import type { IDataSource, Passage, Rating, WorkspaceData } from '../types';
 
 export const emptyWorkspace: WorkspaceData = {
   projects: [],
@@ -8,6 +8,8 @@ export const emptyWorkspace: WorkspaceData = {
   ratings: [],
   pairwiseComparisons: [],
   scenarios: [],
+  conditions: [],
+  passages: [],
 };
 
 export type WorkspaceChange = (data: WorkspaceData) => WorkspaceData;
@@ -31,7 +33,8 @@ function includeId(ids: string[], id: string): string[] {
   return ids.includes(id) ? ids : [...ids, id];
 }
 
-export function ratingContext(rating: Pick<Rating, 'studyId' | 'scenarioId' | 'evaluatorId' | 'mteId'>): string {
+export function ratingContext(rating: Pick<Rating, 'studyId' | 'scenarioId' | 'evaluatorId' | 'mteId' | 'passageId'>): string {
+  if (rating.passageId) return ['passage', rating.passageId, rating.mteId].map(encodeURIComponent).join('/');
   return [rating.studyId, rating.scenarioId ?? '', rating.evaluatorId, rating.mteId]
     .map(encodeURIComponent).join('/');
 }
@@ -43,10 +46,17 @@ export function latestRating(ratings: Rating[], context: Parameters<typeof ratin
       ? candidate : latest, undefined);
 }
 
+export function orderedPassages(passages: Passage[], studyId: string) {
+  return passages.filter(entry => entry.studyId === studyId)
+    .sort((a, b) => a.order - b.order || a.id.localeCompare(b.id));
+}
+
 export function createDataSource(data: WorkspaceData, commit: CommitWorkspace): IDataSource {
   return {
     ...data,
     scenarios: data.scenarios ?? [],
+    conditions: data.conditions ?? [],
+    passages: data.passages ?? [],
     addProject(project, ownerId) {
       const newProject = { ...project, id: newId(), ownerId, memberIds: [ownerId] };
       commit(current => ({ ...current, projects: [...current.projects, newProject] }));
@@ -55,8 +65,9 @@ export function createDataSource(data: WorkspaceData, commit: CommitWorkspace): 
       commit(current => ({ ...current, projects: updateItem(current.projects, project) }));
     },
     deleteProject(id) {
-      commit(current => ({
+      commit(current => current.passages?.some(pass => current.studies.some(study => study.id === pass.studyId && study.projectId === id)) ? current : ({
         ...current,
+        conditions: (current.conditions ?? []).filter(condition => current.studies.some(study => study.id === condition.studyId && study.projectId !== id)),
         projects: removeItem(current.projects, id),
         studies: current.studies.filter(study => study.projectId !== id),
         scenarios: (current.scenarios ?? []).filter(scenario => current.studies.some(study => study.id === scenario.studyId && study.projectId !== id)),
@@ -87,7 +98,7 @@ export function createDataSource(data: WorkspaceData, commit: CommitWorkspace): 
       commit(current => ({ ...current, evaluators: updateItem(current.evaluators, evaluator) }));
     },
     deleteEvaluator(id) {
-      commit(current => ({
+      commit(current => current.passages?.some(pass => pass.evaluatorId === id) ? current : ({
         ...current,
         evaluators: removeItem(current.evaluators, id),
         projects: current.projects.map(project => ({
@@ -108,7 +119,8 @@ export function createDataSource(data: WorkspaceData, commit: CommitWorkspace): 
       commit(current => ({ ...current, studies: updateItem(current.studies, study) }));
     },
     deleteStudy(id) {
-      commit(current => ({ ...current, studies: removeItem(current.studies, id),
+      commit(current => current.passages?.some(pass => pass.studyId === id) ? current : ({ ...current,
+        conditions: (current.conditions ?? []).filter(condition => condition.studyId !== id), studies: removeItem(current.studies, id),
         scenarios: (current.scenarios ?? []).filter(scenario => scenario.studyId !== id) }));
     },
     addMte(mte) {
@@ -120,7 +132,7 @@ export function createDataSource(data: WorkspaceData, commit: CommitWorkspace): 
       commit(current => ({ ...current, mtes: updateItem(current.mtes, mte) }));
     },
     deleteMte(id) {
-      commit(current => ({
+      commit(current => current.passages?.some(pass => pass.mteIds.includes(id)) ? current : ({
         ...current,
         mtes: removeItem(current.mtes, id),
         scenarios: (current.scenarios ?? []).map(scenario => ({
@@ -157,7 +169,7 @@ export function createDataSource(data: WorkspaceData, commit: CommitWorkspace): 
       }));
     },
     removeEvaluatorFromStudy(studyId, evaluatorId) {
-      commit(current => ({
+      commit(current => current.passages?.some(pass => pass.studyId === studyId && pass.evaluatorId === evaluatorId) ? current : ({
         ...current,
         studies: current.studies.map(study => study.id === studyId
           ? { ...study, evaluatorIds: study.evaluatorIds.filter(id => id !== evaluatorId) }
@@ -176,7 +188,7 @@ export function createDataSource(data: WorkspaceData, commit: CommitWorkspace): 
               !current.mtes.some(task => task.id === taskId))) {
           throw new Error('The study or its catalog changed. Reopen the scenario to continue.');
         }
-        const usedTasks = current.ratings.filter(rating => rating.scenarioId === id)
+        const usedTasks = current.ratings.filter(rating => !rating.passageId && rating.scenarioId === id)
           .map(rating => rating.mteId);
         const scenario = {
           ...input, id, archived: original?.archived,
@@ -192,11 +204,97 @@ export function createDataSource(data: WorkspaceData, commit: CommitWorkspace): 
           scenario.id === id ? { ...scenario, archived } : scenario),
       }), true);
     },
+    async addCondition(input) {
+      const id = newId();
+      await commit(current => {
+        const name = input.name.trim();
+        const version = input.version.trim();
+        const conditions = current.conditions ?? [];
+        if (!name || !current.studies.some(study => study.id === input.studyId) ||
+            conditions.some(entry => entry.studyId === input.studyId && entry.name === name && entry.version === version)) {
+          throw new Error('Invalid or duplicate condition');
+        }
+        return { ...current, conditions: [...conditions, { ...input, id, name, version }] };
+      }, true);
+    },
+    async addPassage(input, repeatId) {
+      const id = newId();
+      await commit(current => {
+        const study = current.studies.find(entry => entry.id === input.studyId);
+        const scenario = current.scenarios?.find(entry => entry.id === input.scenarioId && entry.studyId === input.studyId);
+        const passes = current.passages ?? [];
+        const repeat = passes.find(entry => entry.id === repeatId && entry.studyId === input.studyId &&
+          entry.scenarioId === input.scenarioId && entry.evaluatorId === input.evaluatorId && entry.completedAt !== undefined);
+        if (!study?.evaluatorIds.includes(input.evaluatorId) || !scenario ||
+            (repeatId ? !repeat : scenario.archived || !scenario.mteIds.length) ||
+            !current.conditions?.some(entry => entry.id === input.conditionId && entry.studyId === input.studyId)) {
+          throw new Error('Invalid passage context');
+        }
+        const order = Math.max(0, ...passes.filter(entry => entry.studyId === study.id).map(entry => entry.order)) + 1;
+        // An ordinary passage snapshots its scenario when started. A repetition preserves the original protocol.
+        const mteIds = repeat ? [...repeat.mteIds] : [];
+        return { ...current, passages: [...passes, { ...input, id, order, mteIds }] };
+      }, true);
+    },
+    async startPassage(id) {
+      await commit(current => {
+        const passes = current.passages ?? [];
+        const pass = passes.find(entry => entry.id === id);
+        if (!pass) throw new Error('Unknown passage');
+        if (pass.startedAt !== undefined) return current;
+        const scenario = current.scenarios?.find(entry => entry.id === pass.scenarioId && entry.studyId === pass.studyId);
+        const ids = pass.mteIds.length ? pass.mteIds : scenario?.archived ? [] : scenario?.mteIds ?? [];
+        const mteIds = [...new Set(ids)];
+        if (!mteIds.length || mteIds.some(mteId => !current.mtes.some(mte => mte.id === mteId))) {
+          throw new Error('Passage has no available tasks');
+        }
+        return { ...current, passages: updateItem(passes, { ...pass, mteIds, startedAt: Date.now() }) };
+      }, true);
+    },
+    async movePassage(id, offset) {
+      await commit(current => {
+        const passes = current.passages ?? [];
+        const pass = passes.find(entry => entry.id === id);
+        if (!pass) return current;
+        const ordered = orderedPassages(passes, pass.studyId);
+        const index = ordered.findIndex(entry => entry.id === id);
+        const neighbor = ordered[index + offset];
+        if (!neighbor) return current;
+        ordered[index] = neighbor;
+        ordered[index + offset] = pass;
+        const positions = new Map(ordered.map((entry, i) => [entry.id, i + 1]));
+        return { ...current, passages: passes.map(entry => ({ ...entry, order: positions.get(entry.id) ?? entry.order })) };
+      }, true);
+    },
+    async deletePassage(id) {
+      await commit(current => {
+        const passes = current.passages ?? [];
+        if (passes.find(entry => entry.id === id)?.startedAt !== undefined) throw new Error('Passage already started');
+        return { ...current, passages: removeItem(passes, id) };
+      }, true);
+    },
     async saveRating(input) {
       const timestamp = Date.now();
       await commit(current => {
         const study = current.studies.find(candidate => candidate.id === input.studyId);
         const scenario = current.scenarios?.find(candidate => candidate.id === input.scenarioId);
+        const pass = input.passageId ? current.passages?.find(entry => entry.id === input.passageId) : undefined;
+        if (input.passageId) {
+          if (!pass || pass.startedAt === undefined || pass.studyId !== input.studyId ||
+              pass.scenarioId !== input.scenarioId || pass.evaluatorId !== input.evaluatorId ||
+              !pass.mteIds.includes(input.mteId)) throw new Error('Invalid passage rating');
+          const existing = current.ratings.filter(rating => rating.passageId === pass.id);
+          const previous = existing.find(rating => rating.mteId === input.mteId);
+          if (!previous && pass.mteIds.find(id => !existing.some(rating => rating.mteId === id)) !== input.mteId) {
+            throw new Error('Rate the next task in the passage');
+          }
+          const rating = { ...input, id: previous?.id ?? `rating/${ratingContext(input)}`, timestamp };
+          const ratings = previous ? updateItem(current.ratings, rating) : [...current.ratings, rating];
+          const finished = !previous && existing.length + 1 === pass.mteIds.length;
+          return { ...current, ratings, passages: finished
+            ? updateItem(current.passages ?? [], { ...pass, completedAt: timestamp })
+            : current.passages };
+        }
         if (!study || !study.evaluatorIds.includes(input.evaluatorId) ||
             !current.mtes.some(task => task.id === input.mteId) ||
             (input.scenarioId && (!scenario || scenario.studyId !== study.id || scenario.archived ||

@@ -59,6 +59,7 @@ function Navigation({ close, collapsed = false, toggle }: { close?: () => void; 
     { to: studyPath, label: 'projects.study_tasks', path: 'M5 4h14v16H5zM8 8h.01m3 0h5m-8 4h.01m3 0h5m-8 4h.01m3 0h5', end: true },
     { to: `${studyPath}/scenarios`, label: 'header.study_scenarios', path: scenarioIcon },
     { to: `${studyPath}/results`, label: 'header.study_results', path: 'M3 4v16h18M7 15l4-4 3 2 5-6' },
+    { to: `${studyPath}/passages`, label: 'passages.title', path: 'M5 4h14v16H5zM8 8h8m-8 4h8m-8 4h5' },
     { to: `${studyPath}/settings`, label: 'projects.study_settings', path: 'M4 7h4m4 0h8M4 17h8m4 0h4M8 4v6m8 4v6' },
   ];
   const toggleLabel = t(collapsed ? 'header.expand_sidebar' : 'header.collapse_sidebar');

@@ -126,7 +126,7 @@ export function OfflinePassphrase({ submit, onClose }: {
 
 const kind = {
   projects: 'project', studies: 'study', scenarios: 'scenario', mtes: 'task', evaluators: 'evaluator',
-  ratings: 'rating', pairwiseComparisons: 'weights',
+  ratings: 'rating', pairwiseComparisons: 'weights', conditions: 'condition', passages: 'passage',
 } as const;
 
 export function OfflineConflicts({ conflicts, error, resolve }: {

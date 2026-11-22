@@ -90,7 +90,7 @@ const ManageStudyEvaluatorsModal: React.FC<{
   onClose: () => void;
 }> = ({ study, onClose }) => {
   const { t } = useTranslation();
-  const { evaluators, addEvaluatorToStudy, removeEvaluatorFromStudy } = useData();
+  const { evaluators, passages, addEvaluatorToStudy, removeEvaluatorFromStudy } = useData();
 
   const evaluatorsInStudy = useMemo(() => {
     return study.evaluatorIds
@@ -126,7 +126,7 @@ const ManageStudyEvaluatorsModal: React.FC<{
             {evaluatorsInStudy.map(evaluator => (
               <div key={evaluator.id} className="flex justify-between items-center p-2 bg-nasa-gray-700 rounded">
                 <p className="text-sm font-medium text-foreground">{evaluator.name}</p>
-                <Button size="sm" variant="secondary" onClick={() => removeEvaluatorFromStudy(study.id, evaluator.id)}>{t('study_settings.remove')}</Button>
+                <Button size="sm" variant="secondary" disabled={passages?.some(pass => pass.studyId === study.id && pass.evaluatorId === evaluator.id)} onClick={() => removeEvaluatorFromStudy(study.id, evaluator.id)}>{t('study_settings.remove')}</Button>
               </div>
             ))}
             {evaluatorsInStudy.length === 0 && <p className="text-sm text-nasa-gray-500 text-center py-4">{t('study_settings.no_evaluators')}</p>}
@@ -180,7 +180,7 @@ const StudyForm: React.FC<{
 
 const ManageStudies: React.FC<{ projectId?: string; studyId?: string }> = ({ projectId, studyId }) => {
   const { t, i18n } = useTranslation();
-  const { studies, mtes, ratings, evaluators, scenarios, addStudy, updateStudy, deleteStudy } = useData();
+  const { studies, mtes, ratings, evaluators, scenarios, passages, addStudy, updateStudy, deleteStudy } = useData();
   const session = useSession();
   const selectedProjectId = projectId ?? session.selectedProjectId;
   const showStudyList = Boolean(projectId && !studyId);
@@ -255,7 +255,7 @@ const ManageStudies: React.FC<{ projectId?: string; studyId?: string }> = ({ pro
                 </div>
                 <div className="flex shrink-0 items-center gap-1">
                   <RowAction icon="edit" label={t('study_settings.edit')} onClick={() => { setEditingStudy(study); setIsStudyModalOpen(true); }} />
-                  <RowAction icon="delete" label={t('study_settings.delete')} disabled={ratings.some(rating => rating.studyId === study.id)}
+                  <RowAction icon="delete" label={t('study_settings.delete')} disabled={ratings.some(rating => rating.studyId === study.id) || passages?.some(pass => pass.studyId === study.id)}
                     onClick={() => deleteStudy(study.id)} />
                 </div>
               </div>

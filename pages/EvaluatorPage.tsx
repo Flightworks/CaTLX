@@ -105,17 +105,19 @@ const PairwiseComparisonView: React.FC<{
     );
 };
 
-function RatingForm({ study, scenario, evaluatorId, task, submitLabel, onClose }: {
+function RatingForm({ study, scenario, evaluatorId, passageId, passageLabel, task, submitLabel, onClose }: {
     study: Study;
     scenario?: Scenario;
     evaluatorId: string;
+    passageId?: string;
+    passageLabel?: string;
     task: MTE;
     submitLabel: string;
     onClose: (saved?: boolean) => void;
 }) {
     const { t, i18n } = useTranslation();
     const { ratings, saveRating, pairwiseComparisons } = useData();
-    const context = { studyId: study.id, scenarioId: scenario?.id, evaluatorId, mteId: task.id };
+    const context = { studyId: study.id, scenarioId: scenario?.id, evaluatorId, passageId, mteId: task.id };
     const existing = latestRating(ratings, context);
     const [scores, setScores] = useState(existing?.scores ?? initialScores);
     const [comments, setComments] = useState(existing?.comments ?? '');
@@ -128,7 +130,7 @@ function RatingForm({ study, scenario, evaluatorId, task, submitLabel, onClose }
     const lastStep = TLX_DIMENSIONS_INFO.length;
     const assigned = (scenario?.mteIds ?? study.mteIds).includes(task.id);
 
-    const comparison = pairwiseComparisons.find(entry => entry.studyId === study.id && entry.evaluatorId === evaluatorId);
+    const comparison = passageId ? undefined : pairwiseComparisons.find(entry => entry.studyId === study.id && entry.evaluatorId === evaluatorId);
     const weights = comparison?.isWeighted ? comparison.weights : DEFAULT_WEIGHTS;
     const totalWeight = Object.values(weights).reduce((sum, weight) => sum + weight, 0);
     const overallScore = totalWeight > 0
@@ -219,6 +221,7 @@ function RatingForm({ study, scenario, evaluatorId, task, submitLabel, onClose }
                             onChange={event => setComments(event.target.value)} />
                     </label>
                 )}
+                {passageLabel && <p className="text-sm font-medium text-accent-ink">{passageLabel}</p>}
                 <div className="flex flex-wrap items-center justify-between gap-2 border-t border-separator pt-2">
                     <Button variant="secondary" type="button" size="sm" className="min-h-9" onClick={() => onClose()} disabled={saving}>
                         {t('evaluator.back_to_tasks')}
@@ -248,25 +251,26 @@ function RatingForm({ study, scenario, evaluatorId, task, submitLabel, onClose }
     );
 }
 
-export function AssessmentRunner({ study, scenario, evaluatorId }: {
-    study: Study; scenario?: Scenario; evaluatorId: string;
+export function AssessmentRunner({ study, scenario, evaluatorId, passageId, passageLabel }: {
+    study: Study; scenario?: Scenario; evaluatorId: string; passageId?: string; passageLabel?: string;
 }) {
     const { t } = useTranslation();
     const { mtes, ratings, pairwiseComparisons, addPairwiseComparison } = useData();
-    const [taskId, setTaskId] = useState('');
+    const [taskId, setTaskId] = useState(() =>
+        passageId ? scenario?.mteIds.find(id => !ratings.some(rating => rating.passageId === passageId && rating.mteId === id)) ?? '' : '');
     const [search, setSearch] = useState('');
     const [showCatalog, setShowCatalog] = useState(false);
     const [showWeights, setShowWeights] = useState(false);
     const [saved, setSaved] = useState(false);
-    const comparison = pairwiseComparisons.find(entry => entry.studyId === study.id && entry.evaluatorId === evaluatorId);
-    const context = { studyId: study.id, scenarioId: scenario?.id, evaluatorId };
+    const comparison = passageId ? undefined : pairwiseComparisons.find(entry => entry.studyId === study.id && entry.evaluatorId === evaluatorId);
+    const context = { studyId: study.id, scenarioId: scenario?.id, evaluatorId, passageId };
     const task = mtes.find(entry => entry.id === taskId);
     const tasksById = new Map(mtes.map(entry => [entry.id, entry]));
     const assigned = [...new Set(scenario?.mteIds ?? study.mteIds)]
         .flatMap(id => tasksById.get(id) ?? []);
     const assignedIds = new Set(assigned.map(entry => entry.id));
     const scopeRatings = ratings.filter(rating => rating.studyId === study.id &&
-        rating.scenarioId === scenario?.id && rating.evaluatorId === evaluatorId);
+        rating.scenarioId === scenario?.id && rating.evaluatorId === evaluatorId && rating.passageId === passageId);
     const completedIds = new Set(scopeRatings.map(rating => rating.mteId));
     const query = search.trim().toLocaleLowerCase();
     const next = assigned.find(entry => !completedIds.has(entry.id));
@@ -288,7 +292,7 @@ export function AssessmentRunner({ study, scenario, evaluatorId }: {
             ? nextTask ? 'projects.save_and_next' : 'projects.finish_scenario'
             : 'projects.save_and_choose';
         return <RatingForm key={task.id} study={study} scenario={scenario} evaluatorId={evaluatorId}
-            task={task} submitLabel={submitLabel} onClose={wasSaved => {
+            passageId={passageId} passageLabel={passageLabel} task={task} submitLabel={submitLabel} onClose={wasSaved => {
                 setTaskId(wasSaved && nextTask ? nextTask.id : '');
                 setSaved(Boolean(wasSaved));
                 if (wasSaved && !scenario) {
@@ -307,7 +311,7 @@ export function AssessmentRunner({ study, scenario, evaluatorId }: {
     const progressText = t('projects.progress', { completed, total: assigned.length });
     const weights = comparison?.isWeighted ? comparison.weights : DEFAULT_WEIGHTS;
     const totalWeight = Object.values(weights).reduce((sum, weight) => sum + weight, 0);
-    const canConfigureWeights = Boolean(evaluatorId && !scenario?.archived);
+    const canConfigureWeights = Boolean(!passageId && evaluatorId && !scenario?.archived);
 
     return (
         <section className="overflow-hidden rounded-lg border border-separator bg-nasa-gray-800">
@@ -325,7 +329,7 @@ export function AssessmentRunner({ study, scenario, evaluatorId }: {
                 </div>
                 {scenario && evaluatorId && assigned.length > 0 && !scenario.archived && next && (
                     <Button size="sm" className="min-h-9" onClick={() => openTask(next.id)}>
-                        {t(completed ? 'projects.resume_scenario' : 'projects.start_scenario')}
+                        {t(passageId ? 'passages.resume' : completed ? 'projects.resume_scenario' : 'projects.start_scenario')}
                     </Button>
                 )}
             </header>
@@ -391,7 +395,7 @@ export function AssessmentRunner({ study, scenario, evaluatorId }: {
                                         <Button size="sm" className="min-h-8" variant={!scenario && entry.id === next?.id ? 'primary' : 'secondary'}
                                             disabled={!evaluatorId || Boolean(scenario && !previous && entry.id !== next?.id)}
                                             onClick={() => openTask(entry.id)}>
-                                            {t(previous ? 'projects.open_rating' : isAssigned ? 'evaluator.rate_task' : 'projects.add_and_rate')}
+                                            {t(previous ? (passageId ? 'passages.correct' : 'projects.open_rating') : isAssigned ? 'evaluator.rate_task' : 'projects.add_and_rate')}
                                         </Button>
                                     )}
                                 </li>

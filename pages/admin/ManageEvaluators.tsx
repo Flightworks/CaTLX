@@ -70,7 +70,7 @@ const EvaluatorForm: React.FC<{
 
 const ManageEvaluators: React.FC<{ projectId?: string }> = ({ projectId }) => {
   const { t } = useTranslation();
-  const { evaluators, projects, ratings, addEvaluator, updateEvaluator, deleteEvaluator, addMemberToProject } = useData();
+  const { evaluators, projects, ratings, passages, addEvaluator, updateEvaluator, deleteEvaluator, addMemberToProject } = useData();
   const session = useSession();
   const selectedProjectId = projectId ?? session.selectedProjectId;
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -148,7 +148,7 @@ const ManageEvaluators: React.FC<{ projectId?: string }> = ({ projectId }) => {
                   <div className="flex justify-end gap-1">
                     <RowAction icon="edit" label={t('common.edit')} onClick={() => handleEdit(evaluator)} />
                     <RowAction icon="delete" label={t('common.delete')}
-                      disabled={ratings.some(rating => rating.evaluatorId === evaluator.id)}
+                      disabled={ratings.some(rating => rating.evaluatorId === evaluator.id) || passages?.some(pass => pass.evaluatorId === evaluator.id)}
                       onClick={() => deleteEvaluator(evaluator.id)} />
                   </div>
                 </td>

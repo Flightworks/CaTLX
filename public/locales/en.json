@@ -59,6 +59,40 @@
     "bin": "{{ratings}} in the {{min}}–{{max}} range",
     "average": "Average Score: {{score}}"
   },
+  "passages": {
+    "title": "Passages",
+    "add": "New passage",
+    "add_condition": "New condition",
+    "condition": "Condition",
+    "conditions": "Conditions",
+    "pilot": "Pilot",
+    "version": "Mockup version",
+    "version_optional": "Mockup version (optional)",
+    "choose": "Choose…",
+    "prerequisites": "Add an evaluator, a scenario with MTEs, and a condition to plan passages.",
+    "empty": "No passages planned.",
+    "planned": "To do",
+    "running": "In progress",
+    "done": "Complete",
+    "next": "Next passage",
+    "start": "Start",
+    "resume": "Resume",
+    "open": "View ratings",
+    "repeat": "Repeat passage",
+    "correct": "Correct rating",
+    "back": "Back to passages",
+    "export": "Export passages (CSV)",
+    "id": "Passage ID",
+    "compare": "A/B comparison",
+    "condition_a": "Condition A",
+    "condition_b": "Condition B",
+    "reference_hint": "The first completed passage is the reference. Scores are unweighted.",
+    "attempt": "Passage {{number}}",
+    "incompatible": "Different MTE sequences",
+    "incomplete": "Incomplete pair",
+    "action_error": "Unable to update the passage. Check that the scenario contains MTEs and try again.",
+    "condition_error": "Unable to add this condition. Check its name and version."
+  },
   "projects": {
     "title": "Projects",
     "path": "Project path",
@@ -121,6 +155,9 @@
     "study_tasks_empty": "Add an MTE from the catalog to start rating."
   },
   "offline": {
+    "condition": "Condition",
+    "passage": "Passage",
+    "upgrade_required": "Update CaTLX before syncing. Offline changes remain on this device.",
     "enable": "Enable offline access on this device",
     "enabled": "Offline access enabled on this device",
     "unlock": "Unlock the offline copy",
@@ -184,6 +221,7 @@
     "cloud_login_desc": "Open your studies and assessments."
   },
   "cloud": {
+    "save_upgrade_required": "This version of CaTLX needs an update. Unsaved changes remain in this tab.",
     "preprod": "Preproduction · Use test data only.",
     "checking_access": "Checking your connection…",
     "auth_failed": "Google sign-in failed. Please try again.",

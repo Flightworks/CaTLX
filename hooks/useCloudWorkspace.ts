@@ -3,7 +3,7 @@ import { saveWorkspace, type CloudConfig, type LoadedWorkspace } from '../data/s
 import { createDataSource } from '../data/workspace';
 import type { WorkspaceData } from '../types';
 
-type SaveStatus = 'idle' | 'saving' | 'error' | 'conflict' | 'denied';
+type SaveStatus = 'idle' | 'saving' | 'error' | 'conflict' | 'denied' | 'upgrade_required';
 
 type Write = {
   payload: WorkspaceData;

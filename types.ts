@@ -54,12 +54,32 @@ export interface PairwiseComparison {
   isWeighted: boolean;
 }
 
+export interface Condition {
+  id: string;
+  studyId: string;
+  name: string;
+  version: string;
+}
+
+export interface Passage {
+  id: string;
+  studyId: string;
+  scenarioId: string;
+  evaluatorId: string;
+  conditionId: string;
+  order: number;
+  mteIds: string[];
+  startedAt?: number;
+  completedAt?: number;
+}
+
 export interface Rating {
   id: string;
   evaluatorId: string;
   studyId: string;
   mteId: string;
   scenarioId?: string;
+  passageId?: string;
   scores: Record<TLXDimension, number>;
   timestamp: number;
   comments?: string;
@@ -87,6 +107,8 @@ export interface WorkspaceData {
   ratings: Rating[];
   pairwiseComparisons: PairwiseComparison[];
   scenarios?: Scenario[];
+  conditions?: Condition[];
+  passages?: Passage[];
 }
 
 export interface IDataSource extends WorkspaceData {
@@ -111,6 +133,11 @@ export interface IDataSource extends WorkspaceData {
   removeEvaluatorFromStudy: (studyId: string, evaluatorId: string) => void;
   saveScenario: (scenario: Omit<Scenario, 'id' | 'archived'> & { id?: string }) => Promise<void>;
   archiveScenario: (id: string, archived: boolean) => Promise<void>;
+  addCondition: (input: Omit<Condition, 'id'>) => Promise<void>;
+  addPassage: (input: Pick<Passage, 'studyId' | 'scenarioId' | 'evaluatorId' | 'conditionId'>, repeatId?: string) => Promise<void>;
+  startPassage: (id: string) => Promise<void>;
+  movePassage: (id: string, offset: -1 | 1) => Promise<void>;
+  deletePassage: (id: string) => Promise<void>;
   saveRating: (rating: Omit<Rating, 'id' | 'timestamp'>) => Promise<void>;
   addRating: (rating: Omit<Rating, 'id' | 'timestamp'>) => Promise<void>;
   addPairwiseComparison: (comparison: PairwiseComparison) => void;

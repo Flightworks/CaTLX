@@ -108,7 +108,7 @@ const MTEForm: React.FC<{
 
 const ManageMTEs: React.FC<{ projectId?: string; standalone?: boolean }> = ({ projectId, standalone }) => {
   const { t } = useTranslation();
-  const { mtes, projects, studies, scenarios, ratings, addMte, updateMte, deleteMte } = useData();
+  const { mtes, projects, studies, scenarios, ratings, passages, addMte, updateMte, deleteMte } = useData();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingMte, setEditingMte] = useState<MTE | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
@@ -232,7 +232,7 @@ const ManageMTEs: React.FC<{ projectId?: string; standalone?: boolean }> = ({ pr
                     <div className="flex justify-end gap-1">
                       <RowAction icon="edit" label={t('common.edit')} onClick={() => handleEdit(mte)} />
                       <RowAction icon="delete" label={t('common.delete')}
-                        disabled={ratings.some(rating => rating.mteId === mte.id)} onClick={() => deleteMte(mte.id)} />
+                        disabled={ratings.some(rating => rating.mteId === mte.id) || passages?.some(pass => pass.mteIds.includes(mte.id))} onClick={() => deleteMte(mte.id)} />
                     </div>
                   </td>
                 )}

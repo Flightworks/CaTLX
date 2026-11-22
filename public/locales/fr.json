@@ -59,6 +59,40 @@
     "bin": "{{ratings}} dans la plage {{min}} à {{max}}",
     "average": "Score moyen · {{score}}"
   },
+  "passages": {
+    "title": "Passages",
+    "add": "Nouveau passage",
+    "add_condition": "Nouvelle condition",
+    "condition": "Condition",
+    "conditions": "Conditions",
+    "pilot": "Pilote",
+    "version": "Version de la maquette",
+    "version_optional": "Version de la maquette (facultatif)",
+    "choose": "Choisir…",
+    "prerequisites": "Ajoutez un évaluateur, un scénario avec des MTE et une condition pour préparer les passages.",
+    "empty": "Aucun passage planifié.",
+    "planned": "À faire",
+    "running": "En cours",
+    "done": "Terminé",
+    "next": "Prochain passage",
+    "start": "Commencer",
+    "resume": "Reprendre",
+    "open": "Voir les cotations",
+    "repeat": "Refaire un passage",
+    "correct": "Corriger la cotation",
+    "back": "Retour aux passages",
+    "export": "Exporter les passages (CSV)",
+    "id": "ID du passage",
+    "compare": "Comparaison A/B",
+    "condition_a": "Condition A",
+    "condition_b": "Condition B",
+    "reference_hint": "Le premier passage complet sert de référence. Les scores sont non pondérés.",
+    "attempt": "Passage {{number}}",
+    "incompatible": "Séquences de MTE différentes",
+    "incomplete": "Paire incomplète",
+    "action_error": "Impossible de mettre à jour le passage. Vérifiez que le scénario contient des MTE et réessayez.",
+    "condition_error": "Impossible d’ajouter cette condition. Vérifiez son nom et sa version."
+  },
   "projects": {
     "title": "Projets",
     "path": "Chemin dans les projets",
@@ -121,6 +155,9 @@
     "study_tasks_empty": "Ajoutez une MTE du catalogue pour commencer à coter."
   },
   "offline": {
+    "condition": "Condition",
+    "passage": "Passage",
+    "upgrade_required": "Mettez CaTLX à jour avant de synchroniser. Les modifications hors ligne restent sur cet appareil.",
     "enable": "Activer le hors-ligne sur cet appareil",
     "enabled": "Hors-ligne activé sur cet appareil",
     "unlock": "Déverrouiller la copie hors ligne",
@@ -184,6 +221,7 @@
     "language_label": "Langue"
   },
   "cloud": {
+    "save_upgrade_required": "Cette version de CaTLX doit être mise à jour. Les modifications non enregistrées sont encore dans cet onglet.",
     "preprod": "Préproduction · Utilisez uniquement des données fictives.",
     "checking_access": "Vérification de la connexion…",
     "auth_failed": "La connexion Google a échoué. Réessayez.",

@@ -14,6 +14,7 @@ import ManageStudies from './admin/ManageStudies';
 import ManageMTEs from './admin/ManageMTEs';
 import ManageEvaluators from './admin/ManageEvaluators';
 import ViewStats from './admin/ViewStats';
+import StudyPassages, { PassageAssessment, PassageComparison } from './StudyPassages';
 import { projectPath, scenarioPath, studyPath } from './projectPaths';
 
 const inputClass = 'w-full rounded-md bg-nasa-gray-900 border border-nasa-gray-600 p-2 text-foreground';
@@ -141,7 +142,7 @@ function ScenarioForm({ studies, draft, onClose }: { studies: Study[]; draft: Sc
   const [error, setError] = useState(false);
 
   const study = studies.find(entry => entry.id === studyId);
-  const used = new Set(scenario ? ratings.filter(rating => rating.scenarioId === scenario.id).map(rating => rating.mteId) : []);
+  const used = new Set(scenario ? ratings.filter(rating => !rating.passageId && rating.scenarioId === scenario.id).map(rating => rating.mteId) : []);
   const allowedIds = new Set([...(study?.mteIds ?? []), ...(scenario?.mteIds ?? [])]);
   const tasksById = new Map(mtes.map(task => [task.id, task]));
   const availableTasks = mtes.filter(task => allowedIds.has(task.id));
@@ -385,10 +386,17 @@ function StudyOverview({ project, study }: { project: Project; study: Study }) {
         <NavLink end className={tabClass} to={path}>{t('projects.study_tasks')}</NavLink>
         <NavLink className={tabClass} to={`${path}/scenarios`}>{t('header.study_scenarios')}</NavLink>
         <NavLink className={tabClass} to={`${path}/results`}>{t('projects.results')}</NavLink>
+        <NavLink className={tabClass} to={`${path}/passages`}>{t('passages.title')}</NavLink>
         <NavLink className={tabClass} to={`${path}/settings`}>{t('projects.study_settings')}</NavLink>
       </nav>
       <Routes>
-        <Route path="results" element={<ViewStats projectId={project.id} studyId={study.id} />} />
+        <Route path="results" element={<div className="space-y-3">
+          <Link className="text-sm font-medium text-accent-ink underline" to={`${path}/results/compare`}>{t('passages.compare')}</Link>
+          <ViewStats projectId={project.id} studyId={study.id} />
+        </div>} />
+        <Route path="results/compare" element={<PassageComparison study={study} />} />
+        <Route path="passages" element={<StudyPassages study={study} />} />
+        <Route path="passages/:passageId" element={<PassageAssessment study={study} />} />
         <Route path="settings" element={<ManageStudies projectId={project.id} studyId={study.id} />} />
         <Route path="scenarios" element={<ScenarioDirectory studies={[study]} />} />
         <Route index element={(

@@ -2,7 +2,7 @@ import type { WorkspaceData } from '../types';
 import { ratingContext } from './workspace';
 
 const collections = [
-  'projects', 'studies', 'scenarios', 'mtes', 'evaluators', 'ratings', 'pairwiseComparisons',
+  'projects', 'studies', 'scenarios', 'mtes', 'evaluators', 'ratings', 'pairwiseComparisons', 'conditions', 'passages',
 ] as const;
 type Collection = typeof collections[number];
 type RecordValue = NonNullable<WorkspaceData[Collection]>[number];
@@ -68,6 +68,8 @@ function invalidLinks(workspace: WorkspaceData) {
   const evaluators = new Set(workspace.evaluators.map(evaluator => evaluator.id));
   const projects = new Set(workspace.projects.map(project => project.id));
   const scenarios = new Map((workspace.scenarios ?? []).map(scenario => [scenario.id, scenario]));
+  const conditions = new Map((workspace.conditions ?? []).map(entry => [entry.id, entry]));
+  const passages = new Map((workspace.passages ?? []).map(entry => [entry.id, entry]));
   const byContext = new Map<string, string>();
 
   for (const project of workspace.projects) {
@@ -89,13 +91,30 @@ function invalidLinks(workspace: WorkspaceData) {
       if (!studies.get(scenario.studyId)?.mteIds.includes(id)) issues.push([key, `studies:${scenario.studyId}`]);
     }
   }
+  for (const condition of conditions.values()) {
+    if (!studies.has(condition.studyId)) issues.push([`conditions:${condition.id}`, `studies:${condition.studyId}`]);
+  }
+  for (const pass of passages.values()) {
+    const key = `passages:${pass.id}`;
+    if (!studies.get(pass.studyId)?.evaluatorIds.includes(pass.evaluatorId)) issues.push([key, `studies:${pass.studyId}`]);
+    if (!evaluators.has(pass.evaluatorId)) issues.push([key, `evaluators:${pass.evaluatorId}`]);
+    if (scenarios.get(pass.scenarioId)?.studyId !== pass.studyId) issues.push([key, `scenarios:${pass.scenarioId}`]);
+    if (conditions.get(pass.conditionId)?.studyId !== pass.studyId) issues.push([key, `conditions:${pass.conditionId}`]);
+    for (const id of pass.mteIds) if (!tasks.has(id)) issues.push([key, `mtes:${id}`]);
+  }
   for (const rating of workspace.ratings) {
     const key = `ratings:${rating.id}`;
     const study = studies.get(rating.studyId);
     if (!study?.evaluatorIds.includes(rating.evaluatorId)) issues.push([key, `studies:${rating.studyId}`]);
     if (!tasks.has(rating.mteId)) issues.push([key, `mtes:${rating.mteId}`]);
     if (!evaluators.has(rating.evaluatorId)) issues.push([key, `evaluators:${rating.evaluatorId}`]);
-    if (rating.scenarioId) {
+    if (rating.passageId) {
+      const pass = passages.get(rating.passageId);
+      if (!pass || pass.startedAt === undefined || pass.studyId !== rating.studyId || pass.scenarioId !== rating.scenarioId ||
+          pass.evaluatorId !== rating.evaluatorId || !pass.mteIds.includes(rating.mteId)) {
+        issues.push([key, `passages:${rating.passageId}`]);
+      }
+    } else if (rating.scenarioId) {
       const scenario = scenarios.get(rating.scenarioId);
       if (scenario?.studyId !== rating.studyId || !scenario.mteIds.includes(rating.mteId)) {
         issues.push([key, `scenarios:${rating.scenarioId}`]);
