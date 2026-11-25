@@ -94,6 +94,8 @@
     "condition_error": "Unable to add this condition. Check its name and version."
   },
   "projects": {
+    "demo_name": "Demo Project",
+    "demo_hint": "Sample data. Changes are temporary.",
     "title": "Projects",
     "path": "Project path",
     "project_name": "Project name",
@@ -212,7 +214,7 @@
     "subtitle": "Workload Assessment Tool",
     "language_label": "Language",
     "choose_mode": "Choose Your Mode",
-    "demo_mode": "Enter Demo Mode",
+    "demo_mode": "Open Demo Project",
     "demo_mode_desc": "Explore with sample data.",
     "local_mode": "Use Local Mode",
     "local_mode_desc": "Save data for offline/cached use.",

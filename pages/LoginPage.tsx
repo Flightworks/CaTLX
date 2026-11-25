@@ -3,6 +3,8 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../contexts/AppContext';
+import { DEMO_PROJECT_ID } from '../data/demoProject';
+import { projectPath } from './projectPaths';
 import Button from '../components/ui/Button';
 import LanguageSwitcher from '../components/ui/LanguageSwitcher';
 import ThemeSwitch from '../components/ui/ThemeSwitch';
@@ -26,7 +28,7 @@ const LoginPage: React.FC = () => {
 
   const handleLogin = (mode: 'demo' | 'local') => {
     login(mode);
-    navigate('/projects');
+    navigate(mode === 'demo' ? projectPath(DEMO_PROJECT_ID) : '/projects');
   };
 
   const handleGoogleLogin = async () => {

@@ -94,6 +94,8 @@
     "condition_error": "Impossible d’ajouter cette condition. Vérifiez son nom et sa version."
   },
   "projects": {
+    "demo_name": "Projet de démonstration",
+    "demo_hint": "Données fictives. Les modifications sont temporaires.",
     "title": "Projets",
     "path": "Chemin dans les projets",
     "project_name": "Nom du projet",
@@ -211,7 +213,7 @@
     "title": "CaTLX",
     "subtitle": "Outil d'évaluation de la charge de travail",
     "choose_mode": "Choisissez votre mode",
-    "demo_mode": "Entrer en mode démo",
+    "demo_mode": "Ouvrir le projet de démonstration",
     "demo_mode_desc": "Explorer avec des exemples de données.",
     "local_mode": "Utiliser le mode local",
     "local_mode_desc": "Enregistrer les données pour une utilisation hors ligne/en cache.",

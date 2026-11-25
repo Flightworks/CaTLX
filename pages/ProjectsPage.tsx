@@ -1,7 +1,8 @@
 import { useState, type ReactNode } from 'react';
-import { Link, Navigate, NavLink, Route, Routes, useMatch, useParams, useSearchParams } from 'react-router-dom';
+import { Link, Navigate, NavLink, Route, Routes, useMatch, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useData } from '../contexts/AppContext';
+import { DEMO_PROJECT_ID } from '../data/demoProject';
 import type { Project, Scenario, Study } from '../types';
 import Button from '../components/ui/Button';
 import Card from '../components/ui/Card';
@@ -26,11 +27,13 @@ function Breadcrumbs({ project, study }: { project?: Project; study?: Study }) {
   const { t } = useTranslation();
   return (
     <nav aria-label={t('projects.path')} className="flex flex-wrap items-baseline gap-x-2 gap-y-1 text-sm text-nasa-gray-300">
-      <Link className="hover:underline" to="/projects?all=1">{t('projects.title')}</Link>
+      <Link className="hover:underline" to="/projects">{t('projects.title')}</Link>
       {project && (
         <>
           <span aria-hidden="true" className="text-nasa-gray-400">›</span>
-          <Link className="break-words hover:underline" to={projectPath(project.id)}>{project.name}</Link>
+          <Link className="break-words hover:underline" to={projectPath(project.id)}>
+            {project.id === DEMO_PROJECT_ID ? t('projects.demo_name') : project.name}
+          </Link>
         </>
       )}
       {study && (
@@ -44,11 +47,14 @@ function Breadcrumbs({ project, study }: { project?: Project; study?: Study }) {
 }
 
 function ActiveProjectHeader({ project, action }: { project: Project; action?: ReactNode }) {
+  const { t } = useTranslation();
   return (
     <header className="flex flex-wrap items-end justify-between gap-3 border-b border-separator pb-2 sm:pb-4">
       <div className="min-w-0 space-y-1">
         <Breadcrumbs />
-        <h1 className="break-words text-2xl font-semibold tracking-tight sm:text-3xl">{project.name}</h1>
+        <h1 className="break-words text-2xl font-semibold tracking-tight sm:text-3xl">
+          {project.id === DEMO_PROJECT_ID ? t('projects.demo_name') : project.name}
+        </h1>
       </div>
       {action}
     </header>
@@ -59,10 +65,6 @@ function ProjectList() {
   const { t } = useTranslation();
   const { projects, studies, addProject } = useData();
   const [creating, setCreating] = useState(false);
-  const [params] = useSearchParams();
-  if (projects.length === 1 && !params.has('all')) {
-    return <Navigate to={projectPath(projects[0].id)} replace />;
-  }
   return (
     <div className="space-y-5">
       <div className="flex flex-wrap justify-between items-center gap-3">
@@ -74,7 +76,9 @@ function ProjectList() {
           {projects.map(project => (
             <li key={project.id}>
               <Link className="block px-4 py-3 transition-colors hover:bg-hover-surface" to={projectPath(project.id)}>
-                <h2 className="font-semibold text-lg">{project.name}</h2>
+                <h2 className="font-semibold text-lg">
+                  {project.id === DEMO_PROJECT_ID ? t('projects.demo_name') : project.name}
+                </h2>
                 <p className="text-sm text-nasa-gray-300">
                   {t('projects.study_count', { count: studies.filter(study => study.projectId === project.id).length })}
                 </p>
@@ -102,8 +106,11 @@ function ProjectOverview({ project }: { project: Project }) {
   return (
     <div className="space-y-5">
       <ActiveProjectHeader project={project}
-        action={<Button variant="secondary" onClick={() => setEditing(true)}>{t('projects.edit_project')}</Button>} />
+        action={project.id !== DEMO_PROJECT_ID
+          ? <Button variant="secondary" onClick={() => setEditing(true)}>{t('projects.edit_project')}</Button>
+          : undefined} />
       {project.description && <p>{project.description}</p>}
+      {project.id === DEMO_PROJECT_ID && <p className="text-sm text-nasa-gray-300">{t('projects.demo_hint')}</p>}
       <nav className="flex flex-wrap gap-x-2 border-b border-separator md:hidden">
         <NavLink end className={tabClass} to={path}>{t('projects.studies')}</NavLink>
         <NavLink className={tabClass} to={`${path}/catalog`}>{t('admin.mte_catalog')}</NavLink>
